@@ -39,6 +39,12 @@ cd backend_certificado
 ```
 
 2. **Instale as dependências com Poetry**
+#### Instalação do poetry Linux
+curl -sSL https://install.python-poetry.org | python3 -
+
+#### Instalação do peoetry Windows
+curl -sSL https://install.python-poetry.org | python -
+
 ```bash
 poetry install
 ```
@@ -73,6 +79,10 @@ cd front
 ```
 
 2. **Instale as dependências**
+#### Instalação pnpm  windows
+```bash
+Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression
+```
 ```bash
 pnpm install
 ```
@@ -98,7 +108,7 @@ poetry run fastapi run main.py
 - ReDoc: `http://localhost:8000/redoc`
 
 ### Executar o Frontend
-
+#### Instalação do do node https://nodejs.org/
 ```bash
 cd front
 pnpm dev
