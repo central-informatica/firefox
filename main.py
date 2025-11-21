@@ -46,6 +46,7 @@ except Exception as e:
 
 @app.get("/")
 def inicio():
+    
     return {
         "status": "ok",
         "message": "funcionando"
@@ -55,10 +56,10 @@ def teste_h():
     conexao = getDb()
     cursor = conexao.cursor()
     cursor.execute(
-        "SELECT * FROM certificados"
+        "SELECT * FROM certificados;"
     )
     certificados = cursor.fetchall()
-    print(f'certificados: {certificados}')
+    # print(f'certificados: {certificados}')
     conexao.close()
     return {"certificados": certificados}
 
@@ -98,26 +99,55 @@ async def list_certificates():
     )
     certificados = cursor.fetchall()
     # certificados = [["1212", "meu certificado", "id certificado"], ["12", "meu certifi", "id certif"]]
-    print(f'certificados: {certificados}')
+    
     conexao.close()
 
 
     lista_certificados = []
-    for certificado in certificados:
-        print('certificado')
-        print(certificado)
-        encrypted_pfx = json.loads(certificado[3].replace("'", '"'))
-        encrypted_senha = json.loads(certificado[4].replace("'", '"'))
-        print(f'===tipo=== encrypted_pfx {type(encrypted_pfx)}')
+    if len(certificados) > 1:
+        for certificado in certificados:
+            
+            encrypted_pfx = json.loads(certificado[4].replace("'", '"'))
+            encrypted_senha = json.loads(certificado[5].replace("'", '"'))
+            
+            pfx_bytes = decrypt_pfx(encrypted_pfx, MASTER_KEY)
+            senha_bytes = decrypt_pfx(encrypted_senha, MASTER_KEY)
+            
+            
+            
+            
+            # Extrair o certificado do PFX
 
+            private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
+                pfx_bytes,
+                password=senha_bytes  # A senha do certificado
+            )
+
+            # Converter certificado para DER
+            cert_der = certificate.public_bytes(Encoding.DER)
+
+            # Converter DER para base64
+            cert_base64 = base64.b64encode(cert_der).decode()
+
+            lista_certificados.append({
+                "id": f"{certificado[0]}",
+                "label": certificado[2],
+                "cert_der_b64":  cert_base64
+
+            })
+    else:
+        
+        encrypted_pfx = json.loads(certificados[0][4].replace("'", '"'))
+        encrypted_senha = json.loads(certificados[0][5].replace("'", '"'))
+        
         pfx_bytes = decrypt_pfx(encrypted_pfx, MASTER_KEY)
         senha_bytes = decrypt_pfx(encrypted_senha, MASTER_KEY)
-        senha = senha_bytes.decode()
+        
         # Extrair o certificado do PFX
 
         private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
             pfx_bytes,
-            password=b"2705"  # A senha do certificado
+            password=senha_bytes  # A senha do certificado
         )
 
         # Converter certificado para DER
@@ -127,12 +157,14 @@ async def list_certificates():
         cert_base64 = base64.b64encode(cert_der).decode()
 
         lista_certificados.append({
-            "id": f"{certificado[0]}",
-            "label": certificado[2],
-            "data":  cert_base64
+            "id": f"{certificados[0][0]}",
+            "label": certificados[0][3],
+            "cert_der_b64":  cert_base64
 
         })
-    return {"certificates": lista_certificados} #type: ignore
+
+    print('veio listar os certificados')
+    return lista_certificados #type: ignore
 
 @app.post("/api/sign")
 async def sign_digest(payload: SignRequest):
@@ -144,7 +176,7 @@ async def sign_digest(payload: SignRequest):
         conexao = getDb()
         cursor = conexao.cursor()
         cursor.execute(
-            "SELECT encrypted, secret FROM certificados WHERE cert_id = ? AND id_usuario = ?",
+            "SELECT encrypted, secret FROM certificados WHERE id = ? AND id_usuario = ?",
             (payload.cert_id, id_usuario)
         )
         cert_data = cursor.fetchone()
