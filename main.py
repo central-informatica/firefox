@@ -169,6 +169,7 @@ async def list_certificates():
 @app.post("/api/sign")
 async def sign_digest(payload: SignRequest):
     """Assina um digest usando o certificado do usuário"""
+    print('veio assinar o certificado')
     id_usuario = 1
 
     try:
