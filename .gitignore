@@ -3,3 +3,4 @@ certificados/*
 storage/*
 .env    
 front/node_modules/*
+./CLAUDE.md
