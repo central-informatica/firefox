@@ -251,7 +251,7 @@ async def login(nome: str = Form(...), senha: str = Form(...)):
             "status": "ok", "message": "usuario cadastrado", "usuario": usuario[0],
             "token": token_gerado
         }
-    raise HTTPException(status_code=403, detail="Usuário não existe")
+    raise HTTPException(status_code=403, detail="As credenciais não conferem")
 
 @app.post("/upload/certificado")
 async def upload_certificado(arquivo: UploadFile, senha: str = Form(...), token: tuple = Depends(validar_token)):

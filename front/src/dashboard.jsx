@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import "./dashboard.css";
+import { toast } from "react-toastify";
+
 
 const Dashboard = ({ onLogout }) => {
   const [password, setPassword] = useState("");
@@ -10,16 +12,16 @@ const Dashboard = ({ onLogout }) => {
     setFile(e.target.files[0]);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!password) {
-      setError("Por favor, insira a senha.");
+      toast.error("Por favor, insira a senha.");
       return;
     }
 
     if (!file) {
-      setError("Selecione um certificado para enviar.");
+      toast.warning("Selecione um certificado para enviar.");
       return;
     }
     let token = localStorage.getItem('token')
@@ -31,6 +33,22 @@ const Dashboard = ({ onLogout }) => {
          headers: {
             "Authorization": `Bearer ${token}`
         }
+    }).then(async (response) => {
+      const data = await response.json();
+
+        if (!response.ok) {
+          toast.error(data.detail || "Erro ao enviar certificado.");
+          return;
+        }else{
+          toast.success("O certificado foi salvo com sucesso!");
+        }
+      
+        setPassword("");
+        setFile(null);
+        e.target.reset();
+    }).catch((err)=> {
+      console.error(err);
+      toast.error("Erro ao comunicar com o servidor.");
     })
   };
 
