@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import "./login.css";
 
+import { toast } from "react-toastify";
+
+
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +33,7 @@ const Login = ({ onLogin }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.detail || "Erro no login");
+        toast.error(data.detail || "Erro no login");
         return;
       }
 
