@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Login from "./login";
-import Dashboard from "./dashboard";
+import Dashboard from "./pages/Dashboard/Dashboard";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

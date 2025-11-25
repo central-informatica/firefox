@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import "./dashboard.css";
+import "./Dashboard.css";
 import { toast } from "react-toastify";
 
-import Input from "./components/Input/Input";
-import Button from "./components/Button/Button";
-
+import Input from "../../components/Input/Input";
+import Button from "../../components/Button/Button";
+import MainLayout from "../../layouts/MainLayout"; 
 
 const Dashboard = ({ onLogout }) => {
   const [password, setPassword] = useState("");
@@ -27,45 +27,41 @@ const Dashboard = ({ onLogout }) => {
       toast.warning("Selecione um certificado para enviar.");
       return;
     }
-    let token = localStorage.getItem('token')
+
+    const token = localStorage.getItem("token");
+
     fetch("http://127.0.0.1:8000/upload/certificado", {
-        method: "POST",
-        body: new FormData(document.getElementById("formulario")),
-        mode: "cors",
-        cache: "default",
-         headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    }).then(async (response) => {
-      const data = await response.json();
+      method: "POST",
+      body: new FormData(document.getElementById("formulario")),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (response) => {
+        const data = await response.json();
 
         if (!response.ok) {
           toast.error(data.detail || "Erro ao enviar certificado.");
           return;
-        }else{
+        } else {
           toast.success("O certificado foi salvo com sucesso!");
         }
-      
+
         setPassword("");
         setFile(null);
         e.target.reset();
-    }).catch((err)=> {
-      console.error(err);
-      toast.error("Erro ao comunicar com o servidor.");
-    })
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Erro ao comunicar com o servidor.");
+      });
   };
 
   return (
-    <>
-      <div className="navbar">
-        <h1>Dashboard</h1>
-        <button className="logout-btn" onClick={onLogout}>
-          Sair
-        </button>
-      </div>
-
+    <MainLayout>
       <div className="dashboard-container">
         <h2>Upload de Certificado</h2>
+
         <form id="formulario" onSubmit={handleSubmit}>
           <Input
             type="password"
@@ -88,9 +84,13 @@ const Dashboard = ({ onLogout }) => {
           <Button type="submit" className="upload-btn">
             Enviar
           </Button>
+
+          <Button type="button" onClick={onLogout} style={{ marginTop: "20px" }}>
+            Sair
+          </Button>
         </form>
       </div>
-    </>
+    </MainLayout>
   );
 };
 

@@ -1,0 +1,16 @@
+.layout-container {
+  display: flex;
+  width: 100%;
+}
+
+.layout-content {
+  flex: 1;
+  padding: 20px;
+  margin-left: 260px; /* largura da sidebar */
+}
+
+@media (max-width: 768px) {
+  .layout-content {
+    margin-left: 0;
+  }
+}

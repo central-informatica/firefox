@@ -3,31 +3,31 @@ import "./login.css";
 
 import { toast } from "react-toastify";
 
+// Componentes reutilizáveis
+import Input from "./components/Input/Input";
+import Button from "./components/Button/Button";
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!email || !password) {
-      setError("Preencha todos os campos!");
+      toast.error("Preencha todos os campos!");
       return;
     }
 
-    setError("");
-
     // Backend está esperando FormData
     const formData = new FormData();
-    formData.append("nome", email);     // <-- O backend usa "nome"
-    formData.append("senha", password); // <-- O backend usa "senha"
+    formData.append("nome", email);     // Backend usa "nome"
+    formData.append("senha", password); // Backend usa "senha"
 
     try {
       const response = await fetch("http://127.0.0.1:8000/login", {
         method: "POST",
-        body: formData,   // <-- FormData, não JSON
+        body: formData,
       });
 
       const data = await response.json();
@@ -42,7 +42,7 @@ const Login = ({ onLogin }) => {
 
     } catch (err) {
       console.error(err);
-      setError("Erro de comunicação com servidor");
+      toast.error("Erro de comunicação com o servidor");
     }
   };
 
@@ -51,14 +51,15 @@ const Login = ({ onLogin }) => {
       <h2>Login</h2>
 
       <form id="meu-formulario" onSubmit={handleSubmit}>
-        <input
+        
+        <Input
           name="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <input
+        <Input
           name="senha"
           type="password"
           placeholder="Senha"
@@ -66,9 +67,8 @@ const Login = ({ onLogin }) => {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        {error && <p className="error-message">{error}</p>}
+        <Button type="submit">Entrar</Button>
 
-        <button type="submit">Entrar</button>
       </form>
     </div>
   );
