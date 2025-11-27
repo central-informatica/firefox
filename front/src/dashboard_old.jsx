@@ -1,18 +1,15 @@
-// src/pages/Dashboard/Dashboard.jsx
 import React, { useState } from "react";
 import "./dashboard.css";
 import { toast } from "react-toastify";
 
 import Input from "./components/Input/Input";
 import Button from "./components/Button/Button";
-import { apiFetch } from "../../api/api";
-import { useAuth } from "../../auth/useAuth";
 
-const Dashboard = () => {
-  const { logout } = useAuth();
 
+const Dashboard = ({ onLogout }) => {
   const [password, setPassword] = useState("");
   const [file, setFile] = useState(null);
+  const [error, setError] = useState("");
 
   const handleUploadChange = (e) => {
     setFile(e.target.files[0]);
@@ -30,37 +27,39 @@ const Dashboard = () => {
       toast.warning("Selecione um certificado para enviar.");
       return;
     }
-
-    try {
-      const formData = new FormData(document.getElementById("formulario"));
-
-      const response = await apiFetch("/upload/certificado", {
+    let token = localStorage.getItem('token')
+    fetch("http://127.0.0.1:8000/upload/certificado", {
         method: "POST",
-        body: formData,
-      });
-
+        body: new FormData(document.getElementById("formulario")),
+        mode: "cors",
+        cache: "default",
+         headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    }).then(async (response) => {
       const data = await response.json();
 
-      if (!response.ok) {
-        toast.error(data.detail || "Erro ao enviar certificado.");
-        return;
-      }
-
-      toast.success("Certificado enviado com sucesso!");
-      setPassword("");
-      setFile(null);
-      e.target.reset();
-    } catch (err) {
+        if (!response.ok) {
+          toast.error(data.detail || "Erro ao enviar certificado.");
+          return;
+        }else{
+          toast.success("O certificado foi salvo com sucesso!");
+        }
+      
+        setPassword("");
+        setFile(null);
+        e.target.reset();
+    }).catch((err)=> {
       console.error(err);
-      toast.error("Erro ao comunicar com servidor.");
-    }
+      toast.error("Erro ao comunicar com o servidor.");
+    })
   };
 
   return (
     <>
       <div className="navbar">
         <h1>Dashboard</h1>
-        <button className="logout-btn" onClick={logout}>
+        <button className="logout-btn" onClick={onLogout}>
           Sair
         </button>
       </div>
@@ -84,6 +83,7 @@ const Dashboard = () => {
           />
 
           {file && <p className="file-name">Selecionado: {file.name}</p>}
+          {error && <p className="error-message">{error}</p>}
 
           <Button type="submit" className="upload-btn">
             Enviar

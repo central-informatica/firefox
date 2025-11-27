@@ -1,25 +1,21 @@
-import React, { useState } from "react";
+// src/App.jsx
+import React from "react";
 import Login from "./login";
 import Dashboard from "./pages/Dashboard/Dashboard";
-
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { useAuth } from "./auth/useAuth";
 
 function App() {
-  const [isLogged, setIsLogged] = useState(false);
+  const { user, loading } = useAuth();
 
-  const handleLogin = () => setIsLogged(true);
-  const handleLogout = () => setIsLogged(false);
+  // Enquanto carrega, não renderiza login nem dashboard
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <>
-      <div>
-        {isLogged ? (
-          <Dashboard onLogout={handleLogout} />
-        ) : (
-          <Login onLogin={handleLogin} />
-        )}
-      </div>
+      {user ? <Dashboard /> : <Login />}
       <ToastContainer position="top-right" autoClose={3000} />
     </>
   );

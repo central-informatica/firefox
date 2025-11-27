@@ -96,7 +96,7 @@ pnpm install
 poetry run fastapi dev main.py
 ```
 
-O servidor estará disponível em: `http://localhost:8000`
+O servidor estará disponível em: `http://127.0.0.1:8000`
 
 **Modo Produção:**
 ```bash
@@ -104,8 +104,8 @@ poetry run fastapi run main.py
 ```
 
 **Documentação Automática da API:**
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
 
 ### Executar o Frontend
 #### Instalação do do node https://nodejs.org/
@@ -114,7 +114,7 @@ cd front
 pnpm dev
 ```
 
-O frontend estará disponível em: `http://localhost:5173`
+O frontend estará disponível em: `http://127.0.0.1:5173`
 
 ## Estrutura do Projeto
 
@@ -166,14 +166,14 @@ backend_certificado/
 
 ### 1. Cadastrar Usuário
 ```bash
-curl -X POST "http://localhost:8000/cadastro/usuario" \
+curl -X POST "http://127.0.0.1:8000/cadastro/usuario" \
   -F "nome=joao" \
   -F "senha=senha123"
 ```
 
 ### 2. Fazer Login
 ```bash
-curl -X POST "http://localhost:8000/login" \
+curl -X POST "http://127.0.0.1:8000/login" \
   -F "nome=joao" \
   -F "senha=senha123"
 ```
@@ -190,7 +190,7 @@ Resposta:
 
 ### 3. Upload de Certificado
 ```bash
-curl -X POST "http://localhost:8000/upload/certificado" \
+curl -X POST "http://127.0.0.1:8000/upload/certificado" \
   -H "Authorization: Bearer SEU_TOKEN_AQUI" \
   -F "arquivo=@certificado.pfx" \
   -F "senha=senha_do_certificado"
@@ -198,12 +198,12 @@ curl -X POST "http://localhost:8000/upload/certificado" \
 
 ### 4. Listar Certificados
 ```bash
-curl -X GET "http://localhost:8000/api/certificates"
+curl -X GET "http://127.0.0.1:8000/api/certificates"
 ```
 
 ### 5. Assinar Dados
 ```bash
-curl -X POST "http://localhost:8000/api/sign" \
+curl -X POST "http://127.0.0.1:8000/api/sign" \
   -H "Content-Type: application/json" \
   -d '{
     "data": "BASE64_DO_DIGEST",

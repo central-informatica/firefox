@@ -8,10 +8,19 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // carrega usuário logado ao iniciar o app
   async function loadUser() {
-    const res = await apiFetch("/auth/me");
-    if (res.ok) setUser(await res.json());
-    else setUser(null);
+    try {
+      const res = await apiFetch("/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    }
     setLoading(false);
   }
 
@@ -19,19 +28,23 @@ export function AuthProvider({ children }) {
     loadUser();
   }, []);
 
+  // LOGIN
   async function login(email, senha) {
-    const res = await apiFetch("/auth/login", {
+    const response = await apiFetch("/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, senha }),
     });
 
-    if (!res.ok) throw new Error("Login inválido");
+    if (!response.ok) {
+      throw new Error("Login inválido");
+    }
 
-    const user = await res.json();
-    setUser(user);
+    const data = await response.json();
+    setUser(data);
   }
 
+  // LOGOUT
   async function logout() {
     await apiFetch("/auth/logout", { method: "POST" });
     setUser(null);

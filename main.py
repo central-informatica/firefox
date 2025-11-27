@@ -1,293 +1,316 @@
-from fastapi import FastAPI, UploadFile, Form, HTTPException, Header, Depends
+from fastapi import FastAPI, UploadFile, Form, HTTPException, Header, Depends, Response, Request
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import secrets
 import os
 import json
 import time
 import traceback
-from pydantic import BaseModel
 import base64
-from chave_mestra import gerar_chave
-from crypto_utils import encrypt_pfx, decrypt_pfx
+from fastapi.responses import JSONResponse
+
 from dotenv import load_dotenv
 from db_sqlite import getDb
-from cryptography.hazmat.primitives.serialization import Encoding
+from chave_mestra import gerar_chave
+from crypto_utils import encrypt_pfx, decrypt_pfx
 from gerar_token_acesso import gerar_token
-from fastapi.middleware.cors import CORSMiddleware
-from Crypto.Signature import pkcs1_15
-from Crypto.PublicKey import RSA
-from Crypto.Hash import SHA256
-from cryptography.hazmat.primitives.serialization import pkcs12
-from cryptography.hazmat.primitives import serialization
 
 load_dotenv()
 
 app = FastAPI()
 
-origins = ["http://localhost:5173"]
-
+# CORS para permitir o frontend (127.0.0.1:5173)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-MASTER_KEY = gerar_chave(password=os.getenv('MASTER_KEY'))
 
-STORAGE_DIR = "storage/certificados"
-os.makedirs(STORAGE_DIR, exist_ok=True)
+# ================================
+#  Modelos e Helpers
+# ================================
 
-try:
-    PRIVATE_KEY = RSA.import_key(open("./certificados/private_key.pem", "rb").read())
-    print("🔐 PRIVATE_KEY carregada com sucesso!")
-except Exception as e:
-    print("❌ ERRO carregando PRIVATE_KEY:", e)
-    PRIVATE_KEY = None  # type: ignore
-
-@app.get("/")
-def inicio():
-    
-    return {
-        "status": "ok",
-        "message": "funcionando"
-    }
-@app.post("/teste/h")
-def teste_h():
-    conexao = getDb()
-    cursor = conexao.cursor()
-    cursor.execute(
-        "SELECT * FROM certificados;"
-    )
-    certificados = cursor.fetchall()
-    # print(f'certificados: {certificados}')
-    conexao.close()
-    return {"certificados": certificados}
+class LoginJSON(BaseModel):
+    email: str
+    senha: str
 
 
 class SignRequest(BaseModel):
-    data: str
     cert_id: str
-    algorithm: str
+    hash: str
+    content: str
 
-def validar_token(authorization: str = Header(...)):
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Token inválido")
-    token = authorization[7:]
+
+def create_csrf_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+# ================================
+#  Middleware de segurança (opcional)
+# ================================
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    try:
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+    except Exception as e:
+        print("Erro no middleware:", e)
+        raise
+
+
+# ================================
+#  Token Validator (cookie + bearer)
+# ================================
+
+def validar_token(
+    request: Request,
+    authorization: str | None = Header(default=None)
+):
+    """
+    Valida o token vindo do Authorization: Bearer
+    OU vindo do cookie 'session_token'.
+    """
+
+    token = None
+
+    # via header Authorization
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization[7:]
+
+    # via cookie HttpOnly
+    if not token:
+        token = request.cookies.get("session_token")
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Token não informado")
+
     conexao = getDb()
     cursor = conexao.cursor()
-    cursor.execute("select * from acesso where token = ?", (token,))
+    cursor.execute("select * from acesso where token = ? and ativo = 1", (token,))
     acesso = cursor.fetchone()
-    print(acesso)
-
+    conexao.close()
 
     if not acesso:
         raise HTTPException(status_code=401, detail="Token inválido ou expirado")
 
-    return acesso
+    return acesso  # (id, id_usuario, token, ativo)
 
 
-@app.get("/api/certificates")
-async def list_certificates():
-    """Lista todos os certificados do usuário autenticado"""
-    id_usuario = 1
+# ================================
+#  ROTA /auth/login  (NOVA)
+# ================================
 
-    conexao = getDb()
-    cursor = conexao.cursor()
-    cursor.execute(
-        "SELECT * FROM certificados WHERE id_usuario = ?",
-        (id_usuario,)
-    )
-    certificados = cursor.fetchall()
-    # certificados = [["1212", "meu certificado", "id certificado"], ["12", "meu certifi", "id certif"]]
-    
-    conexao.close()
+@app.post("/auth/login")
+async def auth_login(payload: LoginJSON):
+    nome = payload.email
+    senha = payload.senha
 
-
-    lista_certificados = []
-    if len(certificados) > 1:
-        for certificado in certificados:
-            
-            encrypted_pfx = json.loads(certificado[4].replace("'", '"'))
-            encrypted_senha = json.loads(certificado[5].replace("'", '"'))
-            
-            pfx_bytes = decrypt_pfx(encrypted_pfx, MASTER_KEY)
-            senha_bytes = decrypt_pfx(encrypted_senha, MASTER_KEY)
-            
-            
-            
-            
-            # Extrair o certificado do PFX
-
-            private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
-                pfx_bytes,
-                password=senha_bytes  # A senha do certificado
-            )
-
-            # Converter certificado para DER
-            cert_der = certificate.public_bytes(Encoding.DER)
-
-            # Converter DER para base64
-            cert_base64 = base64.b64encode(cert_der).decode()
-
-            lista_certificados.append({
-                "id": f"{certificado[0]}",
-                "label": certificado[2],
-                "cert_der_b64":  cert_base64
-
-            })
-    else:
-        
-        encrypted_pfx = json.loads(certificados[0][4].replace("'", '"'))
-        encrypted_senha = json.loads(certificados[0][5].replace("'", '"'))
-        
-        pfx_bytes = decrypt_pfx(encrypted_pfx, MASTER_KEY)
-        senha_bytes = decrypt_pfx(encrypted_senha, MASTER_KEY)
-        
-        # Extrair o certificado do PFX
-
-        private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
-            pfx_bytes,
-            password=senha_bytes  # A senha do certificado
-        )
-
-        # Converter certificado para DER
-        cert_der = certificate.public_bytes(Encoding.DER)
-
-        # Converter DER para base64
-        cert_base64 = base64.b64encode(cert_der).decode()
-
-        lista_certificados.append({
-            "id": f"{certificados[0][0]}",
-            "label": certificados[0][3],
-            "cert_der_b64":  cert_base64
-
-        })
-
-    print('veio listar os certificados')
-    return lista_certificados #type: ignore
-
-@app.post("/api/sign")
-async def sign_digest(payload: SignRequest):
-    """Assina um digest usando o certificado do usuário"""
-    print('veio assinar o certificado')
-    id_usuario = 1
-
-    try:
-        # Busca o certificado do usuário
-        conexao = getDb()
-        cursor = conexao.cursor()
-        cursor.execute(
-            "SELECT encrypted, secret FROM certificados WHERE id = ? AND id_usuario = ?",
-            (payload.cert_id, id_usuario)
-        )
-        cert_data = cursor.fetchone()
-        conexao.close()
-
-        if not cert_data:
-            raise HTTPException(status_code=404, detail="Certificado não encontrado")
-
-        # Descriptografa o certificado e a senha
-        encrypted_pfx = json.loads(cert_data[0].replace("'", '"'))
-        encrypted_senha = json.loads(cert_data[1].replace("'", '"'))
-
-        pfx_bytes = decrypt_pfx(encrypted_pfx, MASTER_KEY)
-        senha_bytes = decrypt_pfx(encrypted_senha, MASTER_KEY)
-        senha = senha_bytes.decode()
-
-
-        if not private_key:
-            raise HTTPException(status_code=500, detail="Chave privada não encontrada no certificado")
-
-        # Converte a chave privada para o formato RSA do PyCryptodome
-        pem = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption()
-        )
-        rsa_key = RSA.import_key(pem)
-
-        # Decodifica o digest e assina
-        digest_bytes = base64.b64decode(payload.data)
-        h = SHA256.new(digest_bytes)
-        signature = pkcs1_15.new(rsa_key).sign(h)
-
-        return {
-            "status": "ok",
-            "signature_b64": base64.b64encode(signature).decode()
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("ERRO NA ASSINATURA:", e)
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Erro ao assinar: {str(e)}")
-    
-@app.post("/cadastro/usuario")
-async def cad_user(nome: str = Form(...), senha: str = Form(...)):
-    conexao = getDb()
-    cursor = conexao.cursor()
-    cursor.execute("INSERT INTO USUARIOS(nome, senha) VALUES(?, ?)", (nome, senha))
-    conexao.commit()
-    conexao.close()
-    return {
-        "status": "ok", "message": "usuario cadastrado"
-    }
-
-@app.post("/login")
-async def login(nome: str = Form(...), senha: str = Form(...)):
-    print(f'nome: {nome} | senha: {senha}')
     conexao = getDb()
     cursor = conexao.cursor()
     cursor.execute("select * from usuarios where nome = ? and senha = ?", (nome, senha))
     usuario = cursor.fetchone()
-    
-    if usuario:
-        token_gerado = gerar_token()
-        cursor.execute("insert into acesso(id_usuario, token, ativo) values (?, ?, ?)", (usuario[0], token_gerado, 1))
-        conexao.commit()
+
+    if not usuario:
         conexao.close()
-        return {
-            "status": "ok", "message": "usuario cadastrado", "usuario": usuario[0],
-            "token": token_gerado
-        }
-    raise HTTPException(status_code=403, detail="As credenciais não conferem")
+        raise HTTPException(status_code=403, detail="As credenciais não conferem")
 
-@app.post("/upload/certificado")
-async def upload_certificado(arquivo: UploadFile, senha: str = Form(...), token: tuple = Depends(validar_token)):
-    """Recebe um .pfx e armazena de forma criptografada"""
-    print(f'token: {token[1]}')
-
-    if not arquivo.filename.lower().endswith(".pfx"):
-        raise HTTPException(status_code=400, detail="Envie um arquivo .pfx válido")
-
-    pfx_bytes = await arquivo.read()
-    encrypted_data = encrypt_pfx(pfx_bytes, MASTER_KEY)
-    senha_encrypted = encrypt_pfx(senha.encode(), MASTER_KEY)
-
-    # Gera um cert_id único baseado no timestamp e nome do arquivo
-    cert_id = f"{int(time.time())}_{os.path.splitext(arquivo.filename)[0]}"
-
-    save_path = os.path.join(STORAGE_DIR, f"{cert_id}.json")
-    with open(save_path, "w") as f:
-        json.dump({
-            "filename": arquivo.filename,
-            "cert_id": cert_id,
-            "encrypted": encrypted_data,
-            "senha": senha_encrypted
-        }, f)
-
-    conexao = getDb()
-    cursor = conexao.cursor()
+    token_gerado = gerar_token()
     cursor.execute(
-        "INSERT INTO certificados(id_usuario, nome_arquivo, cert_id, encrypted, secret) VALUES (?, ?, ?, ?, ?)",
-        (token[1], arquivo.filename, cert_id, f'{encrypted_data}', f'{senha_encrypted}')
+        "insert into acesso(id_usuario, token, ativo) values (?, ?, 1)",
+        (usuario[0], token_gerado)
     )
     conexao.commit()
     conexao.close()
 
+    # cria resposta JSON
+    response = JSONResponse({
+        "id": usuario[0],
+        "nome": usuario[1],
+        "email": usuario[1],
+        "empresa_id": 1
+    })
+
+    # cookie de sessão
+    response.set_cookie(
+        key="session_token",
+        value=token_gerado,
+        httponly=True,
+        secure=False,     # True em produção
+        samesite="Lax",
+        path="/"
+    )
+
+    # cookie CSRF
+    csrf = create_csrf_token()
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf,
+        httponly=False,
+        secure=False,
+        samesite="Lax",
+        path="/"
+    )
+
+    return response
+
+
+# ================================
+#  ROTA /auth/me  (NOVA)
+# ================================
+
+@app.get("/auth/me")
+async def auth_me(acesso=Depends(validar_token)):
+    """
+    Retorna dados do usuário logado
+    """
+
+    id_usuario = acesso[1]
+
+    conexao = getDb()
+    cursor = conexao.cursor()
+    cursor.execute("select * from usuarios where id = ?", (id_usuario,))
+    usuario = cursor.fetchone()
+    conexao.close()
+
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Usuário não encontrado")
+
     return {
-        "status": "ok",
-        "message": f"Certificado {arquivo.filename} salvo com segurança.",
-        "cert_id": cert_id
+        "id": usuario[0],
+        "nome": usuario[1],
+        "email": usuario[1],
+        "empresa_id": 1,
     }
+
+
+# ================================
+#  ROTA /auth/logout  (NOVA)
+# ================================
+
+@app.post("/auth/logout")
+async def auth_logout(response: Response, acesso=Depends(validar_token)):
+    id_acesso = acesso[0]
+
+    conexao = getDb()
+    cursor = conexao.cursor()
+    cursor.execute("update acesso set ativo = 0 where id = ?", (id_acesso,))
+    conexao.commit()
+    conexao.close()
+
+    response.delete_cookie("session_token", path="/")
+    response.delete_cookie("csrf_token", path="/")
+
+    return {"status": "ok", "message": "logout efetuado"}
+
+
+# ================================
+#  ROTA /auth/refresh  (NOVA)
+# ================================
+
+@app.post("/auth/refresh")
+async def auth_refresh(request: Request):
+    session = request.cookies.get("session_token")
+    if not session:
+        raise HTTPException(401, "Sessão expirada")
+
+    response = JSONResponse({"status": "ok"})
+    response.set_cookie(
+        "csrf_token",
+        create_csrf_token(),
+        httponly=False,
+        secure=False,
+        samesite="Lax",
+        path="/",
+    )
+    return response
+
+# ================================
+#  ROTA ORIGINAL: /cadastro/usuario
+# ================================
+
+@app.post("/cadastro/usuario")
+async def criar_usuario(nome: str = Form(...), senha: str = Form(...)):
+    conexao = getDb()
+    cursor = conexao.cursor()
+    cursor.execute(
+        "insert into usuarios(nome, senha) values (?, ?)",
+        (nome, senha)
+    )
+    conexao.commit()
+    conexao.close()
+
+    return {"status": "ok", "message": "Usuário criado com sucesso"}
+
+
+# ================================
+#  ROTA ORIGINAL: /login (LEGADO)
+# ================================
+# Mantida para compatibilidade com sua versão antiga
+@app.post("/login")
+async def login(nome: str = Form(...), senha: str = Form(...)):
+    conexao = getDb()
+    cursor = conexao.cursor()
+    cursor.execute("select * from usuarios where nome = ? and senha = ?", (nome, senha))
+    usuario = cursor.fetchone()
+
+    if not usuario:
+        conexao.close()
+        raise HTTPException(status_code=403, detail="As credenciais não conferem")
+
+    token = gerar_token()
+
+    cursor.execute(
+        "insert into acesso(id_usuario, token, ativo) values (?, ?, 1)",
+        (usuario[0], token)
+    )
+    conexao.commit()
+    conexao.close()
+
+    return {"status": "ok", "token": token}
+
+
+# ================================
+#  ROTA ORIGINAL + AJUSTADA: UPLOAD DE CERTIFICADO
+# ================================
+
+@app.post("/upload/certificado")
+async def upload_certificado(
+    arquivo: UploadFile,
+    senha: str = Form(...),
+    acesso=Depends(validar_token)
+):
+    print(f"token: {acesso[1]}")
+
+    try:
+        pfx_content = await arquivo.read()
+
+        encrypted_data, b64_key = encrypt_pfx(pfx_content, senha)
+        senha_encrypted = str(b64_key)
+        cert_id = str(json.loads(decrypt_pfx(encrypted_data, senha))[0])
+
+        conexao = getDb()
+        cursor = conexao.cursor()
+        cursor.execute(
+            "INSERT INTO certificados(id_usuario, nome_arquivo, cert_id, encrypted, secret) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (acesso[1], arquivo.filename, cert_id, f"{encrypted_data}", f"{senha_encrypted}")
+        )
+        conexao.commit()
+        conexao.close()
+
+        return {"status": "ok", "detail": "Certificado salvo com sucesso!"}
+
+    except Exception as e:
+        print("Erro ao enviar certificado:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

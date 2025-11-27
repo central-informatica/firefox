@@ -3,21 +3,32 @@ import { getCookie } from "./cookies";
 
 const API_URL = "http://127.0.0.1:8000";
 
+// controla refresh simultâneo
 let refreshing = false;
+let refreshPromise = null;
 
-async function refresh() {
-  if (refreshing) return;
+async function refreshTokens() {
+  if (refreshing) return refreshPromise;
+
   refreshing = true;
-
-  await fetch(`${API_URL}/auth/refresh`, {
+  refreshPromise = fetch(`${API_URL}/auth/refresh`, {
     method: "POST",
     credentials: "include",
     headers: {
       "X-CSRF-Token": getCookie("csrf_token") || "",
     },
-  });
+  })
+    .then((res) => {
+      refreshing = false;
+      if (!res.ok) {
+        throw new Error("Refresh falhou");
+      }
+    })
+    .finally(() => {
+      refreshing = false;
+    });
 
-  refreshing = false;
+  return refreshPromise;
 }
 
 export async function apiFetch(path, options = {}) {
@@ -32,10 +43,17 @@ export async function apiFetch(path, options = {}) {
     },
   });
 
-  if (response.status !== 401) return response;
+  if (response.status !== 401) {
+    return response;
+  }
 
-  await refresh();
+  try {
+    await refreshTokens();
+  } catch (err) {
+    return response; // sessão realmente expirada
+  }
 
+  // tenta novamente com novo access_token
   return fetch(API_URL + path, {
     credentials: "include",
     ...options,
