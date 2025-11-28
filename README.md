@@ -93,7 +93,7 @@ pnpm install
 
 **Modo Desenvolvimento:**
 ```bash
-poetry run fastapi dev main.py
+poetry run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 O servidor estará disponível em: `http://127.0.0.1:8000`
@@ -119,6 +119,35 @@ O frontend estará disponível em: `http://127.0.0.1:5173`
 ## Estrutura do Projeto
 
 ```
+backend-certificado/
+│
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── core/
+│   │   │   ├── config.py
+│   │   │   └── security.py
+│   │   ├── schemas/
+│   │   │   ├── auth.py
+│   │   │   └── certificados.py
+│   │   ├── api/
+│   │   │   └── routes/
+│   │   │       ├── auth.py
+│   │   │       └── certificados.py
+│   │   ├── utils/ (OPCIONAL)
+│   ├── __init__.py
+│
+├── db_sqlite.py           ⟵ pode ficar na raiz ou mover p/ backend/
+├── crypto_utils.py
+├── chave_mestra.py
+├── gerar_token_acesso.py
+│
+├── storage/
+├── front/                 ⟵ seu frontend
+├── .env
+├── pyproject.toml
+└── README.md
+
 backend_certificado/
 ├── main.py                  # API FastAPI e endpoints
 ├── chave_mestra.py         # Geração de chave mestra com PBKDF2

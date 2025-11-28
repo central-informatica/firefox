@@ -28,34 +28,38 @@ const Dashboard = ({ onLogout }) => {
       return;
     }
 
-    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("arquivo", file);
+    formData.append("senha", password);
 
-    fetch("http://127.0.0.1:8000/upload/certificado", {
+    // PEGAR CSRF DO COOKIE
+    const csrf = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("csrf_token="))
+      ?.split("=")[1];
+
+    const response = await fetch("http://127.0.0.1:8000/upload/certificado", {
       method: "POST",
-      body: new FormData(document.getElementById("formulario")),
+      body: formData,
+      credentials: "include",              // 👈 OBRIGATÓRIO!!!
       headers: {
-        Authorization: `Bearer ${token}`,
+        "X-CSRF-Token": csrf,              // 👈 OBRIGATÓRIO!!!
       },
-    })
-      .then(async (response) => {
-        const data = await response.json();
+    });
 
-        if (!response.ok) {
-          toast.error(data.detail || "Erro ao enviar certificado.");
-          return;
-        } else {
-          toast.success("O certificado foi salvo com sucesso!");
-        }
+    const data = await response.json();
 
-        setPassword("");
-        setFile(null);
-        e.target.reset();
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Erro ao comunicar com o servidor.");
-      });
+    if (!response.ok) {
+      toast.error(data.detail || "Erro ao enviar certificado.");
+      return;
+    }
+
+    toast.success("O certificado foi salvo com sucesso!");
+    setPassword("");
+    setFile(null);
+    e.target.reset();
   };
+
 
   return (
     <MainLayout>
