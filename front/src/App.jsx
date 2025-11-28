@@ -1,24 +1,26 @@
-// src/App.jsx
-import React from "react";
+import React, { useState } from "react";
 import Login from "./login";
+import Cadastro from "./pages/Usuarios/Cadastro";
 import Dashboard from "./pages/Dashboard/Dashboard";
-import { ToastContainer } from "react-toastify";
 import { useAuth } from "./auth/useAuth";
 
-function App() {
+export default function App() {
   const { user, loading } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
 
-  // Enquanto carrega, não renderiza login nem dashboard
-  if (loading) {
-    return <div>Carregando...</div>;
+  if (loading) return <div>Carregando...</div>;
+
+  if (user) {
+    return <Dashboard />;
   }
 
   return (
     <>
-      {user ? <Dashboard /> : <Login />}
-      <ToastContainer position="top-right" autoClose={3000} />
+      {showRegister ? (
+        <Cadastro onVoltar={() => setShowRegister(false)} />
+      ) : (
+        <Login onCadastrar={() => setShowRegister(true)} />
+      )}
     </>
   );
 }
-
-export default App;

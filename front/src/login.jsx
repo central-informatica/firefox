@@ -1,4 +1,3 @@
-// src/login.jsx
 import React, { useState } from "react";
 import "./login.css";
 import { toast } from "react-toastify";
@@ -7,7 +6,7 @@ import Input from "./components/Input/Input";
 import Button from "./components/Button/Button";
 import { useAuth } from "./auth/useAuth";
 
-const Login = () => {
+const Login = ({ onCadastrar }) => {
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -51,6 +50,17 @@ const Login = () => {
         />
 
         <Button type="submit">Entrar</Button>
+
+        <p className="register-link">
+          Não tem conta?{" "}
+          <Button
+            type="button"
+            onClick={onCadastrar}
+            className="link-button"
+          >
+            Criar conta
+          </Button>
+        </p>
       </form>
     </div>
   );

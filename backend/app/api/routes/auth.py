@@ -35,8 +35,8 @@ async def register_user(payload: UserCreate, db: Session = Depends(get_db)):
     novo = Usuarios(
         nome=payload.nome,
         email=payload.email,
+        telefone=payload.telefone,
         senha_hash=senha_hash,
-        empresa_id=None
     )
 
     db.add(novo)
@@ -47,7 +47,6 @@ async def register_user(payload: UserCreate, db: Session = Depends(get_db)):
         "id": novo.usuario_id,
         "nome": novo.nome,
         "email": novo.email,
-        "empresa_id": novo.empresa_id,
     }
 
 
@@ -161,8 +160,8 @@ async def refresh_token(acesso=Depends(validar_token), db: Session = Depends(get
         "id": usuario.usuario_id,
         "nome": usuario.nome,
         "email": usuario.email,
+        "empresa_id": usuario.empresa_id,
     })
-        #"empresa_id": usuario.empresa_id
 
     response.set_cookie(
         key="session_token",

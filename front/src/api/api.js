@@ -1,4 +1,3 @@
-// src/api/api.js
 import { getCookie } from "./cookies";
 
 const API_URL = "http://127.0.0.1:8000";
@@ -19,7 +18,6 @@ async function refreshTokens() {
     },
   })
     .then((res) => {
-      refreshing = false;
       if (!res.ok) {
         throw new Error("Refresh falhou");
       }
@@ -43,17 +41,30 @@ export async function apiFetch(path, options = {}) {
     },
   });
 
+  // Se não for 401, devolve direto
   if (response.status !== 401) {
     return response;
   }
 
+  // Se não houver CSRF, não há sessão -> não tenta refresh
+  if (!csrf) {
+    return response;
+  }
+
+  // Não tenta refresh quando a própria rota é /auth/refresh
+  if (path === "/auth/refresh") {
+    return response;
+  }
+
+  // Tenta renovar sessão
   try {
     await refreshTokens();
   } catch (err) {
-    return response; // sessão realmente expirada
+    // sessão realmente expirada
+    return response;
   }
 
-  // tenta novamente com novo access_token
+  // Tenta novamente a requisição original com novo token/cookies
   return fetch(API_URL + path, {
     credentials: "include",
     ...options,
