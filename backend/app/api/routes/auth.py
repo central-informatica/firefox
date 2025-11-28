@@ -1,71 +1,80 @@
-from fastapi import APIRouter, HTTPException, Form, Response, Depends
+from fastapi import APIRouter, HTTPException, Response, Depends
 from fastapi import Request
 from fastapi.responses import JSONResponse
+
+from sqlalchemy.orm import Session
 
 from backend.app.schemas.auth import LoginJSON, UserOut
 from backend.app.core.security import create_csrf_token, validar_token
 from backend.app.utils.gerar_token_acesso import gerar_token
-from backend.app.utils.db_sqlite import getDb
+#from backend.app.utils.db_sqlite import getDb
+
+from backend.app.db.deps import get_db
+from backend.app.db.models import Usuarios, Acesso
+from backend.app.schemas.auth import UserCreate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-
 @router.post("/login", response_model=UserOut)
-async def auth_login(payload: LoginJSON):
+async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
     """
-    Login via JSON (email + senha).
-    Cria cookie de sessão (SameSite=Lax, Secure=False no DEV).
+    Login via JSON (email + senha) usando SQLAlchemy.
+    Cria cookie de sessão + cookie CSRF.
     """
-    nome = payload.email
-    senha = payload.senha
 
-    conn = getDb()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM usuarios WHERE nome = ? AND senha = ?",
-        (nome, senha),
+    # Buscar usuário no banco
+    user = (
+        db.query(Usuarios)
+        .filter(
+            Usuarios.email == payload.email,
+            Usuarios.senha_hash == hash_password(payload.senha),
+        )
+        .first()
     )
-    usuario = cursor.fetchone()
 
-    if not usuario:
-        conn.close()
-        raise HTTPException(status_code=403, detail="As credenciais não conferem")
+    if not user:
+        raise HTTPException(403, "As credenciais não conferem")
 
-    token_gerado = gerar_token()
-    cursor.execute(
-        "INSERT INTO acesso(id_usuario, token, ativo) VALUES (?, ?, 1)",
-        (usuario[0], token_gerado),
+    # Gerar token de sessão
+    token = gerar_token()
+
+    acesso = Acesso(
+        id_usuario=user.usuario_id,
+        token=token,
+        ativo=True
     )
-    conn.commit()
-    conn.close()
+    db.add(acesso)
+    db.commit()
 
+    # Criar CSRF
     csrf = create_csrf_token()
 
+    # Resposta com dados do usuário
     response = JSONResponse(
         {
-            "id": usuario[0],
-            "nome": usuario[1],
-            "email": usuario[1],
-            "empresa_id": 1,
+            "id": user.usuario_id,
+            "nome": user.nome,
+            "email": user.email,
+            "empresa_id": user.empresa_id,
         }
     )
 
-    # cookies para AMBIENTE LOCAL
+    # Definir cookies corretamente
     response.set_cookie(
         key="session_token",
-        value=token_gerado,
+        value=token,
         httponly=True,
-        secure=False,     # em produção: True
-        samesite="lax",   # dev: LAX (funcionando), prod: 'none'
+        secure=False,  # PRODUÇÃO = True
+        samesite="lax",  # PRODUÇÃO = "none"
         path="/",
     )
 
     response.set_cookie(
         key="csrf_token",
         value=csrf,
-        httponly=False,
-        secure=False,
-        samesite="lax",
+        httponly=False,  # JS precisa ler
+        secure=False,  # PRODUÇÃO = True
+        samesite="lax",  # PRODUÇÃO = "none"
         path="/",
     )
 
@@ -73,73 +82,111 @@ async def auth_login(payload: LoginJSON):
 
 
 @router.get("/me", response_model=UserOut)
-async def auth_me(acesso=Depends(validar_token)):
+async def auth_me(acesso = Depends(validar_token), db: Session = Depends(get_db)):
     """
     Retorna o usuário logado com base no token de sessão.
     """
-    id_usuario = acesso[1]
+    id_usuario = acesso.id_usuario
 
-    conn = getDb()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM usuarios WHERE id = ?", (id_usuario,))
-    usuario = cursor.fetchone()
-    conn.close()
+    usuario = (
+        db.query(Usuarios)
+        .filter(Usuarios.usuario_id == id_usuario)
+        .first()
+    )
 
     if not usuario:
         raise HTTPException(status_code=401, detail="Usuário não encontrado")
 
     return {
-        "id": usuario[0],
-        "nome": usuario[1],
-        "email": usuario[1],
-        "empresa_id": 1,
+        "id": usuario.usuario_id,
+        "nome": usuario.nome,
+        "email": usuario.email,
     }
-
+        #"empresa_id": usuario.empresa_id,
 
 @router.post("/logout")
-async def auth_logout(response: Response, acesso=Depends(validar_token)):
+async def auth_logout(
+    acesso = Depends(validar_token),
+    db: Session = Depends(get_db)
+):
     """
-    Invalida o token na tabela 'acesso' e apaga cookies.
+    Invalida o token de sessão e remove cookies.
     """
-    id_acesso = acesso[0]
 
-    conn = getDb()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE acesso SET ativo = 0 WHERE id = ?", (id_acesso,))
-    conn.commit()
-    conn.close()
+    # Desativar o token de sessão no banco
+    acesso.ativo = False
+    db.commit()
 
-    response = JSONResponse({"status": "ok", "message": "logout efetuado"})
+    # Criar resposta vazia
+    response = JSONResponse({"detail": "Logout realizado com sucesso."})
 
-    response.delete_cookie("session_token", path="/")
-    response.delete_cookie("csrf_token", path="/")
+    # Remover session_token
+    response.delete_cookie(
+        key="session_token",
+        path="/"
+    )
+
+    # 4️⃣ Remover csrf_token
+    response.delete_cookie(
+        key="csrf_token",
+        path="/"
+    )
 
     return response
 
 
-@router.post("/refresh")
-async def auth_refresh(request: Request):
+@router.post("/refresh", response_model=UserOut)
+async def refresh_token(
+    acesso = Depends(validar_token),
+    db: Session = Depends(get_db)
+):
     """
-    Apenas renova o csrf_token se a sessão ainda estiver ativa.
+    Renova o token de sessão do usuário.
+    Gera novo session_token + novo csrf_token.
     """
-    session_token = request.cookies.get("session_token")
-    if not session_token:
-        raise HTTPException(status_code=401, detail="Sessão expirada")
 
-    conn = getDb()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM acesso WHERE token = ? AND ativo = 1",
-        (session_token,),
+    # 1️⃣ Desativa token atual
+    acesso.ativo = False
+    db.commit()
+
+    # 2️⃣ Gerar novo token de sessão
+    novo_token = gerar_token()
+
+    novo_acesso = Acesso(
+        id_usuario=acesso.id_usuario,
+        token=novo_token,
+        ativo=True
     )
-    acesso = cursor.fetchone()
-    conn.close()
+    db.add(novo_acesso)
+    db.commit()
 
-    if not acesso:
-        raise HTTPException(status_code=401, detail="Sessão inválida")
-
+    # 3️⃣ Criar novo csrf
     csrf = create_csrf_token()
-    response = JSONResponse({"status": "ok"})
+
+    # 4️⃣ Obter usuário logado
+    usuario = (
+        db.query(Usuarios)
+        .filter(Usuarios.usuario_id == acesso.id_usuario)
+        .first()
+    )
+
+    # 5️⃣ Resposta final
+    response = JSONResponse({
+        "id": usuario.usuario_id,
+        "nome": usuario.nome,
+        "email": usuario.email,
+        "empresa_id": usuario.empresa_id,
+    })
+
+    # 6️⃣ Definir novos cookies
+    response.set_cookie(
+        key="session_token",
+        value=novo_token,
+        httponly=True,
+        secure=False,     # produção = True
+        samesite="lax",   # produção = none
+        path="/",
+    )
 
     response.set_cookie(
         key="csrf_token",
@@ -151,3 +198,47 @@ async def auth_refresh(request: Request):
     )
 
     return response
+
+
+@router.post("/register", response_model=UserOut)
+async def register_user(
+    payload: UserCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Registra um novo usuário usando SQLAlchemy e bcrypt.
+    """
+
+    # Verificar se já existe usuário com email
+    existente = (
+        db.query(Usuarios)
+        .filter(Usuarios.email == payload.email)
+        .first()
+    )
+
+    if existente:
+        raise HTTPException(400, "Email já está cadastrado.")
+
+    # Criar hash da senha
+    senha_hash = hash_password(payload.senha)
+
+    # Criar objeto usuario
+    novo = Usuarios(
+        nome=payload.nome,
+        email=payload.email,
+        senha_hash=senha_hash,
+        empresa_id=None  # se quiser vincular depois
+    )
+
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+
+    # Retorno padronizado
+    return {
+        "id": novo.usuario_id,
+        "nome": novo.nome,
+        "email": novo.email,
+        "empresa_id": novo.empresa_id,
+    }
+

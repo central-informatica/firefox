@@ -10,3 +10,8 @@ class UserOut(BaseModel):
     nome: str
     email: str
     empresa_id: int | None = None
+
+class UserCreate(BaseModel):
+    nome: str
+    email: str
+    senha: str
