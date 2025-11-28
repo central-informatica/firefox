@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 
 from backend.app.db.deps import get_db
 from backend.app.db.models import Acesso
-from backend.app.core.security import validate_csrf_token
+from backend.app.core.csrf import validate_csrf_token
 
 import bcrypt
+import secrets
 
 
 async def validar_token(
@@ -70,6 +71,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         plain_password.encode("utf-8"),
         hashed_password.encode("utf-8")
     )
+
+def gerar_token() -> str:
+    return secrets.token_hex(32)
 
 
 #import secrets

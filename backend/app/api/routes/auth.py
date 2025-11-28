@@ -1,55 +1,75 @@
-from fastapi import APIRouter, HTTPException, Response, Depends
-from fastapi import Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-
 from sqlalchemy.orm import Session
-
-from backend.app.schemas.auth import LoginJSON, UserOut
-from backend.app.core.security import create_csrf_token, validar_token
-from backend.app.utils.gerar_token_acesso import gerar_token
-#from backend.app.utils.db_sqlite import getDb
 
 from backend.app.db.deps import get_db
 from backend.app.db.models import Usuarios, Acesso
-from backend.app.schemas.auth import UserCreate
+from backend.app.schemas.auth import LoginJSON, UserCreate, UserOut
+from backend.app.core.security import (
+    hash_password,
+    verify_password,
+    gerar_token,
+)
+from backend.app.core.csrf import create_csrf_token
+from backend.app.core.validar_token import validar_token
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
-@router.post("/login", response_model=UserOut)
-async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
-    """
-    Login via JSON (email + senha) usando SQLAlchemy.
-    Cria cookie de sessão + cookie CSRF.
-    """
 
-    # Buscar usuário no banco
-    user = (
+# ----------------------------------------------------------
+# REGISTER
+# ----------------------------------------------------------
+@router.post("/register", response_model=UserOut)
+async def register_user(payload: UserCreate, db: Session = Depends(get_db)):
+    existente = (
         db.query(Usuarios)
-        .filter(
-            Usuarios.email == payload.email,
-            Usuarios.senha_hash == hash_password(payload.senha),
-        )
+        .filter(Usuarios.email == payload.email)
         .first()
     )
 
-    if not user:
+    if existente:
+        raise HTTPException(400, "Email já está cadastrado.")
+
+    senha_hash = hash_password(payload.senha)
+
+    novo = Usuarios(
+        nome=payload.nome,
+        email=payload.email,
+        senha_hash=senha_hash,
+        empresa_id=None
+    )
+
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+
+    return {
+        "id": novo.usuario_id,
+        "nome": novo.nome,
+        "email": novo.email,
+        "empresa_id": novo.empresa_id,
+    }
+
+
+@router.post("/login", response_model=UserOut)
+async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
+    user = (
+        db.query(Usuarios)
+        .filter(Usuarios.email == payload.email)
+        .first()
+    )
+
+    if not user or not verify_password(payload.senha, user.senha_hash):
         raise HTTPException(403, "As credenciais não conferem")
 
-    # Gerar token de sessão
     token = gerar_token()
 
-    acesso = Acesso(
-        id_usuario=user.usuario_id,
-        token=token,
-        ativo=True
-    )
+    acesso = Acesso(id_usuario=user.usuario_id, token=token, ativo=True)
     db.add(acesso)
     db.commit()
 
-    # Criar CSRF
     csrf = create_csrf_token()
 
-    # Resposta com dados do usuário
     response = JSONResponse(
         {
             "id": user.usuario_id,
@@ -59,132 +79,12 @@ async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
         }
     )
 
-    # Definir cookies corretamente
     response.set_cookie(
         key="session_token",
         value=token,
         httponly=True,
-        secure=False,  # PRODUÇÃO = True
-        samesite="lax",  # PRODUÇÃO = "none"
-        path="/",
-    )
-
-    response.set_cookie(
-        key="csrf_token",
-        value=csrf,
-        httponly=False,  # JS precisa ler
-        secure=False,  # PRODUÇÃO = True
-        samesite="lax",  # PRODUÇÃO = "none"
-        path="/",
-    )
-
-    return response
-
-
-@router.get("/me", response_model=UserOut)
-async def auth_me(acesso = Depends(validar_token), db: Session = Depends(get_db)):
-    """
-    Retorna o usuário logado com base no token de sessão.
-    """
-    id_usuario = acesso.id_usuario
-
-    usuario = (
-        db.query(Usuarios)
-        .filter(Usuarios.usuario_id == id_usuario)
-        .first()
-    )
-
-    if not usuario:
-        raise HTTPException(status_code=401, detail="Usuário não encontrado")
-
-    return {
-        "id": usuario.usuario_id,
-        "nome": usuario.nome,
-        "email": usuario.email,
-    }
-        #"empresa_id": usuario.empresa_id,
-
-@router.post("/logout")
-async def auth_logout(
-    acesso = Depends(validar_token),
-    db: Session = Depends(get_db)
-):
-    """
-    Invalida o token de sessão e remove cookies.
-    """
-
-    # Desativar o token de sessão no banco
-    acesso.ativo = False
-    db.commit()
-
-    # Criar resposta vazia
-    response = JSONResponse({"detail": "Logout realizado com sucesso."})
-
-    # Remover session_token
-    response.delete_cookie(
-        key="session_token",
-        path="/"
-    )
-
-    # 4️⃣ Remover csrf_token
-    response.delete_cookie(
-        key="csrf_token",
-        path="/"
-    )
-
-    return response
-
-
-@router.post("/refresh", response_model=UserOut)
-async def refresh_token(
-    acesso = Depends(validar_token),
-    db: Session = Depends(get_db)
-):
-    """
-    Renova o token de sessão do usuário.
-    Gera novo session_token + novo csrf_token.
-    """
-
-    # 1️⃣ Desativa token atual
-    acesso.ativo = False
-    db.commit()
-
-    # 2️⃣ Gerar novo token de sessão
-    novo_token = gerar_token()
-
-    novo_acesso = Acesso(
-        id_usuario=acesso.id_usuario,
-        token=novo_token,
-        ativo=True
-    )
-    db.add(novo_acesso)
-    db.commit()
-
-    # 3️⃣ Criar novo csrf
-    csrf = create_csrf_token()
-
-    # 4️⃣ Obter usuário logado
-    usuario = (
-        db.query(Usuarios)
-        .filter(Usuarios.usuario_id == acesso.id_usuario)
-        .first()
-    )
-
-    # 5️⃣ Resposta final
-    response = JSONResponse({
-        "id": usuario.usuario_id,
-        "nome": usuario.nome,
-        "email": usuario.email,
-        "empresa_id": usuario.empresa_id,
-    })
-
-    # 6️⃣ Definir novos cookies
-    response.set_cookie(
-        key="session_token",
-        value=novo_token,
-        httponly=True,
-        secure=False,     # produção = True
-        samesite="lax",   # produção = none
+        secure=False,
+        samesite="lax",
         path="/",
     )
 
@@ -200,45 +100,86 @@ async def refresh_token(
     return response
 
 
-@router.post("/register", response_model=UserOut)
-async def register_user(
-    payload: UserCreate,
-    db: Session = Depends(get_db)
-):
-    """
-    Registra um novo usuário usando SQLAlchemy e bcrypt.
-    """
-
-    # Verificar se já existe usuário com email
-    existente = (
+# ----------------------------------------------------------
+# ME
+# ----------------------------------------------------------
+@router.get("/me", response_model=UserOut)
+async def auth_me(acesso=Depends(validar_token), db: Session = Depends(get_db)):
+    usuario = (
         db.query(Usuarios)
-        .filter(Usuarios.email == payload.email)
+        .filter(Usuarios.usuario_id == acesso.id_usuario)
         .first()
     )
 
-    if existente:
-        raise HTTPException(400, "Email já está cadastrado.")
+    if not usuario:
+        raise HTTPException(401, "Usuário não encontrado")
 
-    # Criar hash da senha
-    senha_hash = hash_password(payload.senha)
-
-    # Criar objeto usuario
-    novo = Usuarios(
-        nome=payload.nome,
-        email=payload.email,
-        senha_hash=senha_hash,
-        empresa_id=None  # se quiser vincular depois
-    )
-
-    db.add(novo)
-    db.commit()
-    db.refresh(novo)
-
-    # Retorno padronizado
     return {
-        "id": novo.usuario_id,
-        "nome": novo.nome,
-        "email": novo.email,
-        "empresa_id": novo.empresa_id,
+        "id": usuario.usuario_id,
+        "nome": usuario.nome,
+        "email": usuario.email,
+        "empresa_id": usuario.empresa_id,
     }
 
+
+# ----------------------------------------------------------
+# LOGOUT
+# ----------------------------------------------------------
+@router.post("/logout")
+async def auth_logout(acesso=Depends(validar_token), db: Session = Depends(get_db)):
+    acesso.ativo = False
+    db.commit()
+
+    response = JSONResponse({"detail": "Logout realizado com sucesso."})
+    response.delete_cookie("session_token", path="/")
+    response.delete_cookie("csrf_token", path="/")
+    return response
+
+
+# ----------------------------------------------------------
+# REFRESH
+# ----------------------------------------------------------
+@router.post("/refresh", response_model=UserOut)
+async def refresh_token(acesso=Depends(validar_token), db: Session = Depends(get_db)):
+    acesso.ativo = False
+    db.commit()
+
+    novo_token = gerar_token()
+    novo = Acesso(id_usuario=acesso.id_usuario, token=novo_token, ativo=True)
+    db.add(novo)
+    db.commit()
+
+    csrf = create_csrf_token()
+
+    usuario = (
+        db.query(Usuarios)
+        .filter(Usuarios.usuario_id == acesso.id_usuario)
+        .first()
+    )
+
+    response = JSONResponse({
+        "id": usuario.usuario_id,
+        "nome": usuario.nome,
+        "email": usuario.email,
+    })
+        #"empresa_id": usuario.empresa_id
+
+    response.set_cookie(
+        key="session_token",
+        value=novo_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        path="/",
+    )
+
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf,
+        httponly=False,
+        secure=False,
+        samesite="lax",
+        path="/",
+    )
+
+    return response
