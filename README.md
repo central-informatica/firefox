@@ -201,10 +201,7 @@ POST /api/sign
 ```
 
 Retorna assinatura RSA base64 da hash enviada.
-
 ---
-
-```
 
 ## Endpoints da API
 
