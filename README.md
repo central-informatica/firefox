@@ -1,7 +1,13 @@
-# Backend Certificado
+# 📄 Certificado Protegido
 
-Sistema de gerenciamento seguro de certificados digitais (.pfx) com API REST construída em FastAPI.
+Sistema para armazenamento seguro de certificados digitais (.pfx), autenticação via cookies HttpOnly, CSRF, assinatura remota e processamento seguro no backend FastAPI.
 
+Este projeto possui dois módulos principais:
+
+- **Backend** — FastAPI + Python 3.13 + Poetry 2.x  
+- **Frontend** — React + Vite
+
+---
 ## Visão Geral
 
 Este projeto permite que usuários façam upload, armazenem de forma criptografada e utilizem certificados digitais .pfx para operações de assinatura digital. O sistema garante segurança através de criptografia AES-GCM com chave mestra derivada por PBKDF2.
@@ -24,148 +30,180 @@ Este projeto permite que usuários façam upload, armazenem de forma criptografa
 
 ## Pré-requisitos
 
-- Python 3.11 ou superior
-- Poetry (gerenciador de dependências Python)
-- Node.js e pnpm (para o frontend)
-
-## Instalação
-
 ### Backend
-
-1. **Clone o repositório**
-```bash
-git clone <url-do-repositorio>
-cd backend_certificado
-```
-
-2. **Instale as dependências com Poetry**
-#### Instalação do poetry Linux
-curl -sSL https://install.python-poetry.org | python3 -
-
-#### Instalação do peoetry Windows
-curl -sSL https://install.python-poetry.org | python -
-
-```bash
-poetry install
-```
-
-3. **Configure as variáveis de ambiente**
-
-Crie um arquivo `.env` na raiz do projeto:
-```env
-MASTER_KEY=sua-senha-mestra-segura
-```
-
-4. **Crie os diretórios necessários**
-
-Os diretórios serão criados automaticamente na primeira execução, mas você pode criá-los manualmente:
-```bash
-mkdir -p storage/db
-mkdir -p storage/certificados
-mkdir -p certificados
-```
-
-5. **Adicione sua chave privada RSA** (se necessário para assinatura)
-```bash
-# Coloque seu arquivo private_key.pem em:
-# certificados/private_key.pem
-```
+- Python **3.13** instalado
+- Poetry **2.x** instalado  
+  https://python-poetry.org/docs/#installation
 
 ### Frontend
+- Node.js **18+**
+- NPM ou Yarn
 
-1. **Navegue até o diretório do frontend**
-```bash
-cd front
-```
+---
 
-2. **Instale as dependências**
-#### Instalação pnpm  windows
-```bash
-Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression
-```
-```bash
-pnpm install
-```
-
-## Como Executar
-
-### Executar o Backend
-
-**Modo Desenvolvimento:**
-```bash
-poetry run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-O servidor estará disponível em: `http://127.0.0.1:8000`
-
-**Modo Produção:**
-```bash
-poetry run fastapi run main.py
-```
-
-**Documentação Automática da API:**
-- Swagger UI: `http://127.0.0.1:8000/docs`
-- ReDoc: `http://127.0.0.1:8000/redoc`
-
-### Executar o Frontend
-#### Instalação do do node https://nodejs.org/
-```bash
-cd front
-pnpm dev
-```
-
-O frontend estará disponível em: `http://127.0.0.1:5173`
-
-## Estrutura do Projeto
+# 🏗 Estrutura do Projeto
 
 ```
 backend-certificado/
 │
 ├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── core/
-│   │   │   ├── config.py
-│   │   │   └── security.py
-│   │   ├── schemas/
-│   │   │   ├── auth.py
-│   │   │   └── certificados.py
-│   │   ├── api/
-│   │   │   └── routes/
-│   │   │       ├── auth.py
-│   │   │       └── certificados.py
-│   │   ├── utils/ (OPCIONAL)
-│   ├── __init__.py
+│   └── app/
+│       ├── main.py
+│       ├── api/
+│       │   └── routes/
+│       │       ├── auth.py
+│       │       └── certificados.py
+│       ├── core/
+│       │   ├── config.py
+│       │   └── security.py
+│       ├── schemas/
+│       └── utils/
 │
-├── db_sqlite.py           ⟵ pode ficar na raiz ou mover p/ backend/
-├── crypto_utils.py
-├── chave_mestra.py
-├── gerar_token_acesso.py
+├── front/
+│   └── (arquivos do React + Vite)
 │
 ├── storage/
-├── front/                 ⟵ seu frontend
-├── .env
+│   └── certificados/  (arquivos .pfx criptografados)
+│
 ├── pyproject.toml
-└── README.md
+├── README.md
+└── .env
+```
 
-backend_certificado/
-├── main.py                  # API FastAPI e endpoints
-├── chave_mestra.py         # Geração de chave mestra com PBKDF2
-├── crypto_utils.py         # Funções de criptografia AES-GCM
-├── db_sqlite.py            # Configuração do banco SQLite
-├── gerar_token_acesso.py   # Geração de tokens seguros
-├── pyproject.toml          # Configuração Poetry e dependências
-├── .env                    # Variáveis de ambiente (não versionado)
-├── storage/
-│   ├── salt.bin           # Salt para derivação de chave
-│   ├── db/                # Banco de dados SQLite
-│   └── certificados/      # Certificados criptografados (JSON)
-├── certificados/
-│   └── private_key.pem    # Chave privada RSA
-└── front/                 # Frontend React/Vite
-    ├── package.json
-    ├── pnpm-lock.yaml
-    └── src/
+---
+
+# ⚙️ Configuração do Backend (FastAPI)
+
+O backend usa:
+
+- Cookies HttpOnly (`session_token`)
+- Token CSRF (`csrf_token`)
+- Autenticação baseada em sessão (não usa localStorage)
+- Criptografia forte com `pycryptodome` + `cryptography`
+- Banco de dados SQLite
+
+---
+
+# 🔐 Arquivo `.env`
+
+Crie na raiz do projeto:
+
+```
+MASTER_KEY=123
+FRONTEND_ORIGIN=http://127.0.0.1:5173
+```
+
+---
+
+# ▶ Como rodar o Backend
+
+## ✔ 1) Instalar dependências:
+
+#### Instalação do poetry Linux
+curl -sSL https://install.python-poetry.org | python3 -
+
+#### Instalação do peoetry Windows
+curl -sSL https://install.python-poetry.org | python -
+```
+poetry install
+```
+
+## ✔ 2) Ver o caminho da virtualenv:
+
+```
+poetry env info --path
+```
+
+## ✔ 3) Ativar a venv manualmente (Windows PowerShell) 
+<CAMINHO_DA_VENV> :: É o resultado do comando: poetry env info --path
+```
+& "<CAMINHO_DA_VENV>\Scripts\Activate.ps1"
+```
+
+## ✔ 4) Rodar o servidor FastAPI
+
+```
+uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+API disponível em:
+
+- http://127.0.0.1:8000
+- http://127.0.0.1:8000/docs
+
+---
+
+# ▶ Como rodar o Frontend (React + Vite)
+
+Entre na pasta:
+
+```
+cd front
+npm install
+npm run dev -- --host 127.0.0.1
+```
+
+Aplicação em:
+
+**http://127.0.0.1:5173**
+
+---
+
+# 🔐 Fluxo de Autenticação
+
+1. O backend cria cookies:
+   - HttpOnly: `session_token`
+   - Acessível ao JS: `csrf_token`
+2. O frontend deve enviar sempre:
+   ```
+   credentials: "include"
+   X-CSRF-Token: csrf_token
+   ```
+3. Rotas protegidas dependem de:
+   ```
+   validar_token
+   ```
+
+Exemplo:
+
+```js
+fetch("http://127.0.0.1:8000/upload/certificado", {
+  method: "POST",
+  credentials: "include",
+  headers: {
+    "X-CSRF-Token": csrf,
+  },
+  body: formData
+});
+```
+
+---
+
+# 📁 Upload de Certificados (.pfx)
+
+```
+POST /upload/certificado
+```
+
+Envia:
+
+- arquivo (.pfx)
+- senha
+- cookie de sessão
+- header CSRF
+
+---
+
+# ✍ Assinatura Digital
+
+```
+POST /api/sign
+```
+
+Retorna assinatura RSA base64 da hash enviada.
+
+---
+
 ```
 
 ## Endpoints da API
@@ -290,3 +328,41 @@ cd front
 pnpm list
 ```
 
+# 🛠 Desenvolvimento
+
+Backend:
+
+```
+uvicorn backend.app.main:app --reload
+```
+
+Frontend:
+
+```
+npm run dev
+```
+
+---
+
+# 🚀 Deploy
+
+- Backend com Uvicorn + Nginx
+- Frontend build com Vite
+- HTTPS obrigatório (SameSite=None)
+
+---
+
+# 👨‍💻 Contribuição
+
+Mantenha o padrão:
+
+- Rotas → `backend/app/api/routes`
+- Segurança → `backend/app/core`
+- Utilitários → `backend/app/utils`
+- Schemas → `backend/app/schemas`
+
+---
+
+# 📄 Licença
+
+Uso interno.

@@ -1,6 +1,125 @@
-__pycache__/*
-certificados/*
+# ============================================================
+#   PYTHON / FASTAPI / POETRY
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*$py.class
+
+# Poetry virtualenvs opcionais
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+sdist/
+*.egg-info/
+.eggs/
+
+# SQLite database backups
+*.db
+*.db-journal
+*.sqlite3
+*.sqlite3-journal
+
+# Logs
+*.log
+logs/
+log/
+
+# Temp files
+tmp/
+temp/
+*.tmp
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+
+# ============================================================
+#   FASTAPI SPECIFIC
+# ============================================================
+
+storage/
 storage/*
-.env    
-front/node_modules/*
-./CLAUDE.md
+
+.cache/
+*.cache
+
+*.pem
+*.crt
+*.key
+
+
+# ============================================================
+#   FRONTEND (React + Vite)
+# ============================================================
+
+front/node_modules/
+node_modules/
+
+front/dist/
+dist/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+*.un~
+*.swp
+*.swo
+
+
+# ============================================================
+#   ENVIRONMENT FILES
+# ============================================================
+
+.env
+.env.*
+!.env.example
+
+
+# ============================================================
+#   IDE / EDITOR SETTINGS
+# ============================================================
+
+.vscode/
+.history/
+
+.idea/
+*.iml
+
+*.code-workspace
+
+
+# ============================================================
+#   WINDOWS / POWERSHELL / MISC
+# ============================================================
+
+*.stackdump
+PSReadLine/
+
+*.dll
+*.exe
+*.manifest
+
+
+# ============================================================
+#   CUSTOM — PROJECT SENSITIVE FILES
+# ============================================================
+
+*.pfx
+*.pem
+*.der
+
+signed/
+signatures/
