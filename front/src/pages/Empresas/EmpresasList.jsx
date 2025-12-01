@@ -1,5 +1,6 @@
 // pages/Empresas/EmpresasList.jsx
 import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { getEmpresas } from "../../services/empresasService";
 import "./Empresas.css"
 import { Link } from "react-router-dom";
@@ -7,7 +8,7 @@ import Button from "../../components/Button/Button";
 
 const EmpresasList = () => {
   const [empresas, setEmpresas] = useState([]);
-
+  const navigate = useNavigate();
   useEffect(() => {
     getEmpresas().then(setEmpresas);
   }, []);

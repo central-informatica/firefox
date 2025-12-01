@@ -2,6 +2,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
+import Input from "../../components/Input/Input";
+import InputMask from "../../components/Input/InputMask";
+import Button from "../../components/Button/Button";
+import Select from "../../components/Select/Select";
+import Label from "../../components/Label/Label";
+
 import {
   getEmpresa,
   createEmpresa,
@@ -48,10 +54,10 @@ const EmpresaForm = () => {
     <div>
       <h1>{isEdit ? "Editar Empresa" : "Nova Empresa"}</h1>
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: "400px" }}>
+      <form onSubmit={handleSubmit} style={{ maxWidth: "800px" }}>
         <div className="form-group">
-          <label>Nome</label>
-          <input
+          <Label>Nome</Label>
+          <Input
             name="nome"
             className="form-control"
             value={form.nome}
@@ -61,38 +67,38 @@ const EmpresaForm = () => {
         </div>
 
         <div className="form-group" style={{ marginTop: "10px" }}>
-          <label>CNPJ</label>
-          <input
+          <Label>CNPJ</Label>
+          <InputMask
             name="cnpj"
+            mask="00.000.000/0000-00"
             className="form-control"
             value={form.cnpj}
-            onChange={handleChange}
+            onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
             required
           />
         </div>
 
         <div className="form-group" style={{ marginTop: "10px" }}>
-          <label>Fuso Horário</label>
-          <select
-            name="timezone"
-            className="form-control"
+          <Label>Fuso Horário</Label>
+          <Select
             value={form.timezone}
-            onChange={handleChange}
-          >
-            <option value="America/Sao_Paulo">America/Sao_Paulo</option>
-            <option value="America/Recife">America/Recife</option>
-            <option value="America/Manaus">America/Manaus</option>
-            <option value="America/Cuiaba">America/Cuiaba</option>
-          </select>
+            onChange={(e) => setForm({ ...form, timezone: e.target.value })}
+            options={[
+              { value: "America/Sao_Paulo", label: "America/Sao_Paulo" },
+              { value: "America/Recife", label: "America/Recife" },
+              { value: "America/Manaus", label: "America/Manaus" },
+              { value: "America/Cuiaba", label: "America/Cuiaba" },
+            ]}
+          />
         </div>
 
-        <button
+        <Button
           type="submit"
-          className="btn btn-success"
+          className="btn"
           style={{ marginTop: "20px" }}
         >
           Salvar
-        </button>
+        </Button>
       </form>
     </div>
   );
