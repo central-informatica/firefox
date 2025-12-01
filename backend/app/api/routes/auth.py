@@ -74,9 +74,10 @@ async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
             "id": user.usuario_id,
             "nome": user.nome,
             "email": user.email,
-            "empresa_id": user.empresa_id,
+            "empresa_id": 0,
         }
     )
+    # "empresa_id": user.empresa_id,
 
     response.set_cookie(
         key="session_token",
@@ -117,9 +118,9 @@ async def auth_me(acesso=Depends(validar_token), db: Session = Depends(get_db)):
         "id": usuario.usuario_id,
         "nome": usuario.nome,
         "email": usuario.email,
-        "empresa_id": usuario.empresa_id,
+        "empresa_id": 0,
     }
-
+    #  "empresa_id": usuario.empresa_id,
 
 # ----------------------------------------------------------
 # LOGOUT
@@ -168,7 +169,7 @@ async def refresh_token(acesso=Depends(validar_token), db: Session = Depends(get
         value=novo_token,
         httponly=True,
         secure=False,
-        samesite="lax",
+        samesite="none",
         path="/",
     )
 
@@ -177,7 +178,7 @@ async def refresh_token(acesso=Depends(validar_token), db: Session = Depends(get
         value=csrf,
         httponly=False,
         secure=False,
-        samesite="lax",
+        samesite="none",
         path="/",
     )
 

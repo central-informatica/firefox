@@ -6,7 +6,7 @@ import Input from "../../components/Input/Input";
 import Button from "../../components/Button/Button";
 import MainLayout from "../../layouts/MainLayout"; 
 
-const Dashboard = ({ onLogout }) => {
+const Dashboard = ({ onSubmit }) => {
   const [password, setPassword] = useState("");
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
@@ -41,9 +41,9 @@ const Dashboard = ({ onLogout }) => {
     const response = await fetch("http://127.0.0.1:8000/upload/certificado", {
       method: "POST",
       body: formData,
-      credentials: "include",              // 👈 OBRIGATÓRIO!!!
+      credentials: "include",              
       headers: {
-        "X-CSRF-Token": csrf,              // 👈 OBRIGATÓRIO!!!
+        "X-CSRF-Token": csrf,
       },
     });
 
@@ -85,12 +85,8 @@ const Dashboard = ({ onLogout }) => {
           {file && <p className="file-name">Selecionado: {file.name}</p>}
           {error && <p className="error-message">{error}</p>}
 
-          <Button type="submit" className="upload-btn">
+          <Button type="submit" className="btn">
             Enviar
-          </Button>
-
-          <Button type="button" onClick={onLogout} style={{ marginTop: "20px" }}>
-            Sair
           </Button>
         </form>
       </div>

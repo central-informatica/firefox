@@ -1,8 +1,9 @@
+// src/App.jsx
 import React, { useState } from "react";
 import Login from "./login";
 import Cadastro from "./pages/Usuarios/Cadastro";
-import Dashboard from "./pages/Dashboard/Dashboard";
 import { useAuth } from "./auth/useAuth";
+import AppRoutes from "./AppRoutes";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -10,10 +11,12 @@ export default function App() {
 
   if (loading) return <div>Carregando...</div>;
 
+  // Se estiver logado → cai nas rotas com layout e sidebar
   if (user) {
-    return <Dashboard />;
+    return <AppRoutes />;
   }
 
+  // Se não estiver logado → Login ou Cadastro
   return (
     <>
       {showRegister ? (

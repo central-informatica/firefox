@@ -1,0 +1,65 @@
+/* ====== TABELAS PADRÃO DO SISTEMA ====== */
+
+.table-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.table thead {
+  background: #f9fbff;
+}
+
+.table thead tr th {
+  padding: 14px;
+  text-align: left;
+  font-weight: 600;
+  color: black;
+  border-bottom: 2px solid #e3e9ff;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #ececec;
+  transition: background 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background: #f9fbff;
+}
+
+.table tbody td {
+  padding: 12px 14px;
+  color: #444;
+}
+
+.table-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-table {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s ease-in-out;
+}
+
+.btn-edit {
+  background: #4CAF50;
+  color: white;
+}
+
+.btn-edit:hover {
+  background: #4CAF50;
+}

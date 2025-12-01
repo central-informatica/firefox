@@ -66,7 +66,7 @@
 
 /* Estilo do item ativo */
 .menu-item.active {
-  background: linear-gradient(135deg, #0ba505, #39ba46);
+  background: linear-gradient(135deg, #0a50b18e, #837fad);
   color: rgb(20, 39, 27);
   box-shadow: 0px 4px 12px rgba(56, 103, 245, 0.3);
 }

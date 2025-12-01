@@ -6,16 +6,18 @@ import {
   FiGitPullRequest, 
   FiSettings 
 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 export default function Sidebar() {
   const [active, setActive] = useState("dashboard");
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();               // ✔ ADICIONADO
 
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: <FiGrid /> },
-    { id: "empresas", label: "Empresas", icon: <FiUsers /> },
-    { id: "funcionarios", label: "Funcionarios", icon: <FiGitPullRequest /> },
-    { id: "config", label: "Configurações", icon: <FiSettings /> },
+    { id: "dashboard", label: "Dashboard", icon: <FiGrid />, path: "/dashboard" },
+    { id: "empresas", label: "Empresas", icon: <FiUsers />, path: "/empresas" },   // ✔ ROTA CERTA
+    { id: "funcionarios", label: "Funcionarios", icon: <FiGitPullRequest />, path: "/funcionarios" },
+    { id: "config", label: "Configurações", icon: <FiSettings />, path: "/config" },
   ];
 
   const toggleSidebar = () => setOpen(!open);
@@ -27,7 +29,6 @@ export default function Sidebar() {
         ☰
       </button>
 
-      {/* Overlay mobile */}
       {open && <div className="sidebar-overlay" onClick={() => setOpen(false)} />}
 
       <aside className={`sidebar ${open ? "open" : ""}`}>
@@ -41,6 +42,7 @@ export default function Sidebar() {
               className={`menu-item ${active === item.id ? "active" : ""}`}
               onClick={() => {
                 setActive(item.id);
+                navigate(item.path);     // ✔ NAVEGAÇÃO REALIZADA
                 setOpen(false);
               }}
             >
