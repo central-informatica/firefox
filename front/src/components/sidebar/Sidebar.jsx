@@ -15,8 +15,8 @@ export default function Sidebar() {
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: <FiGrid />, path: "/dashboard" },
-    { id: "empresas", label: "Empresas", icon: <FiUsers />, path: "/empresas" },   // ✔ ROTA CERTA
-    { id: "funcionarios", label: "Funcionarios", icon: <FiGitPullRequest />, path: "/funcionarios" },
+    { id: "empresas", label: "Empresas", icon: <FiUsers />, path: "/empresas" },  
+    { id: "usuarios", label: "Usuários", icon: <FiGitPullRequest />, path: "/usuarios" },
     { id: "config", label: "Configurações", icon: <FiSettings />, path: "/config" },
   ];
 

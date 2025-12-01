@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { getEmpresas } from "../../services/empresasService";
-import "./Empresas.css"
+import "../../components/Tables/Tables.css"
 import { Link } from "react-router-dom";
 import Button from "../../components/Button/Button";
 
