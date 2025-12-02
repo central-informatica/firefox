@@ -2,7 +2,7 @@ from typing import Optional
 import datetime
 import uuid
 
-from sqlalchemy import ARRAY, BigInteger, Boolean, Date, DateTime, ForeignKeyConstraint, Index, Integer, PrimaryKeyConstraint, String, Text, UniqueConstraint, Uuid, text
+from sqlalchemy import ARRAY, BigInteger, Boolean, Date, DateTime, Enum, ForeignKeyConstraint, Index, Integer, PrimaryKeyConstraint, String, Text, UniqueConstraint, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -26,6 +26,7 @@ class Usuarios(Base):
     email_verificado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
     atualizado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
+    nivel: Mapped[str] = mapped_column(Enum('ADMINISTRADOR', 'COMUM', name='usuario_nivel'), nullable=False, server_default=text("'COMUM'::usuario_nivel"), comment='NÝvel global do usußrio na plataforma SaaS. ADMINISTRADOR = acesso total ao sistema. COMUM = usußrio padrÒo.')
     telefone: Mapped[Optional[str]] = mapped_column(String(40))
 
     acesso: Mapped[list['Acesso']] = relationship('Acesso', back_populates='usuarios')
@@ -82,6 +83,7 @@ class Empresas(Base):
     grupos_certificados: Mapped[list['GruposCertificados']] = relationship('GruposCertificados', back_populates='empresa')
     grupos_usuarios: Mapped[list['GruposUsuarios']] = relationship('GruposUsuarios', back_populates='empresa')
     regras_acesso: Mapped[list['RegrasAcesso']] = relationship('RegrasAcesso', back_populates='empresa')
+    regras_acesso_hosts: Mapped[list['RegrasAcessoHosts']] = relationship('RegrasAcessoHosts', back_populates='empresa')
 
 
 class Certificados(Base):
@@ -146,7 +148,7 @@ class EmpresaMembros(Base):
     membro_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     empresa_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     usuario_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    papel: Mapped[str] = mapped_column(String(30), nullable=False, comment='Papel do usu▀rio na empresa (superadmin, admin, user, etc.).')
+    papel: Mapped[str] = mapped_column(Enum('ADMINISTRADOR', 'COMUM', name='usuario_nivel'), nullable=False, server_default=text("'COMUM'::usuario_nivel"), comment='Papel do usu▀rio na empresa (superadmin, admin, user, etc.).')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
 
     empresa: Mapped['Empresas'] = relationship('Empresas', back_populates='empresa_membros')
@@ -216,6 +218,7 @@ class Grupos(Base):
     grupos_certificados: Mapped[list['GruposCertificados']] = relationship('GruposCertificados', back_populates='grupo')
     grupos_usuarios: Mapped[list['GruposUsuarios']] = relationship('GruposUsuarios', back_populates='grupo')
     regras_acesso: Mapped[list['RegrasAcesso']] = relationship('RegrasAcesso', back_populates='grupo')
+    regras_acesso_hosts: Mapped[list['RegrasAcessoHosts']] = relationship('RegrasAcessoHosts', back_populates='grupo')
 
 
 class GruposCertificados(Base):
@@ -272,6 +275,8 @@ class RegrasAcesso(Base):
         ForeignKeyConstraint(['empresa_id'], ['empresas.empresa_id'], ondelete='CASCADE', name='regras_empresa_fk'),
         ForeignKeyConstraint(['grupo_id'], ['grupos.grupo_id'], ondelete='CASCADE', name='regras_grupo_fk'),
         PrimaryKeyConstraint('regra_id', name='regras_acesso_pkey'),
+        Index('idx_regras_acesso_hosts_emp', 'empresa_id'),
+        Index('idx_regras_acesso_hosts_grupo', 'grupo_id'),
         Index('idx_regras_emp', 'empresa_id'),
         Index('idx_regras_grupo', 'grupo_id'),
         {'comment': 'Regras de dias e hor▀rios permitidos para grupos de uma empresa.'}
@@ -287,3 +292,24 @@ class RegrasAcesso(Base):
 
     empresa: Mapped['Empresas'] = relationship('Empresas', back_populates='regras_acesso')
     grupo: Mapped['Grupos'] = relationship('Grupos', back_populates='regras_acesso')
+
+
+class RegrasAcessoHosts(Base):
+    __tablename__ = 'regras_acesso_hosts'
+    __table_args__ = (
+        ForeignKeyConstraint(['empresa_id'], ['empresas.empresa_id'], ondelete='CASCADE', name='regras_empresa_fk'),
+        ForeignKeyConstraint(['grupo_id'], ['grupos.grupo_id'], ondelete='CASCADE', name='regras_grupo_fk'),
+        PrimaryKeyConstraint('regra_id', name='regras_acesso_hosts_pkey')
+    )
+
+    regra_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    empresa_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    grupo_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    tipo_dia: Mapped[str] = mapped_column(String(20), nullable=False)
+    horarios: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
+    dias_especificos: Mapped[Optional[list[int]]] = mapped_column(ARRAY(Integer()))
+    urls: Mapped[Optional[str]] = mapped_column(Text)
+
+    empresa: Mapped['Empresas'] = relationship('Empresas', back_populates='regras_acesso_hosts')
+    grupo: Mapped['Grupos'] = relationship('Grupos', back_populates='regras_acesso_hosts')

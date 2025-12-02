@@ -20,6 +20,14 @@ export function getEmpresas() {
   return Promise.resolve(empresas);
 }
 
+export async function getEmpresasDoUsuario(userId) {
+  console.log("Id do usuário logado: ", userId);
+  const res = await fetch(`http://127.0.0.1:8000/usuarios/${userId}/empresas`, {
+    credentials: "include",
+  });
+  return await res.json();
+}
+
 // Busca por ID
 export function getEmpresa(id) {
   const empresa = empresas.find((e) => e.id === Number(id));

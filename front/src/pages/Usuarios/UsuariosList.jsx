@@ -47,7 +47,7 @@ const UsuariosList = () => {
               <td>
                 <Link className="btn" to={`/usuarios/editar/${u.id}`}>Editar</Link>
                 {" | "}
-                <ButtonExcluir className="btn_30x30" onClick={() => handleDelete(u.id)}>Excluir</ButtonExcluir>
+                <ButtonExcluir onClick={() => handleDelete(u.id)}>Excluir</ButtonExcluir>
 
               </td>
             </tr>

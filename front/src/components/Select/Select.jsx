@@ -1,49 +1,37 @@
-import React, { useEffect, useRef } from "react";
-//import "./Select.css";
-import "./Select2Style.css";
+import React from "react";
+import ReactSelect from "react-select";
 
-export default function Select({ label, options = [], value, onChange, className, ...props }) {
-  const selectRef = useRef();
-
-  useEffect(() => {
-    const $ = window.$; // ← pega o jQuery global do CDN
-    const $select = $(selectRef.current);
-
-    console.log("jQuery:", typeof $);
-    console.log("Select2 existe?", typeof $.fn.select2);
-
-    if (!$.fn.select2) {
-      console.error("❌ Select2 NÃO carregou.");
-      return;
-    }
-
-    $select.select2({
-      width: "100%",
-      placeholder: props.placeholder || "Selecione...",
-      language: {
-        noResults: () => "Nenhum resultado encontrado",
-    }
-    });
-
-    $select.on("change", (e) => onChange?.(e));
-
-    if (value) {
-      $select.val(value).trigger("change");
-    }
-
-    return () => $select.select2("destroy");
-  }, []);
+export default function Select({
+  label,
+  options = [],
+  value,
+  onChange,
+  placeholder = "Selecione...",
+  className,
+  ...props
+}) {
+  // Converte o value simples (ex: 1, "ADMIN") para o formato { value, label }
+  const selectedOption =
+    options.find((opt) => opt.value === value) || null;
 
   return (
     <div className="select-group">
       {label && <label className="select-label">{label}</label>}
-      <select ref={selectRef} className={className} {...props}>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+
+      <ReactSelect
+        className={className}
+        options={options}
+        value={selectedOption}
+        onChange={(opt) => onChange(opt ? opt.value : null)}
+        placeholder={placeholder}
+        styles={{
+          menu: (provided) => ({
+            ...provided,
+            zIndex: 9999,
+          }),
+        }}
+        {...props}
+      />
     </div>
   );
 }

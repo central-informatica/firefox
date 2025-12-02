@@ -30,7 +30,8 @@ export default function AppRoutes() {
         {/* CRUD de Certificados */}
         <Route path="/certificados" element={<CertificadosList />} />
         <Route path="/certificados/novo" element={<CertificadosForm />} />
-        <Route path="/certificados/editar/:id" element={<CertificadosForm />} />
+        {/*<Route path="/certificados/editar/:id" element={<CertificadosForm />} />*/}
+        <Route path="/certificados/excluir" element={<CertificadosForm />} />
 
         
 

@@ -82,7 +82,7 @@ const EmpresaForm = () => {
           <Label>Fuso Horário</Label>
           <Select
             value={form.timezone}
-            onChange={(e) => setForm({ ...form, timezone: e.target.value })}
+            onChange={(value) => setForm({ ...form, timezone: value })}
             options={[
               { value: "America/Sao_Paulo", label: "America/Sao_Paulo" },
               { value: "America/Recife", label: "America/Recife" },
@@ -91,6 +91,7 @@ const EmpresaForm = () => {
             ]}
           />
         </div>
+
 
         <Button
           type="submit"
