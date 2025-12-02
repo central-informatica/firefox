@@ -6,6 +6,8 @@ import EmpresasList from "./pages/Empresas/EmpresasList";
 import EmpresaForm from "./pages/Empresas/EmpresasForm";
 import UsuariosList from "./pages/Usuarios/UsuariosList";
 import UsuariosForm from "./pages/Usuarios/UsuariosForm";
+import CertificadosList from "./pages/Certificados/CertificadosList"
+import CertificadosForm from "./pages/Certificados/CertificadosForm"
 
 
 export default function AppRoutes() {
@@ -24,6 +26,13 @@ export default function AppRoutes() {
         <Route path="/usuarios" element={<UsuariosList />} />
         <Route path="/usuarios/novo" element={<UsuariosForm />} />
         <Route path="/usuarios/editar/:id" element={<UsuariosForm />} />
+
+        {/* CRUD de Certificados */}
+        <Route path="/certificados" element={<CertificadosList />} />
+        <Route path="/certificados/novo" element={<CertificadosForm />} />
+        <Route path="/certificados/editar/:id" element={<CertificadosForm />} />
+
+        
 
         {/* Redirecionamento padrão */}
         <Route path="*" element={<Navigate to="/dashboard" />} />

@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import Input from "../../components/Input/Input";
+import Button from "../../components/Button/Button";
+import "../../components/Select/Select2Style.css";
+
+import Label from "../../components/Label/Label";
+
 import {
   createUsuario,
   getUsuarioById,
@@ -46,14 +52,14 @@ const UsuarioForm = () => {
       <h1>{isEdit ? "Editar Usuário" : "Novo Usuário"}</h1>
 
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 10, width: 300 }}>
-        <input
+        <Input
           name="nome"
           placeholder="Nome"
           value={form.nome}
           onChange={handleChange}
         />
 
-        <input
+        <Input
           name="email"
           placeholder="Email"
           type="email"
@@ -61,12 +67,16 @@ const UsuarioForm = () => {
           onChange={handleChange}
         />
 
-        <select name="nivel" value={form.nivel} onChange={handleChange}>
+         <select
+          name="nivel"
+          defaultValue={form.nivel}
+          className="select"
+        >
           <option value="ADMINISTRADOR">ADMINISTRADOR</option>
           <option value="COMUM">COMUM</option>
         </select>
 
-        <button type="submit">Salvar</button>
+        <Button type="submit">Salvar</Button>
       </form>
     </div>
   );

@@ -4,19 +4,25 @@ import {
   FiGrid, 
   FiUsers, 
   FiGitPullRequest, 
-  FiSettings 
+  FiSettings, 
+  FiFigma,
+  FiFeather,
+  FiLifeBuoy,
+  FiCast,
+  FiCreditCard
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 
 export default function Sidebar() {
   const [active, setActive] = useState("dashboard");
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();               // ✔ ADICIONADO
+  const navigate = useNavigate();
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: <FiGrid />, path: "/dashboard" },
-    { id: "empresas", label: "Empresas", icon: <FiUsers />, path: "/empresas" },  
-    { id: "usuarios", label: "Usuários", icon: <FiGitPullRequest />, path: "/usuarios" },
+    { id: "empresas", label: "Empresas", icon: <FiLifeBuoy />, path: "/empresas" },  
+    { id: "usuarios", label: "Usuários", icon: <FiUsers />, path: "/usuarios" },
+    { id: "cedrtificados", label: "Certificados", icon: <FiCreditCard />, path: "/certificados" },
     { id: "config", label: "Configurações", icon: <FiSettings />, path: "/config" },
   ];
 

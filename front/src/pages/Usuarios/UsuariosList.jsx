@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getUsuarios, deleteUsuario } from "../../services/usuariosService";
 import "../../components/Tables/Tables.css";
+import ButtonExcluir from "../../components/Button/ButtonExcluir";
 
 const UsuariosList = () => {
   const [usuarios, setUsuarios] = useState([]);
@@ -24,8 +25,8 @@ const UsuariosList = () => {
     <>
       <h1>Usuários</h1>
       <Link to="/usuarios/novo" className="btn">Novo Usuário</Link>
-
-      <table className="table">
+      <div className="table-container">
+        <table className="table">
         <thead>
           <tr>
             <th>ID</th>
@@ -44,14 +45,16 @@ const UsuariosList = () => {
               <td>{u.email}</td>
               <td>{u.nivel}</td>
               <td>
-                <Link to={`/usuarios/editar/${u.id}`}>Editar</Link>
+                <Link className="btn" to={`/usuarios/editar/${u.id}`}>Editar</Link>
                 {" | "}
-                <button onClick={() => handleDelete(u.id)}>Excluir</button>
+                <ButtonExcluir className="btn_30x30" onClick={() => handleDelete(u.id)}>Excluir</ButtonExcluir>
+
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
     </>
   );
 };
