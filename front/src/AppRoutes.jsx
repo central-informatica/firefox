@@ -8,6 +8,8 @@ import UsuariosList from "./pages/Usuarios/UsuariosList";
 import UsuariosForm from "./pages/Usuarios/UsuariosForm";
 import CertificadosList from "./pages/Certificados/CertificadosList"
 import CertificadosForm from "./pages/Certificados/CertificadosForm"
+import PlanosList from "./pages/PlanosTrabalho/PlanosTrabalhoList"
+import PlanosForm from "./pages/PlanosTrabalho/PlanosTrabalhoForm"
 
 
 export default function AppRoutes() {
@@ -33,7 +35,10 @@ export default function AppRoutes() {
         {/*<Route path="/certificados/editar/:id" element={<CertificadosForm />} />*/}
         <Route path="/certificados/excluir" element={<CertificadosForm />} />
 
-        
+        {/* CRUD de planos de trabalho */}
+        <Route path="/planos" element={<PlanosList />} />
+        <Route path="/planos/novo" element={<PlanosForm />} />
+        <Route path="/planos/editar/:id" element={<PlanosForm />} />
 
         {/* Redirecionamento padrão */}
         <Route path="*" element={<Navigate to="/dashboard" />} />

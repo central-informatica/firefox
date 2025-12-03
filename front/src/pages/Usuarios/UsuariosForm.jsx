@@ -3,9 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import Input from "../../components/Input/Input";
 import Button from "../../components/Button/Button";
-import "../../components/Select/Select2Style.css";
-
-import Label from "../../components/Label/Label";
+import "../../components/Forms/Forms.css"; // importa o estilo dos forms
 
 import {
   createUsuario,
@@ -27,12 +25,15 @@ const UsuarioForm = () => {
 
   useEffect(() => {
     if (isEdit) {
-      getUsuarioById(id).then((data) => setForm(data));
+      getUsuarioById(id).then((data) => {
+        if (data) setForm(data);
+      });
     }
-  }, [id]);
+  }, [id, isEdit]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((old) => ({ ...old, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -48,33 +49,44 @@ const UsuarioForm = () => {
   };
 
   return (
-    <div>
-      <h1>{isEdit ? "Editar Usuário" : "Novo Usuário"}</h1>
+    <div className="page-form">
+      <h1 className="titulo">
+        {isEdit ? "Editar Usuário" : "Novo Usuário"}
+      </h1>
 
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 10, width: 300 }}>
-        <Input
-          name="nome"
-          placeholder="Nome"
-          value={form.nome}
-          onChange={handleChange}
-        />
+      <form onSubmit={handleSubmit}>
+        <div className="form-group" style={{ marginBottom: "10px" }}>
+          <Input
+            name="nome"
+            placeholder="Nome"
+            value={form.nome}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-        <Input
-          name="email"
-          placeholder="Email"
-          type="email"
-          value={form.email}
-          onChange={handleChange}
-        />
+        <div className="form-group" style={{ marginBottom: "10px" }}>
+          <Input
+            name="email"
+            placeholder="Email"
+            type="email"
+            value={form.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-         <select
-          name="nivel"
-          defaultValue={form.nivel}
-          className="select"
-        >
-          <option value="ADMINISTRADOR">ADMINISTRADOR</option>
-          <option value="COMUM">COMUM</option>
-        </select>
+        <div className="form-group" style={{ marginBottom: "16px" }}>
+          <select
+            name="nivel"
+            value={form.nivel}
+            onChange={handleChange}
+            className="select"
+          >
+            <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+            <option value="COMUM">COMUM</option>
+          </select>
+        </div>
 
         <Button type="submit">Salvar</Button>
       </form>

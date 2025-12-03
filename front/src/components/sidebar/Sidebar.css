@@ -76,30 +76,60 @@
   display: flex;
   align-items: center;
   margin-top: auto;
-  padding-top: 20px;
+  padding-top: 12px;
   border-top: 1px solid #eee;
 }
 
-.avatar {
-  width: 42px;
-  height: 42px;
-  background: #3867F5;
-  border-radius: 50%;
-  color: white;
+.sidebar-footer {
+  padding: 16px;
+  padding-bottom: 24px; /* espaço extra no final */
+  margin-top: auto;
+  border-top: 1px solid #e5e5e5;
+
   display: flex;
   align-items: center;
+  gap: 12px;
+  background: #fff;
+
+  white-space: normal;
+}
+
+
+.sidebar-footer div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  background: #3b82f6;
+  border-radius: 50%;
+  display: flex;
   justify-content: center;
+  align-items: center;
+  color: white;
   font-weight: bold;
-  margin-right: 10px;
+  font-size: 18px;
+  flex-shrink: 0; /* impede que o avatar seja esmagado */
 }
 
 .user-name {
   font-weight: 600;
+  font-size: 15px;
+  color: #333;
+
+  /* PERMITE QUE O TEXTO NÃO ESTOURE A CAIXA */
+  white-space: normal;
+  word-break: break-word;
 }
 
 .user-email {
   font-size: 12px;
   color: #666;
+  white-space: normal;
+  word-break: break-all;
 }
 
 /* MOBILE */
@@ -122,4 +152,25 @@
     background: rgba(0,0,0,0.4);
     z-index: 1500;
   }
+}
+
+.submenu {
+  padding-left: 35px;
+  background: #f4f6ff;
+}
+.submenu-item {
+  padding: 8px 0;
+  cursor: pointer;
+  color: #1c0633;
+  font-size: 14px;
+}
+
+.submenu-item:hover {
+  color: rgb(62, 98, 191);
+}
+
+.submenu-arrow {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }

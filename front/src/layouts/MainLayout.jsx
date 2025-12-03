@@ -2,11 +2,14 @@ import React from "react";
 import Sidebar from "../components/Sidebar/Sidebar";
 import "./MainLayout.css";
 
-export default function MainLayout({ children }) {
+export default function Layout({ children }) {
   return (
-    <div className="layout-container">
+    <div className="layout">
       <Sidebar />
-      <main className="layout-content">{children}</main>
+
+      <main className="main-content">
+        {children}
+      </main>
     </div>
   );
 }

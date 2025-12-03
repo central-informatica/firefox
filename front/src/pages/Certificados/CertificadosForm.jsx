@@ -5,6 +5,7 @@ import { createCertificado } from "../../services/certificadosService";
 
 import Input from "../../components/Input/Input";
 import Button from "../../components/Button/Button";
+import "../../components/Forms/Forms.css";
 
 const CertificadosForm = () => {
   const navigate = useNavigate();
@@ -40,31 +41,38 @@ const CertificadosForm = () => {
   };
 
   return (
-    <div>
-      <h1>Novo Certificado</h1>
+    <div className="page-form">
+      <h1 className="titulo">Novo Certificado</h1>
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: "800px" }}>
-        
+      <form onSubmit={handleSubmit}>
         {/* Upload */}
-        <Input
-          type="file"
-          name="arquivo"
-          accept=".crt,.pem,.cer,.pfx"
-          onChange={handleUploadChange}
-        />
-
-        {file && <p className="file-name">Selecionado: {file.name}</p>}
+        <div className="form-group" style={{ marginBottom: "12px" }}>
+          <label>Arquivo do certificado</label>
+          <Input
+            type="file"
+            name="arquivo"
+            accept=".crt,.pem,.cer,.pfx"
+            onChange={handleUploadChange}
+          />
+          {file && (
+            <p className="file-name" style={{ marginTop: "6px", fontSize: "13px" }}>
+              Selecionado: {file.name}
+            </p>
+          )}
+        </div>
 
         {/* Senha opcional */}
-        <Input
-          name="senha"
-          placeholder="Senha do certificado (se houver)"
-          type="password"
-          value={form.senha}
-          onChange={handleChange}
-        />
+        <div className="form-group" style={{ marginBottom: "16px" }}>
+          <label>Senha do certificado (se houver)</label>
+          <Input
+            name="senha"
+            type="password"
+            value={form.senha}
+            onChange={handleChange}
+          />
+        </div>
 
-        <Button type="submit" className="upload-btn">
+        <Button type="submit" className="btn">
           Enviar
         </Button>
       </form>

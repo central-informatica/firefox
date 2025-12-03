@@ -1,0 +1,21 @@
+/* Wrapper padrão para páginas de formulário */
+.page-form {
+  max-width: 700px;      /* largura máxima do conteúdo */
+  margin: 40px auto 24px;        /* centraliza horizontalmente */
+  background: #ffffff;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e2e2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* Título do formulário alinhado à esquerda dentro do card */
+.page-form .titulo {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+/* Se quiser que a página inteira tenha um fundo levemente cinza */
+.main-content {
+  background: #f7f7f7;
+}

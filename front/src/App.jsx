@@ -4,6 +4,7 @@ import Login from "./login";
 import Cadastro from "./pages/Usuarios/Cadastro";
 import { useAuth } from "./auth/useAuth";
 import AppRoutes from "./AppRoutes";
+import Layout from "./layouts/MainLayout";
 
 import { ToastContainer } from "react-toastify";
 
@@ -17,7 +18,9 @@ export default function App() {
     <>
       <ToastContainer />
       {user ? (
-        <AppRoutes />
+        <Layout>
+          <AppRoutes />
+        </Layout>
       ) : showRegister ? (
         <Cadastro onVoltar={() => setShowRegister(false)} />
       ) : (

@@ -1,16 +1,23 @@
-.layout-container {
+.layout {
   display: flex;
-  width: 100%;
 }
 
-.layout-content {
-  flex: 1;
+/* Sidebar fixa */
+.sidebar {
+  width: 260px; 
+  flex-shrink: 0;
+}
+
+/* Conteúdo principal empurrado para a direita */
+.main-content {
+  margin-left: 260px; /* igual à largura da sidebar */
   padding: 20px;
-  margin-left: 260px; /* largura da sidebar */
+  min-height: 100vh;
+  background: #f7f7f7;
 }
 
 @media (max-width: 768px) {
-  .layout-content {
-    margin-left: 0;
+  .main-content {
+    margin-left: 0; /* quando sidebar fecha */
   }
 }

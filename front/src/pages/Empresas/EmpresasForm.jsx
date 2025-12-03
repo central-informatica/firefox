@@ -7,6 +7,7 @@ import InputMask from "../../components/Input/InputMask";
 import Button from "../../components/Button/Button";
 import Select from "../../components/Select/Select";
 import Label from "../../components/Label/Label";
+import "../../components/Forms/Forms.css";
 
 import {
   getEmpresa,
@@ -51,10 +52,12 @@ const EmpresaForm = () => {
   };
 
   return (
-    <div>
-      <h1>{isEdit ? "Editar Empresa" : "Nova Empresa"}</h1>
+    <div className="page-form">
+      <h1 className="titulo">
+        {isEdit ? "Editar Empresa" : "Nova Empresa"}
+      </h1>
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: "800px" }}>
+      <form onSubmit={handleSubmit}>
         <div className="form-group">
           <Label>Nome</Label>
           <Input
@@ -73,7 +76,9 @@ const EmpresaForm = () => {
             mask="00.000.000/0000-00"
             className="form-control"
             value={form.cnpj}
-            onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
+            onChange={(e) =>
+              setForm({ ...form, cnpj: e.target.value })
+            }
             required
           />
         </div>
@@ -91,7 +96,6 @@ const EmpresaForm = () => {
             ]}
           />
         </div>
-
 
         <Button
           type="submit"

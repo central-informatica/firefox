@@ -22,16 +22,20 @@ const UsuariosList = () => {
   };
 
   return (
-    <>
-      <h1>Usuários</h1>
-      <Link to="/usuarios/novo" className="btn">Novo Usuário</Link>
-      <div className="table-container">
+     <>
+      <h1 className="titulo">Usuários</h1>
+
+      <Link to="/usuarios/novo" className="btn">
+        Novo Usuário
+      </Link>
+
+      <div className="table-container" style={{ marginTop: "12px" }}>
         <table className="table">
         <thead>
           <tr>
             <th>ID</th>
             <th>Nome</th>
-            <th>Email</th>
+            <th>Email</th> 
             <th>Nível</th>
             <th>Ações</th>
           </tr>
