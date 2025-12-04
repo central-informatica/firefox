@@ -45,6 +45,26 @@ td{
 }
 
 /* Tabela */
+/* Truncar conteúdo longo nas células */
+.dt-cell-truncate {
+  max-width: 180px;     /* Ajuste conforme desejar */
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+/* Para colunas maiores como nome do arquivo */
+.dt-col-file {
+  max-width: 260px;
+}
+
+/* Para colunas pequenas */
+.dt-col-small {
+  max-width: 120px;
+}
+
 .dt-table {
   table-layout: fixed;
   width: 100%;

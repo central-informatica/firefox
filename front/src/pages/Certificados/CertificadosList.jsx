@@ -54,14 +54,24 @@ export default function CertificadosList() {
   const columns = [
     { header: "Criado por", accessorKey: "criado_por_nome" },
     { header: "Nome do arquivo", accessorKey: "nome_arquivo" },
-
-    // ⬇️ NOVAS COLUNAS
-    { header: "Proprietário", accessorKey: "proprietario" },
-    { header: "Emitido por", accessorKey: "emitido_por" },
-    { header: "Início da validade", accessorKey: "validade_inicio" },
-    { header: "Válido até", accessorKey: "valido_ate" },
-
-    { header: "Criado em", accessorKey: "criado_em" },
+    {
+      accessorKey: "validade_inicio",
+      header: "Início da validade",
+      cell: ({ row }) =>
+        new Date(row.original.validade_inicio).toLocaleDateString("pt-BR"),
+    },
+    {
+      accessorKey: "valido_ate",
+      header: "Válido até",
+      cell: ({ row }) =>
+        new Date(row.original.valido_ate).toLocaleDateString("pt-BR"),
+    },
+    {
+      accessorKey: "criado_em",
+      header: "Criado em",
+      cell: ({ row }) =>
+        new Date(row.original.criado_em).toLocaleDateString("pt-BR"),
+    },
     {
       header: "Ações",
       cell: ({ row }) => (

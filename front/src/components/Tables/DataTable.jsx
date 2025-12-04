@@ -124,13 +124,19 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
           ) : (
             data.map((row, i) => (
               <tr key={i}>
-                {columns.map((col, j) => (
-                  <td key={j}>
-                    {col.cell
-                      ? col.cell({ row: { original: row } })
-                      : row[col.accessorKey]}
-                  </td>
-                ))}
+                {columns.map((col, j) => {
+                  const value = col.cell
+                    ? col.cell({ row: { original: row } })
+                    : row[col.accessorKey];
+
+                  return (
+                    <td key={j}>
+                      <span className="dt-cell-truncate" title={value}>
+                        {value}
+                      </span>
+                    </td>
+                  );
+                })}
               </tr>
             ))
           )}
