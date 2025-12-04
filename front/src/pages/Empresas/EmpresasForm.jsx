@@ -1,4 +1,5 @@
 // pages/Empresas/EmpresaForm.jsx
+import { getTimezoneOptions } from "../../services/timezoneService";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -14,6 +15,8 @@ import {
   createEmpresa,
   updateEmpresa,
 } from "../../services/empresasService";
+
+const timezoneOptions = getTimezoneOptions();
 
 const EmpresaForm = () => {
   const { id } = useParams();
@@ -86,14 +89,14 @@ const EmpresaForm = () => {
         <div className="form-group" style={{ marginTop: "10px" }}>
           <Label>Fuso Horário</Label>
           <Select
-            value={form.timezone}
-            onChange={(value) => setForm({ ...form, timezone: value })}
-            options={[
-              { value: "America/Sao_Paulo", label: "America/Sao_Paulo" },
-              { value: "America/Recife", label: "America/Recife" },
-              { value: "America/Manaus", label: "America/Manaus" },
-              { value: "America/Cuiaba", label: "America/Cuiaba" },
-            ]}
+            options={timezoneOptions}
+            value={
+              form.timezone
+                ? { value: form.timezone, label: form.timezone }
+                : null
+            }
+            onChange={(opt) => setForm({ ...form, timezone: opt.value })}
+            placeholder="Selecione o fuso horário"
           />
         </div>
 

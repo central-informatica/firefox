@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from backend.app.db.deps import get_db
+from backend.app.db.database import get_db
 from backend.app.db.models import Usuarios, Acesso
 from backend.app.schemas.auth import LoginJSON, UserCreate, UserOut
 from backend.app.core.security import (

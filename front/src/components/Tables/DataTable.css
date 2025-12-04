@@ -1,4 +1,7 @@
 /* Container geral */
+th {
+  color: #444;
+}
 .dt-wrapper {
   margin-top: 20px;
   background: #ffffff;

@@ -1,37 +1,48 @@
 import React from "react";
-import ReactSelect from "react-select";
+import Select from "react-select";
 
-export default function Select({
-  label,
-  options = [],
-  value,
-  onChange,
-  placeholder = "Selecione...",
-  className,
-  ...props
-}) {
-  // Converte o value simples (ex: 1, "ADMIN") para o formato { value, label }
-  const selectedOption =
-    options.find((opt) => opt.value === value) || null;
+const defaultStyles = {
+  control: (base) => ({
+    ...base,
+    borderRadius: 8,
+    minHeight: 38,
+    borderColor: "#c9c9c9",
+    boxShadow: "none",
+    ":hover": {
+      borderColor: "#b3b3b3",
+    },
+  }),
 
-  return (
-    <div className="select-group">
-      {label && <label className="select-label">{label}</label>}
+  menu: (base) => ({
+    ...base,
+    zIndex: 9999, // evita ficar atrás do menu lateral
+    borderRadius: 8,
+  }),
 
-      <ReactSelect
-        className={className}
-        options={options}
-        value={selectedOption}
-        onChange={(opt) => onChange(opt ? opt.value : null)}
-        placeholder={placeholder}
-        styles={{
-          menu: (provided) => ({
-            ...provided,
-            zIndex: 9999,
-          }),
-        }}
-        {...props}
-      />
-    </div>
-  );
+  option: (base, state) => ({
+    ...base,
+    color: "black",  // cor da fonte
+    backgroundColor: state.isSelected
+      ? "#e0e7ff"     // fundo quando selecionado
+      : state.isFocused
+      ? "#f3f4f6"     // fundo no hover
+      : "white",
+    ":active": {
+      backgroundColor: "#dbeafe",
+    },
+  }),
+
+  singleValue: (base) => ({
+    ...base,
+    color: "black", // texto do item selecionado
+  }),
+};
+
+export default function SelectCustom({ styles = {}, ...props }) {
+  const mergedStyles = {
+    ...defaultStyles,
+    ...styles, // permite sobrescrever valores
+  };
+
+  return <Select {...props} styles={mergedStyles} />;
 }

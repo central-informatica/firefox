@@ -76,7 +76,7 @@ export default function Sidebar() {
 
       <aside className={`sidebar ${open ? "open" : ""}`}>
         
-        <div className="sidebar-title">Certi Pro</div>
+        <div className="sidebar-title">XSecurity Vault</div>
 
         <nav className="sidebar-menu">
           {menu.map((item) => (

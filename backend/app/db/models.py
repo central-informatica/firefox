@@ -104,6 +104,10 @@ class Certificados(Base):
     encrypted: Mapped[str] = mapped_column(Text, nullable=False, comment='Dados do certificado em formato criptografado.')
     secret: Mapped[str] = mapped_column(Text, nullable=False, comment='Frase secreta ou chave auxiliar usada na criptografia.')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
+    proprietario: Mapped[Optional[str]] = mapped_column(String, comment='Proprietßrio do certificado')
+    emitido_por: Mapped[Optional[str]] = mapped_column(String, comment='Nome da entidade emissora do certificado')
+    validade_inicio: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), comment='Data de inÝcio da validade')
+    valido_ate: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), comment='Data do fim da validade')
 
     usuarios: Mapped['Usuarios'] = relationship('Usuarios', back_populates='certificados')
     empresa: Mapped['Empresas'] = relationship('Empresas', back_populates='certificados')
