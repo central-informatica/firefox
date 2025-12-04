@@ -53,7 +53,7 @@ export async function createCertificado(formData) {
     method: "POST",
     body: formData,
   });
-
+  console.log("Form data: ", res)
   if (!res.ok) {
     throw new Error("Erro ao criar certificado");
   }
@@ -64,14 +64,18 @@ export async function createCertificado(formData) {
 // -------------------------
 // EXCLUIR
 // -------------------------
-export async function deleteCertificado(id) {
+// EXCLUI UM CERTIFICADO
+export async function excluir_certificado(id) {
   const res = await apiFetch(`/certificados/${id}`, {
     method: "DELETE",
   });
 
   if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Erro ao excluir", errorText);
     throw new Error("Erro ao excluir certificado");
   }
 
   return res.json();
 }
+

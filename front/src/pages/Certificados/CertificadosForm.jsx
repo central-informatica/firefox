@@ -60,10 +60,6 @@ export default function CertificadosForm() {
     data.append("empresa_id", form.empresa_id);
     data.append("senha", form.senha || "");
     data.append("arquivo", file);               
-    data.append("proprietario", form.proprietario || "");
-    data.append("emitido_por", form.emitido_por || "");
-    data.append("validade_inicio", form.validade_inicio || "");
-    data.append("valido_ate", form.valido_ate || "");
 
     try {
       await createCertificado(data);
@@ -81,7 +77,7 @@ export default function CertificadosForm() {
 
       <form onSubmit={handleSubmit}>
         {/* Empresa */}
-        <label>Empresa</label>
+        <Label>Empresa</Label>
         <SelectCustom
           options={empresas}
           value={empresaSelecionada}
@@ -90,9 +86,8 @@ export default function CertificadosForm() {
             setForm((f) => ({ ...f, empresa_id: opt.value }));
           }}
         />
-
         {/* Upload */}
-        <Label>Certificado (PFX)</Label>
+        <p><Label>Certificado (PFX)</Label></p>
         <input
           type="file"
           accept=".pfx"
@@ -102,7 +97,7 @@ export default function CertificadosForm() {
           }}
         />
 
-        {file && <p style={{ fontSize: 12 }}>Arquivo: {file.name}</p>}
+        {file && <p style={{fontSize: 12 }}>Arquivo: {file.name}</p>}
 
         {/* Senha */}
         <label style={{ marginTop: 15 }}>Senha (se houver)</label>

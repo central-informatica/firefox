@@ -1,24 +1,16 @@
-//import { useEffect, useState } from "react";
-//import { useNavigate } from "react-router-dom";
-//import { listarCertificadosPaginado } from "../../services/certificadosService";
-//import { getEmpresasDoUsuario } from "../../services/empresasService";
-//import { useAuth } from "../../auth/useAuth";
-//import Select from "../../components/Select/Select" //"react-select";
-//import DataTable from "../../components/Tables/DataTable";
-//import ButtonExcluir from "../../components/Button/ButtonExcluir"
-
-// -------------
-
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/useAuth";
+import { getEmpresasDoUsuario } from "../../services/empresasService";
+import {
+  listarCertificadosPaginado,
+  excluir_certificado,
+} from "../../services/certificadosService";
+import { toast } from "react-toastify";
 
 import SelectCustom from "../../components/Select/Select";
 import DataTable from "../../components/Tables/DataTable";
-
-import { useAuth } from "../../auth/useAuth";
-import { getEmpresasDoUsuario } from "../../services/empresasService";
-import { listarCertificadosPaginado } from "../../services/certificadosService";
+import ButtonExluir from "../../components/Button/ButtonExcluir";
 
 export default function CertificadosList() {
   const navigate = useNavigate();
@@ -26,6 +18,9 @@ export default function CertificadosList() {
 
   const [empresasDoUsuario, setEmpresasDoUsuario] = useState([]);
   const [empresaFiltro, setEmpresaFiltro] = useState(null);
+
+  // 🔄 força o DataTable a recarregar após exclusão
+  const [reloadKey, setReloadKey] = useState(0);
 
   // -----------------------------
   // Carrega empresas do usuário
@@ -42,7 +37,7 @@ export default function CertificadosList() {
       setEmpresasDoUsuario(opcoes);
 
       // Seleciona automaticamente a primeira empresa
-      if (!empresaFiltro && opcoes.length > 0) {
+      if (opcoes.length > 0) {
         setEmpresaFiltro(opcoes[0]);
       }
     });
@@ -75,17 +70,29 @@ export default function CertificadosList() {
     {
       header: "Ações",
       cell: ({ row }) => (
-        <button
-          className="btn btn-danger"
-          onClick={() => navigate(`/certificados/excluir/${row.original.id}`)}
+        <ButtonExluir
+          onClick={async () => {
+            if (!confirm("Deseja excluir este certificado?")) return;
+
+            try {
+              await excluir_certificado(row.original.id);
+              toast.success("Certificado excluído com sucesso!");
+
+              // 🔥 força o DataTable a recarregar
+              setReloadKey((old) => old + 1);
+            } catch (err) {
+              console.error(err);
+              toast.error("Erro ao excluir certificado.");
+            }
+          }}
         >
           Excluir
-        </button>
+        </ButtonExluir>
       ),
     },
   ];
 
-  // Função que será passada para o DataTable
+  // Função passada para o DataTable
   const fetchCertificados = ({ page, limit, search, sort }) => {
     return listarCertificadosPaginado({
       empresa_id: empresaFiltro?.value,
@@ -117,13 +124,10 @@ export default function CertificadosList() {
         + Novo Certificado
       </button>
 
-      {/* 
-        IMPORTANTE:
-        key={empresaFiltro?.value} força o DataTable a recarregar quando trocar empresa
-      */}
+      {/* Recarrega ao trocar empresa ou ao excluir */}
       {empresaFiltro && (
         <DataTable
-          key={empresaFiltro.value}
+          key={empresaFiltro.value + "-" + reloadKey} // 👈 recarrega tabela
           columns={columns}
           fetchData={fetchCertificados}
           limit={10}

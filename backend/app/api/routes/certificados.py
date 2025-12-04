@@ -221,6 +221,12 @@ def excluir_certificado(
     acesso=Depends(validar_token),
     db: Session = Depends(get_db),
 ):
+    """
+    Remove um certificado do banco. (Opcional: remove o arquivo físico)
+    Garante que o certificado pertence ao usuário logado.
+    """
+    id_usuario = acesso.id_usuario
+
     cert = db.query(Certificados).filter(
         Certificados.certificado_id == certificado_id
     ).first()
@@ -228,10 +234,28 @@ def excluir_certificado(
     if not cert:
         raise HTTPException(status_code=404, detail="Certificado não encontrado")
 
+    # Verifica permissão — só quem criou pode excluir
+    if cert.criado_por != id_usuario:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para excluir este certificado."
+        )
+
+    # (Opcional) Remover arquivo físico caso exista
+    # NOTA: muitos sistemas NÃO apagam o PFX físico, pois o certificado fica criptografado em banco.
+    file_path = os.path.join("storage/pfx", cert.nome_arquivo)
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception:
+            pass  # não impede a exclusão no banco
+
+    # Remove do banco
     db.delete(cert)
     db.commit()
 
-    return {"success": True}
+    return {"success": True, "message": "Certificado excluído com sucesso."}
+
 
 
 @router.get("/api/certificates")

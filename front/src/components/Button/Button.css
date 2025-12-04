@@ -9,7 +9,7 @@
 }
 
 .btn-excluir{
-  background-color: brown;
+  background-color: brown !important;
 }
 
 .btn:hover {
