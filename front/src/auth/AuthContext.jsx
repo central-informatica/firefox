@@ -1,13 +1,15 @@
 import { createContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api/api";
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // carrega usuário logado ao iniciar o app
+  // Carrega usuário ativo da sessão
   async function loadUser() {
     try {
       const res = await apiFetch("/auth/me");
@@ -16,7 +18,6 @@ export function AuthProvider({ children }) {
         const data = await res.json();
         setUser(data);
       } else {
-        // 401 aqui é normal se não estiver logado
         setUser(null);
       }
     } catch (err) {
@@ -43,12 +44,15 @@ export function AuthProvider({ children }) {
       throw new Error("Login inválido");
     }
 
+    // opcional: backend retorna dados completos do usuário
     const data = await response.json();
     setUser(data);
+
+    navigate("/"); // redireciona após login
   }
 
-  // REGISTER (cadastro de usuário)
- async function register({ nome, email, senha, telefone }) {
+  // REGISTER
+  async function register({ nome, email, senha, telefone }) {
     const response = await apiFetch("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -64,12 +68,9 @@ export function AuthProvider({ children }) {
         if (typeof data.detail === "string") {
           msg = data.detail;
         } else if (Array.isArray(data.detail) && data.detail.length > 0) {
-          // Erro de validação Pydantic
           msg = data.detail[0].msg || msg;
         }
-      } catch {
-        // ignore erro ao ler json
-      }
+      } catch {}
 
       throw new Error(msg);
     }
@@ -84,7 +85,9 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.error("Erro ao fazer logout:", err);
     }
+
     setUser(null);
+    navigate("/login"); // ✔ redireciona
   }
 
   return (

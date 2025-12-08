@@ -13,4 +13,14 @@ def get_empresas_do_usuario(user_id: int, db: Session = Depends(get_db)):
         .filter(EmpresaMembros.usuario_id == user_id)
         .all()
     )
-    return empresas
+
+    return [
+        {
+            "empresa_id": e.empresa_id,
+            "razao_social": e.razao_social,
+            "fantasia": e.fantasia,
+            "cnpj": e.cnpj,
+            "timezone": e.timezone,
+        }
+        for e in empresas
+    ]

@@ -10,10 +10,11 @@ import { useAuth } from "../../auth/useAuth";
 export default function Sidebar() {
   const [active, setActive] = useState("dashboard");
   const [open, setOpen] = useState(false);
-  const [openSub, setOpenSub] = useState(null); // controla qual submenu está aberto
+  const [openSub, setOpenSub] = useState(null);
   const navigate = useNavigate();
-  const { user } = useAuth() || {}; // ← usuário real do sistema
-  const auth = useAuth();
+
+  // pegando tudo que precisamos do AuthContext
+  const { user, logout } = useAuth();
   
 
   // ---- CONFIG DO MENU ----
@@ -127,6 +128,7 @@ export default function Sidebar() {
           <div>
             <div className="user-name">{user?.nome || "Usuário"}</div>
             <div className="user-email">{user?.email || "email@example.com"}</div>
+            <button onClick={logout} style={{marginLeft: "auto" }}>Sair</button>
           </div>
         </div>
       </aside>
