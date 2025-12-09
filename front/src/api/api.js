@@ -32,10 +32,10 @@ export async function apiFetch(path, options = {}) {
   const csrf = getCookie("csrf_token") || "";
 
   const response = await fetch(API_URL + path, {
-    credentials: "include",
+    // credentials: "include",
     ...options,
     headers: {
-      "X-CSRF-Token": csrf,
+      // "X-CSRF-Token": csrf,
       ...(options.headers || {}),
     },
   });

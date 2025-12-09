@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import Input from "../../components/Input/Input";
 import Button from "../../components/Button/Button";
-import "../../components/Forms/Forms.css";
 
 import {
   createUsuario,
@@ -49,39 +48,35 @@ const UsuarioForm = () => {
   };
 
   return (
-    <div className="page-form">
-      <h1 className="titulo">
+    <div className="max-w-[700px] mx-auto my-10 mb-6 bg-white py-5 px-6 rounded-xl border border-gray-200 shadow-sm">
+      <h1 className="mt-0 mb-4 text-2xl font-bold text-gray-800">
         {isEdit ? "Editar Usuário" : "Novo Usuário"}
       </h1>
 
       <form onSubmit={handleSubmit}>
-        <div className="form-group" style={{ marginBottom: "10px" }}>
-          <Input
-            name="nome"
-            placeholder="Nome"
-            value={form.nome}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        <Input
+          name="nome"
+          placeholder="Nome"
+          value={form.nome}
+          onChange={handleChange}
+          required
+        />
 
-        <div className="form-group" style={{ marginBottom: "10px" }}>
-          <Input
-            name="email"
-            placeholder="Email"
-            type="email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        <Input
+          name="email"
+          placeholder="Email"
+          type="email"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
 
-        <div className="form-group" style={{ marginBottom: "16px" }}>
+        <div className="mb-4">
           <select
             name="nivel"
             value={form.nivel}
             onChange={handleChange}
-            className="select"
+            className="p-2.5 border border-gray-300 rounded-md text-[15px] text-black bg-[#fcfcfa] w-full box-border focus:border-primary focus:outline-none focus:bg-[#e9f7f8]"
           >
             <option value="ADMINISTRADOR">ADMINISTRADOR</option>
             <option value="COMUM">COMUM</option>
