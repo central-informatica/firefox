@@ -34,7 +34,6 @@ export default function Cadastro({ onVoltar }) {
       await register({ nome, email, senha, telefone });
       toast.success("Cadastro realizado com sucesso!");
 
-      // volta para o login sem React Router
       if (onVoltar) onVoltar();
     } catch (err) {
       console.error(err);

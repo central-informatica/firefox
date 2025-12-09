@@ -32,7 +32,6 @@ const Dashboard = ({ onSubmit }) => {
     formData.append("arquivo", file);
     formData.append("senha", password);
 
-    // PEGAR CSRF DO COOKIE
     const csrf = document.cookie
       .split("; ")
       .find((row) => row.startsWith("csrf_token="))

@@ -3,8 +3,7 @@ from typing import Optional
 
 class SignRequest(BaseModel):
     cert_id: str
-    data: str  # digest (hash) em base64
-
+    data: str 
 
 
 class CertificadoBase(BaseModel):

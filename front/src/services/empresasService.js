@@ -1,4 +1,3 @@
-// services/empresasService.js
 
 let empresas = [
   {
@@ -15,7 +14,6 @@ let empresas = [
   },
 ];
 
-// Lista
 export function getEmpresas() {
   return Promise.resolve(empresas);
 }
@@ -28,7 +26,6 @@ export async function getEmpresasDoUsuario(userId) {
   return await res.json();
 }
 
-// Busca por ID
 export function getEmpresa(id) {
   const empresa = empresas.find((e) => e.id === Number(id));
   return Promise.resolve(empresa);
@@ -44,7 +41,6 @@ export function listarEmpresasPaginado({
 
   let lista = [...empresas];
 
-  // Busca global (nome ou cnpj)
   if (search && search.trim() !== "") {
     const termo = search.toLowerCase();
     lista = lista.filter(
@@ -54,7 +50,6 @@ export function listarEmpresasPaginado({
     );
   }
 
-  // Ordenação: ex "nome.asc" ou "cnpj.desc"
   if (sort) {
     const [campo, direcao] = sort.split(".");
     lista.sort((a, b) => {
@@ -76,15 +71,12 @@ export function listarEmpresasPaginado({
   });
 }
 
-
-// Criar
 export function createEmpresa(data) {
   const nova = { id: Date.now(), ...data };
   empresas.push(nova);
   return Promise.resolve(nova);
 }
 
-// Atualizar
 export function updateEmpresa(id, data) {
   empresas = empresas.map((e) =>
     e.id === Number(id) ? { ...e, ...data } : e

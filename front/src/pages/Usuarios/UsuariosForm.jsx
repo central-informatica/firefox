@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import Input from "../../components/Input/Input";
 import Button from "../../components/Button/Button";
-import "../../components/Forms/Forms.css"; // importa o estilo dos forms
+import "../../components/Forms/Forms.css";
 
 import {
   createUsuario,

@@ -1,9 +1,5 @@
-// certificadosService.js
 import { apiFetch } from "../api/api";
 
-// -------------------------
-// LISTAGEM PAGINADA
-// -------------------------
 export async function listarCertificadosPaginado({
   empresa_id,
   page = 1,
@@ -30,9 +26,6 @@ export async function listarCertificadosPaginado({
   return res.json();
 }
 
-// -------------------------
-// BUSCAR POR ID
-// -------------------------
 export async function getCertificado(id) {
   const res = await apiFetch(`/certificados/${id}`, {
     method: "GET",
@@ -45,9 +38,6 @@ export async function getCertificado(id) {
   return res.json();
 }
 
-// -------------------------
-// CRIAR (UPLOAD DO PFX)
-// -------------------------
 export async function createCertificado(formData) {
   const res = await apiFetch(`/certificados`, {
     method: "POST",
@@ -61,10 +51,6 @@ export async function createCertificado(formData) {
   return res.json();
 }
 
-// -------------------------
-// EXCLUIR
-// -------------------------
-// EXCLUI UM CERTIFICADO
 export async function excluir_certificado(id) {
   const res = await apiFetch(`/certificados/${id}`, {
     method: "DELETE",

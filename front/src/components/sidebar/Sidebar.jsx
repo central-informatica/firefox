@@ -10,13 +10,11 @@ import { useAuth } from "../../auth/useAuth";
 export default function Sidebar() {
   const [active, setActive] = useState("dashboard");
   const [open, setOpen] = useState(false);
-  const [openSub, setOpenSub] = useState(null); // controla qual submenu está aberto
+  const [openSub, setOpenSub] = useState(null);
   const navigate = useNavigate();
-  const { user } = useAuth() || {}; // ← usuário real do sistema
+  const { user } = useAuth() || {}; 
   const auth = useAuth();
   
-
-  // ---- CONFIG DO MENU ----
   const menu = [
     { id: "dashboard", label: "Dashboard", icon: <FiGrid />, path: "/dashboard" },
 

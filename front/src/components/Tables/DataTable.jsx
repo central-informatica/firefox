@@ -6,7 +6,7 @@ import {
 
 import { ChevronLeft, ChevronRight, ArrowUpDown, Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import "./DataTable.css"; // CSS novo e exclusivo
+import "./DataTable.css";
 
 export default function DataTable({ columns, fetchData, limit = 10 }) {
   const [data, setData] = useState([]);

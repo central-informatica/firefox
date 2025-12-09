@@ -19,12 +19,8 @@ export default function CertificadosList() {
   const [empresasDoUsuario, setEmpresasDoUsuario] = useState([]);
   const [empresaFiltro, setEmpresaFiltro] = useState(null);
 
-  // 🔄 força o DataTable a recarregar após exclusão
   const [reloadKey, setReloadKey] = useState(0);
 
-  // -----------------------------
-  // Carrega empresas do usuário
-  // -----------------------------
   useEffect(() => {
     if (!user) return;
 
@@ -36,16 +32,12 @@ export default function CertificadosList() {
 
       setEmpresasDoUsuario(opcoes);
 
-      // Seleciona automaticamente a primeira empresa
       if (opcoes.length > 0) {
         setEmpresaFiltro(opcoes[0]);
       }
     });
   }, [user]);
 
-  // -----------------------------
-  // Tabela de certificados
-  // -----------------------------
   const columns = [
     { header: "Criado por", accessorKey: "criado_por_nome" },
     { header: "Nome do arquivo", accessorKey: "nome_arquivo" },
@@ -78,7 +70,6 @@ export default function CertificadosList() {
               await excluir_certificado(row.original.id);
               toast.success("Certificado excluído com sucesso!");
 
-              // 🔥 força o DataTable a recarregar
               setReloadKey((old) => old + 1);
             } catch (err) {
               console.error(err);
@@ -92,7 +83,6 @@ export default function CertificadosList() {
     },
   ];
 
-  // Função passada para o DataTable
   const fetchCertificados = ({ page, limit, search, sort }) => {
     return listarCertificadosPaginado({
       empresa_id: empresaFiltro?.value,

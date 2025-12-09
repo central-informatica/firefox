@@ -7,7 +7,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // carrega usuário logado ao iniciar o app
   async function loadUser() {
     try {
       const res = await apiFetch("/auth/me");
@@ -16,7 +15,6 @@ export function AuthProvider({ children }) {
         const data = await res.json();
         setUser(data);
       } else {
-        // 401 aqui é normal se não estiver logado
         setUser(null);
       }
     } catch (err) {
@@ -31,7 +29,6 @@ export function AuthProvider({ children }) {
     loadUser();
   }, []);
 
-  // LOGIN
   async function login(email, senha) {
     const response = await apiFetch("/auth/login", {
       method: "POST",
@@ -47,7 +44,6 @@ export function AuthProvider({ children }) {
     setUser(data);
   }
 
-  // REGISTER (cadastro de usuário)
  async function register({ nome, email, senha, telefone }) {
     const response = await apiFetch("/auth/register", {
       method: "POST",
@@ -64,11 +60,9 @@ export function AuthProvider({ children }) {
         if (typeof data.detail === "string") {
           msg = data.detail;
         } else if (Array.isArray(data.detail) && data.detail.length > 0) {
-          // Erro de validação Pydantic
           msg = data.detail[0].msg || msg;
         }
       } catch {
-        // ignore erro ao ler json
       }
 
       throw new Error(msg);
@@ -77,7 +71,6 @@ export function AuthProvider({ children }) {
     return response.json();
   }
 
-  // LOGOUT
   async function logout() {
     try {
       await apiFetch("/auth/logout", { method: "POST" });

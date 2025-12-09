@@ -16,17 +16,17 @@ class Usuarios(Base):
         PrimaryKeyConstraint('usuario_id', name='usuarios_pkey'),
         UniqueConstraint('email', name='usuarios_email_key'),
         Index('idx_usuarios_email', 'email'),
-        {'comment': 'Cadastro geral de usu▀rios da plataforma.'}
+        {'comment': 'Cadastro geral de usuarios da plataforma.'}
     )
 
     usuario_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    nome: Mapped[str] = mapped_column(String(80), nullable=False, comment='Nome completo do usu▀rio.')
+    nome: Mapped[str] = mapped_column(String(80), nullable=False, comment='Nome completo do usuario.')
     email: Mapped[str] = mapped_column(String(150), nullable=False, comment='E-mail utilizado para login na plataforma.')
     senha_hash: Mapped[str] = mapped_column(Text, nullable=False)
     email_verificado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
     atualizado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
-    nivel: Mapped[str] = mapped_column(Enum('ADMINISTRADOR', 'COMUM', name='usuario_nivel'), nullable=False, server_default=text("'COMUM'::usuario_nivel"), comment='NÝvel global do usußrio na plataforma SaaS. ADMINISTRADOR = acesso total ao sistema. COMUM = usußrio padrÒo.')
+    nivel: Mapped[str] = mapped_column(Enum('ADMINISTRADOR', 'COMUM', name='usuario_nivel'), nullable=False, server_default=text("'COMUM'::usuario_nivel"), comment='Nivel global do usuario na plataforma SaaS. ADMINISTRADOR = acesso total ao sistema. COMUM = usuario padrao.')
     telefone: Mapped[Optional[str]] = mapped_column(String(40))
 
     acesso: Mapped[list['Acesso']] = relationship('Acesso', back_populates='usuarios')
@@ -66,10 +66,10 @@ class Empresas(Base):
     )
 
     empresa_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    razao_social: Mapped[str] = mapped_column(String(120), nullable=False, comment='RazÊo social da empresa.')
-    cnpj: Mapped[str] = mapped_column(String(14), nullable=False, comment='CNPJ da empresa, sem formata■Êo.')
-    anfitria_usuario_id: Mapped[int] = mapped_column(BigInteger, nullable=False, comment='Usu▀rio que criou a empresa (anfitriÊo/superadmin).')
-    timezone: Mapped[str] = mapped_column(String(50), nullable=False, server_default=text("'America/Sao_Paulo'::character varying"), comment='Fuso hor▀rio da empresa no padrÊo IANA (ex: America/Sao_Paulo).')
+    razao_social: Mapped[str] = mapped_column(String(120), nullable=False, comment='Razao social da empresa.')
+    cnpj: Mapped[str] = mapped_column(String(14), nullable=False, comment='CNPJ da empresa, sem formatacao.')
+    anfitria_usuario_id: Mapped[int] = mapped_column(BigInteger, nullable=False, comment='Usuario que criou a empresa (anfitriao/superadmin).')
+    timezone: Mapped[str] = mapped_column(String(50), nullable=False, server_default=text("'America/Sao_Paulo'::character varying"), comment='Fuso horario da empresa no padrao IANA (ex: America/Sao_Paulo).')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
     fantasia: Mapped[Optional[str]] = mapped_column(String(120), comment='Nome fantasia da empresa.')
 
@@ -104,9 +104,9 @@ class Certificados(Base):
     encrypted: Mapped[str] = mapped_column(Text, nullable=False, comment='Dados do certificado em formato criptografado.')
     secret: Mapped[str] = mapped_column(Text, nullable=False, comment='Frase secreta ou chave auxiliar usada na criptografia.')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
-    proprietario: Mapped[Optional[str]] = mapped_column(String, comment='Proprietßrio do certificado')
+    proprietario: Mapped[Optional[str]] = mapped_column(String, comment='Proprietario do certificado')
     emitido_por: Mapped[Optional[str]] = mapped_column(String, comment='Nome da entidade emissora do certificado')
-    validade_inicio: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), comment='Data de inÝcio da validade')
+    validade_inicio: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), comment='Data de inicio da validade')
     valido_ate: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), comment='Data do fim da validade')
 
     usuarios: Mapped['Usuarios'] = relationship('Usuarios', back_populates='certificados')
@@ -146,13 +146,13 @@ class EmpresaMembros(Base):
         UniqueConstraint('empresa_id', 'usuario_id', name='empresa_membros_unq'),
         Index('idx_emp_membros_emp', 'empresa_id'),
         Index('idx_emp_membros_user', 'usuario_id'),
-        {'comment': 'Relaciona usu▀rios Ës empresas, com o papel de cada um.'}
+        {'comment': 'Relaciona usuarios e empresas, com o papel de cada um.'}
     )
 
     membro_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     empresa_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     usuario_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    papel: Mapped[str] = mapped_column(Enum('ADMINISTRADOR', 'COMUM', name='usuario_nivel'), nullable=False, server_default=text("'COMUM'::usuario_nivel"), comment='Papel do usu▀rio na empresa (superadmin, admin, user, etc.).')
+    papel: Mapped[str] = mapped_column(Enum('ADMINISTRADOR', 'COMUM', name='usuario_nivel'), nullable=False, server_default=text("'COMUM'::usuario_nivel"), comment='Papel do usuario na empresa (superadmin, admin, user, etc.).')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
 
     empresa: Mapped['Empresas'] = relationship('Empresas', back_populates='empresa_membros')
@@ -190,7 +190,7 @@ class PlanosTrabalho(Base):
 
     plano_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     empresa_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    nome: Mapped[str] = mapped_column(String(100), nullable=False, comment='Nome do plano de trabalho (deve ser Ànico dentro da empresa).')
+    nome: Mapped[str] = mapped_column(String(100), nullable=False, comment='Nome do plano de trabalho (deve ser unico dentro da empresa).')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
     descricao: Mapped[Optional[str]] = mapped_column(Text)
 
@@ -207,14 +207,14 @@ class Grupos(Base):
         UniqueConstraint('empresa_id', 'nome', name='grupos_unq'),
         Index('idx_grupos_emp', 'empresa_id'),
         Index('idx_grupos_plano', 'plano_id'),
-        {'comment': 'Grupos de usu▀rios pertencentes a planos de trabalho de uma '
+        {'comment': 'Grupos de usuarios pertencentes a planos de trabalho de uma '
                 'empresa.'}
     )
 
     grupo_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     empresa_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     plano_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    nome: Mapped[str] = mapped_column(String(100), nullable=False, comment='Nome do grupo (Ànico dentro da empresa).')
+    nome: Mapped[str] = mapped_column(String(100), nullable=False, comment='Nome do grupo (unico dentro da empresa).')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
 
     empresa: Mapped['Empresas'] = relationship('Empresas', back_populates='grupos')
@@ -236,7 +236,7 @@ class GruposCertificados(Base):
         Index('idx_g_cert_cert', 'certificado_id'),
         Index('idx_g_cert_emp', 'empresa_id'),
         Index('idx_g_cert_grupo', 'grupo_id'),
-        {'comment': 'Rela■Êo de quais certificados cada grupo pode acessar.'}
+        {'comment': 'Relacao de quais certificados cada grupo pode acessar.'}
     )
 
     grupo_cert_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -260,7 +260,7 @@ class GruposUsuarios(Base):
         Index('idx_g_usuarios_emp', 'empresa_id'),
         Index('idx_g_usuarios_grupo', 'grupo_id'),
         Index('idx_g_usuarios_user', 'usuario_id'),
-        {'comment': 'Rela■Êo entre usu▀rios e grupos, dentro de uma empresa.'}
+        {'comment': 'Relacao entre usuarios e grupos, dentro de uma empresa.'}
     )
 
     grupo_usuario_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -283,14 +283,14 @@ class RegrasAcesso(Base):
         Index('idx_regras_acesso_hosts_grupo', 'grupo_id'),
         Index('idx_regras_emp', 'empresa_id'),
         Index('idx_regras_grupo', 'grupo_id'),
-        {'comment': 'Regras de dias e hor▀rios permitidos para grupos de uma empresa.'}
+        {'comment': 'Regras de dias e horarios permitidos para grupos de uma empresa.'}
     )
 
     regra_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     empresa_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     grupo_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     tipo_dia: Mapped[str] = mapped_column(String(20), nullable=False, comment='Tipo de regra: corridos, uteis ou especificos.')
-    horarios: Mapped[dict] = mapped_column(JSONB, nullable=False, comment='Lista de janelas de hor▀rio em JSON (inicio/fim no formato HH:MI).')
+    horarios: Mapped[dict] = mapped_column(JSONB, nullable=False, comment='Lista de janelas de horario em JSON (inicio/fim no formato HH:MI).')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
     dias_especificos: Mapped[Optional[list[int]]] = mapped_column(ARRAY(Integer()), comment='Lista de dias (ex: 1=segunda ... 7=domingo) quando tipo_dia = especificos.')
 

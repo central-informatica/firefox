@@ -7,14 +7,14 @@ from logging.config import fileConfig
 from backend.app.db.session import engine
 from backend.app.db.base import Base
 
-# Configurações do Alembic (não alterar)
+
 config = context.config
 
-# Permite logging do alembic.ini
+
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Metadados usados pelo autogenerate
+
 target_metadata = Base.metadata
 
 
@@ -54,7 +54,7 @@ def run_migrations_online() -> None:
             context.run_migrations()
 
 
-# Seleciona offline ou online automaticamente
+
 if context.is_offline_mode():
     run_migrations_offline()
 else:

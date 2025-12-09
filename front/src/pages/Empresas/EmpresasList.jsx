@@ -1,4 +1,4 @@
-// pages/Empresas/EmpresasList.jsx
+
 import { useNavigate } from "react-router-dom";
 import { listarEmpresasPaginado } from "../../services/empresasService";
 import { Link } from "react-router-dom";
@@ -35,7 +35,6 @@ const EmpresasList = () => {
     },
   ];
 
-  // função que o DataTable vai chamar para buscar dados paginados
   const fetchEmpresas = ({ page, limit, search, sort }) => {
     return listarEmpresasPaginado({ page, limit, search, sort });
   };
