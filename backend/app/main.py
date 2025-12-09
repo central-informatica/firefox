@@ -5,6 +5,7 @@ from backend.app.core.config import FRONTEND_ORIGINS
 from backend.app.api.routes.auth import router as auth_router
 from backend.app.api.routes.certificados import router as cert_router
 from backend.app.api.routes.usuarios import router as user_router
+from backend.app.api.routes.empresas import router as empresas_router
 
 
 app = FastAPI(title="Certificado Protegido")
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(cert_router)
 app.include_router(user_router)
+app.include_router(empresas_router)
 
 
 @app.get("/")

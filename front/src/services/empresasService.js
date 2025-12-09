@@ -18,46 +18,22 @@ export function getEmpresa(id) {
   return Promise.resolve(empresa);
 }
 
-export function listarEmpresasPaginado({
-  page = 1,
-  limit = 10,
-  search = "",
-  sort = "",
-}) {
-  console.log("🔍 listarEmpresasPaginado()", { page, limit, search, sort });
+// Empresas paginado
+export async function listarEmpresasPaginado({ page = 1, limit = 10, search = "", sort = "" }) {
+  const params = new URLSearchParams();
 
-  let lista = [...empresas];
+  params.append("page", page);
+  params.append("limit", limit);
+  params.append("search", search);
+  params.append("sort", sort);
 
-  // Busca global (nome ou cnpj)
-  if (search && search.trim() !== "") {
-    const termo = search.toLowerCase();
-    lista = lista.filter(
-      (e) =>
-        e.nome.toLowerCase().includes(termo) ||
-        e.cnpj.toLowerCase().includes(termo)
-    );
-  }
-
-  // Ordenação: ex "nome.asc" ou "cnpj.desc"
-  if (sort) {
-    const [campo, direcao] = sort.split(".");
-    lista.sort((a, b) => {
-      if (a[campo] < b[campo]) return direcao === "asc" ? -1 : 1;
-      if (a[campo] > b[campo]) return direcao === "asc" ? 1 : -1;
-      return 0;
-    });
-  }
-
-  const total = lista.length;
-
-  const inicio = (page - 1) * limit;
-  const fim = inicio + limit;
-  const paginadas = lista.slice(inicio, fim);
-
-  return Promise.resolve({
-    data: paginadas,
-    total,
+  const res = await fetch(`http://127.0.0.1:8000/empresas?${params.toString()}`, {
+    credentials: "include",
   });
+
+  if (!res.ok) throw new Error("Erro ao carregar empresas");
+
+  return await res.json(); // deve retornar { data: [...], total: X }
 }
 
 
