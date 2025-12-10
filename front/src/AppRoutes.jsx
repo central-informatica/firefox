@@ -8,6 +8,7 @@ import CertificadosList from "./pages/Certificados/CertificadosList"
 import CertificadosForm from "./pages/Certificados/CertificadosForm"
 import PlanosList from "./pages/PlanosTrabalho/PlanosTrabalhoList"
 import PlanosForm from "./pages/PlanosTrabalho/PlanosTrabalhoForm"
+import GerenciarAssociacoes from "./pages/PlanosTrabalho/GerenciarAssociacoes"
 
 
 export default function AppRoutes() {
@@ -34,6 +35,7 @@ export default function AppRoutes() {
       <Route path="/planos" element={<PlanosList />} />
       <Route path="/planos/novo" element={<PlanosForm />} />
       <Route path="/planos/editar/:id" element={<PlanosForm />} />
+      <Route path="/planos/associacoes" element={<GerenciarAssociacoes />} />
 
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>

@@ -27,7 +27,8 @@ const menuConfig = [
     icon: <FiFlag />,
     children: [
       { id: "planos-lista", label: "Listar planos", path: "/planos" },
-      { id: "planos-novo", label: "Novo plano", path: "/planos/novo" }
+      { id: "planos-novo", label: "Novo plano", path: "/planos/novo" },
+      { id: "planos-associacoes", label: "Gerenciar associações", path: "/planos/associacoes" }
     ]
   },
 

@@ -65,3 +65,30 @@ export async function excluir_certificado(id) {
   return res.json();
 }
 
+// Mock data para testes de associação
+const certificadosMock = [
+  {
+    id: 1,
+    nome_arquivo: "certificado_empresa.pfx",
+    proprietario: "Empresa XYZ LTDA",
+    valido_ate: "2026-12-31",
+  },
+  {
+    id: 2,
+    nome_arquivo: "certificado_comercial.pfx",
+    proprietario: "Sistema Comercial",
+    valido_ate: "2025-06-30",
+  },
+  {
+    id: 3,
+    nome_arquivo: "certificado_fiscal.pfx",
+    proprietario: "Sistema Fiscal",
+    valido_ate: "2026-03-15",
+  },
+];
+
+// Listar todos os certificados (mock)
+export function getCertificadosSimples() {
+  return Promise.resolve(certificadosMock);
+}
+

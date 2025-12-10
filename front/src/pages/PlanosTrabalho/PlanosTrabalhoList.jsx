@@ -73,13 +73,22 @@ const PlanosTrabalhoList = () => {
           <p className="text-gray-600">Organize e gerencie os planos de trabalho da empresa</p>
         </div>
 
-        <button
-          onClick={() => navigate("/planos/novo")}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-        >
-          <FiPlus size={20} />
-          Novo Plano de Trabalho
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/planos/associacoes")}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+          >
+            <FiUsers size={20} />
+            Gerenciar Associações
+          </button>
+          <button
+            onClick={() => navigate("/planos/novo")}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+          >
+            <FiPlus size={20} />
+            Novo Plano de Trabalho
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
