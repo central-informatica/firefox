@@ -15,17 +15,17 @@ const defaultStyles = {
 
   menu: (base) => ({
     ...base,
-    zIndex: 9999, // evita ficar atrás do menu lateral
+    zIndex: 9999, 
     borderRadius: 8,
   }),
 
   option: (base, state) => ({
     ...base,
-    color: "black",  // cor da fonte
+    color: "black",  
     backgroundColor: state.isSelected
-      ? "#e0e7ff"     // fundo quando selecionado
+      ? "#e0e7ff"    
       : state.isFocused
-      ? "#f3f4f6"     // fundo no hover
+      ? "#f3f4f6"    
       : "white",
     ":active": {
       backgroundColor: "#dbeafe",
@@ -34,14 +34,14 @@ const defaultStyles = {
 
   singleValue: (base) => ({
     ...base,
-    color: "black", // texto do item selecionado
+    color: "black", 
   }),
 };
 
 export default function SelectCustom({ styles = {}, ...props }) {
   const mergedStyles = {
     ...defaultStyles,
-    ...styles, // permite sobrescrever valores
+    ...styles, 
   };
 
   return <Select {...props} styles={mergedStyles} />;

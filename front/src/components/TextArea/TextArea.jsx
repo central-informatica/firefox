@@ -1,13 +1,13 @@
 import React from "react";
-import "../Input/Input.css";
 
 export default function TextArea({ label, className, ...props }) {
-  const finalClass = ["input", className].filter(Boolean).join(" ");
+  const baseClass = "p-2.5 border border-gray-300 rounded-md text-[15px] text-black bg-[#fcfcfa] w-full box-border focus:border-primary focus:outline-none focus:bg-[#e9f7f8]";
+  const finalClass = [baseClass, className].filter(Boolean).join(" ");
 
   return (
-    <div className="input-group">
-      {label && <label className="input-label">{label}</label>}
-      <input className={finalClass} {...props} />
+    <div className="mb-[15px] flex flex-col w-full">
+      {label && <label className="mb-2 text-sm font-medium text-gray-700">{label}</label>}
+      <textarea className={finalClass} {...props} />
     </div>
   );
 }

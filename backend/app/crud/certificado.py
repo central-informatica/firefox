@@ -37,7 +37,6 @@ def listar_certificados(db: Session, empresa_id: int, page: int, limit: int, sea
         termo = f"%{search.lower()}%"
         query = query.filter(Certificados.nome_arquivo.ilike(termo))
 
-    # Ordenação
     if sort:
         campo, ordem = sort.split(".")
         col = getattr(Certificados, campo)

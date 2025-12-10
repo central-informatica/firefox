@@ -6,7 +6,7 @@ let usuarios = [
     telefone: "(69) 98422-6006",
     email_verificado: true,
     atualizado_em: "2025-11-28",
-    nivel: 1
+    nivel: "ADMINISTRADOR"
   },
   {
     id: 2,
@@ -15,7 +15,7 @@ let usuarios = [
     telefone: "(69) 98422-3421",
     email_verificado: true,
     atualizado_em: "2025-11-29",
-    nivel: 2
+    nivel: "COMUM"
   },
 ];
 

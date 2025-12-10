@@ -6,7 +6,6 @@ import {
 
 import { ChevronLeft, ChevronRight, ArrowUpDown, Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import "./DataTable.css"; // CSS novo e exclusivo
 
 export default function DataTable({ columns, fetchData, limit = 10 }) {
   const [data, setData] = useState([]);
@@ -55,10 +54,10 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
   }
 
   return (
-    <div className="dt-wrapper">
+    <div className="mt-5 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
       {/* Busca */}
-      <div className="dt-search-box">
-        <Search size={18} className="dt-search-icon" />
+      <div className="relative mb-3">
+        <Search size={18} className="absolute top-[9px] left-2.5 text-gray-500" />
         <input
           type="text"
           placeholder="Buscar..."
@@ -67,12 +66,12 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
             setSearch(e.target.value);
             setPage(1);
           }}
-          className="dt-search-input"
+          className="w-[280px] py-2 px-3 pl-8 rounded-md border border-gray-300 text-sm bg-white text-black focus:outline-none focus:border-[#3a7afe]"
         />
       </div>
 
       {/* Tabela */}
-      <table className="dt-table">
+      <table className="table-fixed w-full border-collapse mt-2">
         <thead>
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
@@ -81,11 +80,11 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
                 const isCurrentSort = sort.includes(key);
 
                 return (
-                  <th key={header.id}>
+                  <th className="bg-gray-100 p-2.5 text-left font-bold border-b-2 border-gray-300 text-gray-700" key={header.id}>
                     {key ? (
                       <button
-                        className={`dt-sort-btn ${
-                          isCurrentSort ? "dt-sort-active" : ""
+                        className={`bg-transparent border-none font-bold cursor-pointer flex items-center gap-1.5 hover:text-black ${
+                          isCurrentSort ? "text-[#1e64ff]" : "text-gray-700"
                         }`}
                         onClick={() => toggleSort(header.column)}
                       >
@@ -111,27 +110,27 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
         <tbody>
           {loading ? (
             <tr>
-              <td className="dt-empty" colSpan={columns.length}>
+              <td className="text-center py-5 text-gray-500" colSpan={columns.length}>
                 Carregando...
               </td>
             </tr>
           ) : data.length === 0 ? (
             <tr>
-              <td className="dt-empty" colSpan={columns.length}>
+              <td className="text-center py-5 text-gray-500" colSpan={columns.length}>
                 Nenhum registro encontrado
               </td>
             </tr>
           ) : (
             data.map((row, i) => (
-              <tr key={i}>
+              <tr key={i} className="hover:bg-[#f6faff]">
                 {columns.map((col, j) => {
                   const value = col.cell
                     ? col.cell({ row: { original: row } })
                     : row[col.accessorKey];
 
                   return (
-                    <td key={j}>
-                      <span className="dt-cell-truncate" title={value}>
+                    <td className="p-2.5 border-b border-gray-200 text-[#24044b]" key={j}>
+                      <span className="max-w-[180px] inline-block overflow-hidden whitespace-nowrap text-ellipsis align-middle" title={value}>
                         {value}
                       </span>
                     </td>
@@ -144,22 +143,22 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
       </table>
 
       {/* Paginação */}
-      <div className="dt-pagination">
+      <div className="mt-3.5 flex items-center gap-3">
         <button
-          className="dt-page-btn"
+          className="bg-[#1e64ff] text-white border-none py-2 px-3.5 rounded-md cursor-pointer text-sm disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1"
           disabled={page === 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
         >
           <ChevronLeft size={16} /> Anterior
         </button>
 
-        <span className="dt-page-info">
+        <span className="text-sm text-gray-700">
           Página <strong>{page}</strong> de{" "}
           <strong>{Math.ceil(total / limit)}</strong>
         </span>
 
         <button
-          className="dt-page-btn"
+          className="bg-[#1e64ff] text-white border-none py-2 px-3.5 rounded-md cursor-pointer text-sm disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1"
           disabled={page * limit >= total}
           onClick={() => setPage((p) => p + 1)}
         >

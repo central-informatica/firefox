@@ -15,10 +15,6 @@ from backend.app.core.validar_token import validar_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-
-# ----------------------------------------------------------
-# REGISTER
-# ----------------------------------------------------------
 @router.post("/register", response_model=UserOut)
 async def register_user(payload: UserCreate, db: Session = Depends(get_db)):
     existente = (
@@ -99,10 +95,6 @@ async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
 
     return response
 
-
-# ----------------------------------------------------------
-# ME
-# ----------------------------------------------------------
 @router.get("/me", response_model=UserOut)
 async def auth_me(acesso=Depends(validar_token), db: Session = Depends(get_db)):
     usuario = (
@@ -122,9 +114,6 @@ async def auth_me(acesso=Depends(validar_token), db: Session = Depends(get_db)):
     }
     #  "empresa_id": usuario.empresa_id,
 
-# ----------------------------------------------------------
-# LOGOUT
-# ----------------------------------------------------------
 @router.post("/logout")
 async def auth_logout(acesso=Depends(validar_token), db: Session = Depends(get_db)):
     acesso.ativo = False
@@ -135,10 +124,6 @@ async def auth_logout(acesso=Depends(validar_token), db: Session = Depends(get_d
     response.delete_cookie("csrf_token", path="/")
     return response
 
-
-# ----------------------------------------------------------
-# REFRESH
-# ----------------------------------------------------------
 @router.post("/refresh", response_model=UserOut)
 async def refresh_token(acesso=Depends(validar_token), db: Session = Depends(get_db)):
     acesso.ativo = False

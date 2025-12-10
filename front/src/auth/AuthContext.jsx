@@ -32,7 +32,6 @@ export function AuthProvider({ children }) {
     loadUser();
   }, []);
 
-  // LOGIN
   async function login(email, senha) {
     const response = await apiFetch("/auth/login", {
       method: "POST",
@@ -78,7 +77,6 @@ export function AuthProvider({ children }) {
     return response.json();
   }
 
-  // LOGOUT
   async function logout() {
     try {
       await apiFetch("/auth/logout", { method: "POST" });

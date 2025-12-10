@@ -1,4 +1,3 @@
-// src/services/planosTrabalhoService.js
 let planos = [
   { id: 1, nome: "Plano Suporte 24h", descricao: "Atendimento contínuo" },
   { id: 2, nome: "Plano Comercial", descricao: "Horário comercial" },

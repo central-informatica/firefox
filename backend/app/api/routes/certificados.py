@@ -65,16 +65,14 @@ async def upload_certificado(
     """
     Recebe um .pfx, extrai os dados principais, criptografa e grava no banco.
     """
-    # 'acesso' é um objeto Acesso (ORM)
+    
     id_usuario = acesso.id_usuario
 
     if not arquivo.filename.lower().endswith(".pfx"):
         raise HTTPException(status_code=400, detail="Envie um arquivo .pfx válido")
 
-    # lê o PFX inteiro em memória
     pfx_bytes = await arquivo.read()
 
-    # extrai dados do certificado
     try:
         proprietario_auto, emitido_por_auto, validade_inicio_auto, valido_ate_auto = (
             extrair_info_certificado(pfx_bytes, senha)
@@ -85,11 +83,9 @@ async def upload_certificado(
             detail="Não foi possível ler o certificado. Verifique a senha informada.",
         )
 
-    # se o front não mandar estes campos, usa os extraídos
     proprietario_final = proprietario or proprietario_auto
     emitido_por_final = emitido_por or emitido_por_auto
 
-    # datas: se vierem do front (yyyy-mm-dd), converte; senão usa as do certificado
     if validade_inicio:
         validade_inicio_dt = datetime.datetime.fromisoformat(validade_inicio)
     else:
@@ -100,12 +96,11 @@ async def upload_certificado(
     else:
         valido_ate_dt = valido_ate_auto
 
-    # criptografa o PFX e a senha com a MASTER_KEY, usando o helper já existente
     encrypted_pfx = encrypt_pfx(pfx_bytes, MASTER_KEY)
     senha_bytes = senha.encode() if senha is not None else b""
     encrypted_senha = encrypt_pfx(senha_bytes, MASTER_KEY)
 
-    # grava no banco (ORM)
+    
     cert = Certificados(
         empresa_id=empresa_id,
         criado_por=id_usuario,
@@ -150,7 +145,6 @@ def listar_certificados(
 
     total = query.count()
 
-    # ordenação simples: por criado_em desc, ou nome_arquivo asc se sort == "nome"
     if sort == "nome":
         query = query.order_by(Certificados.nome_arquivo.asc())
     else:
@@ -175,7 +169,7 @@ def listar_certificados(
             "validade_inicio": c.validade_inicio.isoformat() if c.validade_inicio else None,
             "valido_ate": c.valido_ate.isoformat() if c.valido_ate else None,
         }
-        # nome do usuário via relacionamento, se carregado
+    
         try:
             item["criado_por_nome"] = c.usuarios.nome
         except Exception:
@@ -234,15 +228,12 @@ def excluir_certificado(
     if not cert:
         raise HTTPException(status_code=404, detail="Certificado não encontrado")
 
-    # Verifica permissão — só quem criou pode excluir
     if cert.criado_por != id_usuario:
         raise HTTPException(
             status_code=403,
             detail="Você não tem permissão para excluir este certificado."
         )
 
-    # (Opcional) Remover arquivo físico caso exista
-    # NOTA: muitos sistemas NÃO apagam o PFX físico, pois o certificado fica criptografado em banco.
     file_path = os.path.join("storage/pfx", cert.nome_arquivo)
     if os.path.exists(file_path):
         try:
@@ -250,13 +241,10 @@ def excluir_certificado(
         except Exception:
             pass  # não impede a exclusão no banco
 
-    # Remove do banco
     db.delete(cert)
     db.commit()
 
     return {"success": True, "message": "Certificado excluído com sucesso."}
-
-
 
 @router.get("/api/certificates")
 async def list_certificates_for_sign(

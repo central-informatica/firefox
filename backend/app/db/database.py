@@ -1,39 +1,27 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import NullPool
+from dotenv import load_dotenv
 import os
 
-# ---------------------------------------------------------------------
-# 1) BUSCAR URL DO BANCO
-# (pode vir do .env ou ser hardcode para teste)
-# ---------------------------------------------------------------------
+load_dotenv()
+
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg2://postgres:postgres@localhost:5432/backend_certificado"
+    "postgresql+psycopg2://postgres:postgres@127.0.0.1:5432/certprot"
+    # "postgresql+psycopg2://postgres:seq098@192.168.10.36:5432/cert-prot"
 )
 
-# ---------------------------------------------------------------------
-# 2) CRIA ENGINE DO POSTGRES
-# ---------------------------------------------------------------------
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
-    poolclass=NullPool   # garante reinicialização limpa no reload
+    poolclass=NullPool   
 )
 
-# ---------------------------------------------------------------------
-# 3) SESSION FACTORY
-# ---------------------------------------------------------------------
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# ---------------------------------------------------------------------
-# 4) BASE PARA OS MODELOS
-# ---------------------------------------------------------------------
 Base = declarative_base()
 
-# ---------------------------------------------------------------------
-# 5) FUNÇÃO PADRÃO DO FASTAPI PARA OBTER A SESSÃO DO BANCO
-# ---------------------------------------------------------------------
 def get_db():
     db = SessionLocal()
     try:

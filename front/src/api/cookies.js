@@ -1,4 +1,3 @@
-// src/api/cookies.js
 export function getCookie(name) {
   const value = document.cookie
     .split("; ")

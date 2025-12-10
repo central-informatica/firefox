@@ -12,7 +12,6 @@ export async function getEmpresasDoUsuario(userId) {
   return await res.json();
 }
 
-// Busca por ID
 export function getEmpresa(id) {
   const empresa = empresas.find((e) => e.id === Number(id));
   return Promise.resolve(empresa);
@@ -36,15 +35,12 @@ export async function listarEmpresasPaginado({ page = 1, limit = 10, search = ""
   return await res.json(); // deve retornar { data: [...], total: X }
 }
 
-
-// Criar
 export function createEmpresa(data) {
   const nova = { id: Date.now(), ...data };
   empresas.push(nova);
   return Promise.resolve(nova);
 }
 
-// Atualizar
 export function updateEmpresa(id, data) {
   empresas = empresas.map((e) =>
     e.id === Number(id) ? { ...e, ...data } : e
