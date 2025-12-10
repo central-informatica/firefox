@@ -6,6 +6,8 @@ from backend.app.api.routes.auth import router as auth_router
 from backend.app.api.routes.certificados import router as cert_router
 from backend.app.api.routes.usuarios import router as user_router
 from backend.app.api.routes.empresas import router as empresas_router
+from backend.app.api.routes.grupos import router as grupos_router
+from backend.app.api.routes.planos_trabalho import router as planos_trabalho_router
 
 
 app = FastAPI(title="Certificado Protegido")
@@ -22,6 +24,8 @@ app.include_router(auth_router)
 app.include_router(cert_router)
 app.include_router(user_router)
 app.include_router(empresas_router)
+app.include_router(grupos_router)
+app.include_router(planos_trabalho_router)
 
 
 @app.get("/")
