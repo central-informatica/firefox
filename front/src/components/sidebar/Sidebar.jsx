@@ -47,61 +47,55 @@ const menuConfig = [
 ];
 
 export default function Sidebar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [active, setActive] = useState("dashboard");
+  const [open, setOpen] = useState(false);
   const [openSub, setOpenSub] = useState(null);
-  const { expanded, setExpanded } = useSidebar();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user, logout } = useAuth() || {};
 
-  const menu = menuConfig;
+  // pegando tudo que precisamos do AuthContext
+  const { user, logout } = useAuth();
+  
 
-  // Sincronizar estado ativo com a URL atual
-  useEffect(() => {
-    const currentPath = location.pathname;
+  // ---- CONFIG DO MENU ----
+  const menu = [
+    { id: "dashboard", label: "Dashboard", icon: <FiGrid />, path: "/dashboard" },
 
-    // Encontrar qual menu ou submenu corresponde à URL atual
-    for (const item of menu) {
-      if (item.path === currentPath) {
-        // Item principal corresponde
-        setOpenSub(null);
-        return;
-      }
+    {
+      id: "empresas",
+      label: "Empresas",
+      icon: <FiLifeBuoy />,
+      children: [
+        { id: "emp-lista", label: "Listar empresas", path: "/empresas" },
+        { id: "emp-nova", label: "Nova empresa", path: "/empresas/nova" }
+      ]
+    },
 
-      if (item.children) {
-        for (const child of item.children) {
-          if (child.path === currentPath || currentPath.startsWith(child.path + '/')) {
-            // Submenu corresponde - abrir o menu pai
-            setOpenSub(item.id);
-            return;
-          }
-        }
+    {
+      id: "planos",
+      label: "Planos de trabalho",
+      icon: <FiFlag />,
+      children: [
+        { id: "planos-lista", label: "Listar planos", path: "/planos" },
+        { id: "planos-novo", label: "Novo plano", path: "/planos/novo" }
+      ]
+    },
 
-        // Verificar se a URL começa com o caminho de algum filho (para rotas de edição)
-        if (currentPath.startsWith('/empresas')) {
-          setOpenSub('empresas');
-        } else if (currentPath.startsWith('/planos')) {
-          setOpenSub('planos');
-        } else if (currentPath.startsWith('/certificados')) {
-          setOpenSub('certificados');
-        }
-      }
-    }
-  }, [location.pathname, menu]);
+    { id: "usuarios", label: "Usuários", icon: <FiUsers />, path: "/usuarios" },
 
-  const toggleMobileSidebar = () => setMobileOpen(!mobileOpen);
-  const toggleExpanded = () => setExpanded(!expanded);
+    {
+      id: "certificados",
+      label: "Certificados",
+      icon: <FiCreditCard />,
+      children: [
+        { id: "cert-lista", label: "Listar certificados", path: "/certificados" },
+        { id: "cert-grupos", label: "Grupos de certificados", path: "/certificados/grupos" }
+      ]
+    },
 
-  const isActive = (item) => {
-    if (item.path === location.pathname) return true;
-    if (item.path && location.pathname.startsWith(item.path + '/')) return true;
-    return false;
-  };
+    { id: "config", label: "Configurações", icon: <FiSettings />, path: "/config" },
+  ];
 
-  const isParentActive = (item) => {
-    if (!item.children) return false;
-    return item.children.some(child => isActive(child));
-  };
+  const toggleSidebar = () => setOpen(!open);
 
   const handleMainClick = (item) => {
     if (item.children) {
@@ -273,44 +267,10 @@ export default function Sidebar() {
               </div>
             </div>
           </div>
-
-          {/* LOGOUT BUTTON */}
-          <div className={`px-3 pb-3 ${expanded ? '' : 'px-4'}`}>
-            <button
-              onClick={() => {
-                if (logout) {
-                  logout();
-                  navigate('/login');
-                }
-              }}
-              className={`
-                group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
-                transition-all duration-300 cursor-pointer
-                ${expanded ? 'justify-start' : 'justify-center'}
-                bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800
-                border border-red-200 hover:border-red-300
-                hover:shadow-md
-              `}
-              title={expanded ? "" : "Sair"}
-            >
-              <FiLogOut className={`flex-shrink-0 transition-all duration-300 ${
-                expanded ? 'text-lg' : 'text-xl'
-              } group-hover:scale-110`} />
-
-              <span className={`font-medium text-sm transition-all duration-300 whitespace-nowrap ${
-                expanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 overflow-hidden'
-              }`}>
-                Sair
-              </span>
-
-              {/* TOOLTIP (only when collapsed) */}
-              {!expanded && (
-                <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-50 shadow-xl">
-                  Sair
-                  <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
-                </div>
-              )}
-            </button>
+          <div>
+            <div className="user-name">{user?.nome || "Usuário"}</div>
+            <div className="user-email">{user?.email || "email@example.com"}</div>
+            <button onClick={logout} style={{marginLeft: "auto" }}>Sair</button>
           </div>
         </div>
       </aside>
