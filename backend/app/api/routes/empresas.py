@@ -1,20 +1,21 @@
-    # backend/app/api/routes/empresas.py
-
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, Form
+# backend/app/api/routes/empresas.py
+from fastapi import APIRouter, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
 from typing import Optional
 
 from backend.app.db.database import get_db
-from backend.app.db.models import Empresas, EmpresaMembros
-#from backend.app.core.security import get_current_user
 from backend.app.core.security import validar_token
+from backend.app.crud.empresas import (
+    crud_listar_empresas_paginado,
+    crud_criar_empresa,
+    crud_obter_empresa,
+    crud_atualizar_empresa,
+    crud_excluir_empresa,
+)
 
 router = APIRouter(prefix="/empresas", tags=["Empresas"])
 
 
-# -----------------------------------------------------------
-# LISTAGEM PAGINADA
-# -----------------------------------------------------------
 @router.get("/paginado")
 def listar_empresas_paginado(
     page: int = 1,
@@ -24,53 +25,9 @@ def listar_empresas_paginado(
     usuario=Depends(validar_token),
     db: Session = Depends(get_db),
 ):
-    query = (
-        db.query(Empresas)
-        .join(EmpresaMembros, EmpresaMembros.empresa_id == Empresas.id)
-        .filter(EmpresaMembros.usuario_id == usuario.id)
-    )
-
-    # FILTRO
-    if search:
-        termo = f"%{search}%"
-        query = query.filter(Empresas.razao_social.ilike(termo))
-
-    total = query.count()
-
-    # ORDENAÇÃO
-    if sort:
-        if sort.startswith("-"):
-            campo = sort[1:]
-            query = query.order_by(getattr(Empresas, campo).desc())
-        else:
-            query = query.order_by(getattr(Empresas, sort).asc())
-
-    # PAGINAÇÃO
-    offset = (page - 1) * limit
-    empresas = query.offset(offset).limit(limit).all()
-
-    # RETORNO PADRÃO DO FRONT
-    return {
-        "data": [
-            {
-                "id": e.id,
-                "razao_social": e.razao_social,
-                "cnpj": e.cnpj,
-                "email": e.email,
-                "telefone": e.telefone,
-                "fuso_horario": e.fuso_horario,
-            }
-            for e in empresas
-        ],
-        "total": total,
-        "page": page,
-        "limit": limit,
-    }
+    return crud_listar_empresas_paginado(db, usuario, page, limit, search, sort)
 
 
-# -----------------------------------------------------------
-# CRIAR EMPRESA
-# -----------------------------------------------------------
 @router.post("/")
 def criar_empresa(
     razao_social: str = Form(...),
@@ -81,53 +38,21 @@ def criar_empresa(
     usuario=Depends(validar_token),
     db: Session = Depends(get_db),
 ):
-
-    nova = Empresas(
-        razao_social=razao_social,
-        cnpj=cnpj,
-        email=email,
-        telefone=telefone,
-        fuso_horario=fuso_horario,
-    )
-
-    db.add(nova)
-    db.commit()
-    db.refresh(nova)
-
-    # vincular empresa ao usuário
-    vinculo = EmpresaMembros(usuario_id=usuario.id, empresa_id=nova.id)
-    db.add(vinculo)
-    db.commit()
-
-    return {"message": "Empresa criada com sucesso", "id": nova.id}
+    return crud_criar_empresa(db, usuario, razao_social, cnpj, email, telefone, fuso_horario)
 
 
-# -----------------------------------------------------------
-# OBTER EMPRESA POR ID
-# -----------------------------------------------------------
 @router.get("/{empresa_id}")
 def obter_empresa(
     empresa_id: int,
     usuario=Depends(validar_token),
     db: Session = Depends(get_db),
 ):
-    empresa = (
-        db.query(Empresas)
-        .join(EmpresaMembros, EmpresaMembros.empresa_id == Empresas.id)
-        .filter(EmpresaMembros.usuario_id == usuario.id)
-        .filter(Empresas.id == empresa_id)
-        .first()
-    )
-
+    empresa = crud_obter_empresa(db, usuario, empresa_id)
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
-
     return empresa
 
 
-# -----------------------------------------------------------
-# ATUALIZAR EMPRESA
-# -----------------------------------------------------------
 @router.put("/{empresa_id}")
 def atualizar_empresa(
     empresa_id: int,
@@ -139,51 +64,15 @@ def atualizar_empresa(
     usuario=Depends(validar_token),
     db: Session = Depends(get_db),
 ):
-
-    empresa = (
-        db.query(Empresas)
-        .join(EmpresaMembros, EmpresaMembros.empresa_id == Empresas.id)
-        .filter(EmpresaMembros.usuario_id == usuario.id)
-        .filter(Empresas.id == empresa_id)
-        .first()
+    return crud_atualizar_empresa(
+        db, usuario, empresa_id, razao_social, cnpj, email, telefone, fuso_horario
     )
 
-    if not empresa:
-        raise HTTPException(status_code=404, detail="Empresa não encontrada")
 
-    empresa.razao_social = razao_social
-    empresa.cnpj = cnpj
-    empresa.email = email
-    empresa.telefone = telefone
-    empresa.fuso_horario = fuso_horario
-
-    db.commit()
-    db.refresh(empresa)
-
-    return {"message": "Empresa atualizada com sucesso"}
-
-
-# -----------------------------------------------------------
-# EXCLUIR EMPRESA
-# -----------------------------------------------------------
 @router.delete("/{empresa_id}")
 def excluir_empresa(
     empresa_id: int,
     usuario=Depends(validar_token),
     db: Session = Depends(get_db),
 ):
-    empresa = (
-        db.query(Empresas)
-        .join(EmpresaMembros, EmpresaMembros.empresa_id == Empresas.id)
-        .filter(EmpresaMembros.usuario_id == usuario.id)
-        .filter(Empresas.id == empresa_id)
-        .first()
-    )
-
-    if not empresa:
-        raise HTTPException(status_code=404, detail="Empresa não encontrada")
-
-    db.delete(empresa)
-    db.commit()
-
-    return {"message": "Empresa excluída com sucesso"}
+    return crud_excluir_empresa(db, usuario, empresa_id)

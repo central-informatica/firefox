@@ -1,18 +1,20 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.app.db.database import get_db
-from backend.app.db.models import Empresas, EmpresaMembros
+from backend.app.crud.usuarios import (
+    listar_empresas_do_usuario,
+    get_usuario,
+    criar_usuario,
+    atualizar_usuario,
+    deletar_usuario,
+)
 
 router = APIRouter(prefix="/usuarios", tags=["Usuários"])
 
+
 @router.get("/{user_id}/empresas")
-def get_empresas_do_usuario(user_id: int, db: Session = Depends(get_db)):
-    empresas = (
-        db.query(Empresas)
-        .join(EmpresaMembros, EmpresaMembros.empresa_id == Empresas.empresa_id)
-        .filter(EmpresaMembros.usuario_id == user_id)
-        .all()
-    )
+def get_empresas_usuario(user_id: int, db: Session = Depends(get_db)):
+    empresas = listar_empresas_do_usuario(db, user_id)
 
     return [
         {
@@ -24,3 +26,32 @@ def get_empresas_do_usuario(user_id: int, db: Session = Depends(get_db)):
         }
         for e in empresas
     ]
+
+
+@router.get("/{usuario_id}")
+def obter_usuario(usuario_id: int, db: Session = Depends(get_db)):
+    usuario = get_usuario(db, usuario_id)
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return usuario
+
+
+@router.post("/")
+def criar_novo_usuario(payload: dict, db: Session = Depends(get_db)):
+    return criar_usuario(db, payload)
+
+
+@router.put("/{usuario_id}")
+def atualizar_usuario_route(usuario_id: int, payload: dict, db: Session = Depends(get_db)):
+    usuario = atualizar_usuario(db, usuario_id, payload)
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return usuario
+
+
+@router.delete("/{usuario_id}")
+def remover_usuario(usuario_id: int, db: Session = Depends(get_db)):
+    sucesso = deletar_usuario(db, usuario_id)
+    if not sucesso:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return {"detail": "Usuário removido com sucesso"}
