@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from backend.app.db.session import get_db
 from backend.app.crud.usuarios import (
     listar_empresas_do_usuario,
@@ -8,27 +9,34 @@ from backend.app.crud.usuarios import (
     atualizar_usuario,
     deletar_usuario,
 )
+from backend.app.schemas.usuarios import (
+    UsuarioCreate,
+    UsuarioUpdate,
+    UsuarioOut,
+    EmpresaDoUsuarioOut,
+)
 
 router = APIRouter(prefix="/usuarios", tags=["Usuários"])
 
 
-@router.get("/{user_id}/empresas")
+@router.get("/{user_id}/empresas", response_model=list[EmpresaDoUsuarioOut])
 def get_empresas_usuario(user_id: int, db: Session = Depends(get_db)):
     empresas = listar_empresas_do_usuario(db, user_id)
 
+    # Mantém o mesmo formato que você já retornava antes
     return [
-        {
-            "empresa_id": e.empresa_id,
-            "razao_social": e.razao_social,
-            "fantasia": e.fantasia,
-            "cnpj": e.cnpj,
-            "timezone": e.timezone,
-        }
+        EmpresaDoUsuarioOut(
+            empresa_id=e.empresa_id,
+            razao_social=e.razao_social,
+            fantasia=e.fantasia,
+            cnpj=e.cnpj,
+            timezone=e.timezone,
+        )
         for e in empresas
     ]
 
 
-@router.get("/{usuario_id}")
+@router.get("/{usuario_id}", response_model=UsuarioOut)
 def obter_usuario(usuario_id: int, db: Session = Depends(get_db)):
     usuario = get_usuario(db, usuario_id)
     if not usuario:
@@ -36,14 +44,21 @@ def obter_usuario(usuario_id: int, db: Session = Depends(get_db)):
     return usuario
 
 
-@router.post("/")
-def criar_novo_usuario(payload: dict, db: Session = Depends(get_db)):
-    return criar_usuario(db, payload)
+@router.post("/", response_model=UsuarioOut, status_code=201)
+def criar_novo_usuario(payload: UsuarioCreate, db: Session = Depends(get_db)):
+    # Passamos um dict pro CRUD existente, mantendo compatibilidade
+    dados = payload.dict()
+    return criar_usuario(db, dados)
 
 
-@router.put("/{usuario_id}")
-def atualizar_usuario_route(usuario_id: int, payload: dict, db: Session = Depends(get_db)):
-    usuario = atualizar_usuario(db, usuario_id, payload)
+@router.put("/{usuario_id}", response_model=UsuarioOut)
+def atualizar_usuario_route(
+    usuario_id: int,
+    payload: UsuarioUpdate,
+    db: Session = Depends(get_db),
+):
+    dados = payload.dict(exclude_unset=True)
+    usuario = atualizar_usuario(db, usuario_id, dados)
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return usuario
