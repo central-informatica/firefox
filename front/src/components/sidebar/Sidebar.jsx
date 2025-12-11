@@ -1,65 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   FiGrid, FiUsers, FiSettings, FiLifeBuoy, FiCreditCard,
-  FiFlag, FiChevronDown, FiChevronRight, FiMenu, FiX, FiChevronsLeft, FiChevronsRight, FiLogOut
+  FiFlag, FiChevronDown, FiChevronRight, FiMenu, FiX, FiChevronsLeft, FiChevronsRight
 } from "react-icons/fi";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { useSidebar } from "../../contexts/SidebarContext";
 
-// Menu configuration outside component to avoid recreation
-const menuConfig = [
-  { id: "dashboard", label: "Dashboard", icon: <FiGrid />, path: "/dashboard" },
-
-  {
-    id: "empresas",
-    label: "Empresas",
-    icon: <FiLifeBuoy />,
-    children: [
-      { id: "emp-lista", label: "Listar empresas", path: "/empresas" },
-      { id: "emp-nova", label: "Nova empresa", path: "/empresas/nova" }
-    ]
-  },
-
-  {
-    id: "planos",
-    label: "Planos de trabalho",
-    icon: <FiFlag />,
-    children: [
-      { id: "planos-lista", label: "Listar planos", path: "/planos" },
-      { id: "planos-novo", label: "Novo plano", path: "/planos/novo" },
-      { id: "planos-associacoes", label: "Gerenciar associações", path: "/planos/associacoes" }
-    ]
-  },
-
-  { id: "usuarios", label: "Usuários", icon: <FiUsers />, path: "/usuarios" },
-
-  {
-    id: "certificados",
-    label: "Certificados",
-    icon: <FiCreditCard />,
-    children: [
-      { id: "cert-lista", label: "Listar certificados", path: "/certificados" },
-      { id: "cert-novo", label: "Novo certificado", path: "/certificados/novo" }
-    ]
-  },
-
-];
-
 export default function Sidebar() {
-  const [active, setActive] = useState("dashboard");
-  const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [openSub, setOpenSub] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // pegando tudo que precisamos do AuthContext
   const { user, logout } = useAuth();
-  
+  const { expanded, setExpanded } = useSidebar();
 
-  // ---- CONFIG DO MENU ----
   const menu = [
     { id: "dashboard", label: "Dashboard", icon: <FiGrid />, path: "/dashboard" },
-
     {
       id: "empresas",
       label: "Empresas",
@@ -69,7 +27,6 @@ export default function Sidebar() {
         { id: "emp-nova", label: "Nova empresa", path: "/empresas/nova" }
       ]
     },
-
     {
       id: "planos",
       label: "Planos de trabalho",
@@ -79,9 +36,7 @@ export default function Sidebar() {
         { id: "planos-novo", label: "Novo plano", path: "/planos/novo" }
       ]
     },
-
     { id: "usuarios", label: "Usuários", icon: <FiUsers />, path: "/usuarios" },
-
     {
       id: "certificados",
       label: "Certificados",
@@ -91,11 +46,18 @@ export default function Sidebar() {
         { id: "cert-grupos", label: "Grupos de certificados", path: "/certificados/grupos" }
       ]
     },
-
     { id: "config", label: "Configurações", icon: <FiSettings />, path: "/config" },
   ];
 
-  const toggleSidebar = () => setOpen(!open);
+  const toggleMobileSidebar = () => setMobileOpen(!mobileOpen);
+  const toggleExpanded = () => setExpanded(!expanded);
+
+  const isActive = (item) => location.pathname === item.path;
+
+  const isParentActive = (item) => {
+    if (!item.children) return false;
+    return item.children.some(child => location.pathname === child.path);
+  };
 
   const handleMainClick = (item) => {
     if (item.children) {
@@ -249,12 +211,10 @@ export default function Sidebar() {
         `}>
           <div className="p-4">
             <div className={`flex items-center gap-3 ${expanded ? '' : 'justify-center'}`}>
-              {/* AVATAR */}
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex justify-center items-center text-white font-bold text-base flex-shrink-0 shadow-lg shadow-emerald-500/30">
                 {(user?.nome || "U").charAt(0).toUpperCase()}
               </div>
 
-              {/* USER INFO (only when expanded) */}
               <div className={`flex flex-col leading-tight transition-all duration-300 overflow-hidden ${
                 expanded ? 'opacity-100 max-w-[180px]' : 'opacity-0 max-w-0'
               }`}>
@@ -266,11 +226,6 @@ export default function Sidebar() {
                 </div>
               </div>
             </div>
-          </div>
-          <div>
-            <div className="user-name">{user?.nome || "Usuário"}</div>
-            <div className="user-email">{user?.email || "email@example.com"}</div>
-            <button onClick={logout} style={{marginLeft: "auto" }}>Sair</button>
           </div>
         </div>
       </aside>
