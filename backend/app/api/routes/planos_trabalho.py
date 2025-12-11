@@ -1,57 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from backend.app.db.session import get_db
-
-from backend.app.crud.planos_trabalho import (
-    listar_planos_trabalho,
-    get_planos_trabalho,
-    criar_planos_trabalho,
-    atualizar_planos_trabalho,
-    deletar_planos_trabalho,
+from backend.app.schemas.planos_trabalho import (
+    PlanoTrabalhoCreate,
+    PlanoTrabalhoUpdate,
+    PlanoTrabalhoOut,
 )
+from backend.app.crud.planos_trabalho import crud_planos_trabalho
 
-router = APIRouter(prefix="/planos_trabalho", tags=["Planos"])
+
+router = APIRouter(prefix="/planos-trabalho", tags=["Planos de Trabalho"])
 
 
-@router.get("/")
+@router.get("/", response_model=list[PlanoTrabalhoOut])
 def listar(db: Session = Depends(get_db)):
-    planos_trabalho = listar_planos_trabalho(db)
-    return [
-        {
-            "grupo_id": p.grupo_id,
-            "empresa_id": p.empresa_id,
-            "plano_id": p.plano_id,
-            "nome": p.nome,
-            "criado_em": p.criado_em,
-        }
-        for p in planos_trabalho
-    ]
+    return crud_planos_trabalho.listar(db)
 
 
-@router.get("/{plano_id}")
-def obter(grupo_id: int, db: Session = Depends(get_db)):
-    planos_trabalho = get_planos_trabalho(db, grupo_id)
-    if not planos_trabalho:
-        raise HTTPException(status_code=404, detail="Plano de trabalho não encontrado")
-    return planos_trabalho
+@router.get("/empresa/{empresa_id}", response_model=list[PlanoTrabalhoOut])
+def listar_empresa(empresa_id: int, db: Session = Depends(get_db)):
+    return crud_planos_trabalho.listar_por_empresa(db, empresa_id)
 
 
-@router.post("/")
-def criar(payload: dict, db: Session = Depends(get_db)):
-    return criar_planos_trabalho(db, payload)
+@router.get("/{plano_id}", response_model=PlanoTrabalhoOut)
+def obter(plano_id: int, db: Session = Depends(get_db)):
+    return crud_planos_trabalho.get(db, plano_id)
 
 
-@router.put("/{planos_id}")
-def atualizar(plano_id: int, payload: dict, db: Session = Depends(get_db)):
-    planos_trabalho = atualizar_planos_trabalho(db, plano_id, payload)
-    if not planos_trabalho:
-        raise HTTPException(status_code=404, detail="Plano de trabalho não encontrado")
-    return planos_trabalho
+@router.post("/", response_model=PlanoTrabalhoOut, status_code=201)
+def criar(data: PlanoTrabalhoCreate, db: Session = Depends(get_db)):
+    return crud_planos_trabalho.criar(db, data)
+
+
+@router.put("/{plano_id}", response_model=PlanoTrabalhoOut)
+def atualizar(plano_id: int, data: PlanoTrabalhoUpdate, db: Session = Depends(get_db)):
+    return crud_planos_trabalho.atualizar(db, plano_id, data)
 
 
 @router.delete("/{plano_id}")
-def remover(plano_id: int, db: Session = Depends(get_db)):
-    sucesso = deletar_planos_trabalho(db, plano_id)
-    if not sucesso:
-        raise HTTPException(status_code=404, detail="Plano de trabalho não encontrado")
-    return {"detail": "Plano de trabalho removido com sucesso"}
+def deletar(plano_id: int, db: Session = Depends(get_db)):
+    return crud_planos_trabalho.deletar(db, plano_id)
