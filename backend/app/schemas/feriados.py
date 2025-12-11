@@ -1,0 +1,28 @@
+from pydantic import BaseModel, constr
+from datetime import date, datetime
+from typing import Optional
+
+
+class FeriadoBase(BaseModel):
+    empresa_id: int
+    data: date
+    nome: constr(min_length=2, max_length=120)
+    recorrente: bool = False
+
+
+class FeriadoCreate(FeriadoBase):
+    pass
+
+
+class FeriadoUpdate(BaseModel):
+    data: Optional[date] = None
+    nome: Optional[str] = None
+    recorrente: Optional[bool] = None
+
+
+class FeriadoOut(FeriadoBase):
+    feriado_id: int
+    criado_em: datetime
+
+    class Config:
+        orm_mode = True
