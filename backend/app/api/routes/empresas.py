@@ -1,78 +1,35 @@
-# backend/app/api/routes/empresas.py
-from fastapi import APIRouter, Depends, HTTPException, Form
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from backend.app.db.session import get_db
-from backend.app.core.security import validar_token
-from backend.app.crud.empresas import (
-    crud_listar_empresas_paginado,
-    crud_criar_empresa,
-    crud_obter_empresa,
-    crud_atualizar_empresa,
-    crud_excluir_empresa,
+from backend.app.schemas.empresas import (
+    EmpresaCreate, EmpresaUpdate, EmpresaOut
 )
+from backend.app.crud.empresas import crud_empresas
 
 router = APIRouter(prefix="/empresas", tags=["Empresas"])
 
 
-@router.get("/paginado")
-def listar_empresas_paginado(
-    page: int = 1,
-    limit: int = 10,
-    search: Optional[str] = "",
-    sort: Optional[str] = "",
-    usuario=Depends(validar_token),
-    db: Session = Depends(get_db),
-):
-    return crud_listar_empresas_paginado(db, usuario, page, limit, search, sort)
+@router.get("/", response_model=list[EmpresaOut])
+def listar_empresas(db: Session = Depends(get_db)):
+    return crud_empresas.listar(db)
 
 
-@router.post("/")
-def criar_empresa(
-    razao_social: str = Form(...),
-    cnpj: str = Form(...),
-    email: str = Form(""),
-    telefone: str = Form(""),
-    fuso_horario: str = Form(...),
-    usuario=Depends(validar_token),
-    db: Session = Depends(get_db),
-):
-    return crud_criar_empresa(db, usuario, razao_social, cnpj, email, telefone, fuso_horario)
+@router.get("/{empresa_id}", response_model=EmpresaOut)
+def get_empresa(empresa_id: int, db: Session = Depends(get_db)):
+    return crud_empresas.get(db, empresa_id)
 
 
-@router.get("/{empresa_id}")
-def obter_empresa(
-    empresa_id: int,
-    usuario=Depends(validar_token),
-    db: Session = Depends(get_db),
-):
-    empresa = crud_obter_empresa(db, usuario, empresa_id)
-    if not empresa:
-        raise HTTPException(status_code=404, detail="Empresa não encontrada")
-    return empresa
+@router.post("/", response_model=EmpresaOut)
+def criar_empresa(data: EmpresaCreate, db: Session = Depends(get_db)):
+    return crud_empresas.criar(db, data)
 
 
-@router.put("/{empresa_id}")
-def atualizar_empresa(
-    empresa_id: int,
-    razao_social: str = Form(...),
-    cnpj: str = Form(...),
-    email: str = Form(""),
-    telefone: str = Form(""),
-    fuso_horario: str = Form(...),
-    usuario=Depends(validar_token),
-    db: Session = Depends(get_db),
-):
-    return crud_atualizar_empresa(
-        db, usuario, empresa_id, razao_social, cnpj, email, telefone, fuso_horario
-    )
+@router.put("/{empresa_id}", response_model=EmpresaOut)
+def atualizar_empresa(empresa_id: int, data: EmpresaUpdate, db: Session = Depends(get_db)):
+    return crud_empresas.atualizar(db, empresa_id, data)
 
 
 @router.delete("/{empresa_id}")
-def excluir_empresa(
-    empresa_id: int,
-    usuario=Depends(validar_token),
-    db: Session = Depends(get_db),
-):
-    return crud_excluir_empresa(db, usuario, empresa_id)
+def deletar_empresa(empresa_id: int, db: Session = Depends(get_db)):
+    return crud_empresas.deletar(db, empresa_id)
