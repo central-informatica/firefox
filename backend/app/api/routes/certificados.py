@@ -15,7 +15,7 @@ from Crypto.Hash import SHA256
 
 from backend.app.core.config import MASTER_KEY
 from backend.app.core.security import validar_token
-from backend.app.db.database import get_db
+from backend.app.db.session import get_db
 from backend.app.db.models import Certificados
 from backend.app.schemas.certificados import SignRequest
 from backend.app.utils.crypto_utils import encrypt_pfx, decrypt_pfx

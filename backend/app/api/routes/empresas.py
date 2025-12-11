@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from backend.app.db.database import get_db
+from backend.app.db.session import get_db
 from backend.app.core.security import validar_token
 from backend.app.crud.empresas import (
     crud_listar_empresas_paginado,

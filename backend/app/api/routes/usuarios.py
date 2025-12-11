@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from backend.app.db.database import get_db
+from backend.app.db.session import get_db
 from backend.app.crud.usuarios import (
     listar_empresas_do_usuario,
     get_usuario,
