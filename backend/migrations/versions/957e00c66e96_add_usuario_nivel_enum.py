@@ -1,7 +1,7 @@
 from alembic import op
 import sqlalchemy as sa
 
-revision = "ADD_ENUM_USUARIO_NIVEL"
+revision = "957e00c66e96"
 down_revision = "2a3106605800"
 branch_labels = None
 depends_on = None
