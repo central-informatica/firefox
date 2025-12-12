@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: xsecurity-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: certprot
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - xsecurity-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: xsecurity-backend
+    environment:
+      MASTER_KEY: ${MASTER_KEY:-minha_chave_secreta}
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/certprot
+      FRONTEND_ORIGIN: "*"
+      CERT_STORAGE_DIR: storage/certificados
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+      - ./.env:/app/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - xsecurity-network
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn backend.app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: xsecurity-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - xsecurity-network
+
+volumes:
+  postgres_data:
+
+networks:
+  xsecurity-network:
+    driver: bridge
