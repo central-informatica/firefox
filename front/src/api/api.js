@@ -11,10 +11,10 @@ async function refreshTokens() {
   refreshing = true;
   refreshPromise = fetch(`${API_URL}/auth/refresh`, {
     method: "POST",
-    credentials: "include",
-    headers: {
-      "X-CSRF-Token": getCookie("csrf_token") || "",
-    },
+    // credentials: "include",
+    // headers: {
+    //   "X-CSRF-Token": getCookie("csrf_token") || "",
+    // },
   })
     .then((res) => {
       if (!res.ok) {
@@ -34,10 +34,10 @@ export async function apiFetch(path, options = {}) {
   const response = await fetch(API_URL + path, {
     // credentials: "include",
     ...options,
-    headers: {
+    // headers: {
       // "X-CSRF-Token": csrf,
-      ...(options.headers || {}),
-    },
+      // ...(options.headers || {}),
+    // },
   });
 
   if (response.status !== 401) {
@@ -59,11 +59,11 @@ export async function apiFetch(path, options = {}) {
   }
 
   return fetch(API_URL + path, {
-    credentials: "include",
+    // credentials: "include",
     ...options,
-    headers: {
-      "X-CSRF-Token": getCookie("csrf_token") || "",
-      ...(options.headers || {}),
-    },
+    // headers: {
+    //   "X-CSRF-Token": getCookie("csrf_token") || "",
+    //   ...(options.headers || {}),
+    // },
   });
 }
