@@ -2,7 +2,7 @@ from fastapi import Header, HTTPException, Depends, Request
 
 from sqlalchemy.orm import Session
 
-from backend.app.db.database import get_db
+from backend.app.db.session import get_db
 from backend.app.db.models import Acesso
 from backend.app.core.csrf import validate_csrf_token
 

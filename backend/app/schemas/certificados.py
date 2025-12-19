@@ -26,3 +26,14 @@ class CertificadoOut(CertificadoBase):
 
     class Config:
         orm_mode = True
+
+class CertificadoPermitidoResponse(BaseModel):
+    certificado_id: int
+    nome_arquivo: str
+    empresa_id: int
+    empresa_nome: str
+    pode_acessar: bool
+
+class ValidarAcessoCertificadoResponse(BaseModel):
+    certificado_id: int
+    permitido: bool

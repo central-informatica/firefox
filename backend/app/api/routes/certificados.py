@@ -15,13 +15,15 @@ from Crypto.Hash import SHA256
 
 from backend.app.core.config import MASTER_KEY
 from backend.app.core.security import validar_token
-from backend.app.db.database import get_db
+from backend.app.db.session import get_db
 from backend.app.db.models import Certificados
-from backend.app.schemas.certificados import SignRequest
+from backend.app.db.models import Usuarios
+from backend.app.api.deps import get_current_user
 from backend.app.utils.crypto_utils import encrypt_pfx, decrypt_pfx
+from backend.app.schemas.certificados import SignRequest,CertificadoPermitidoResponse, ValidarAcessoCertificadoResponse
+from backend.app.crud.certificado import listar_certificados_permitidos, validar_acesso_certificado
 
 router = APIRouter(prefix="/certificados", tags=["certificados"])
-
 
 def extrair_info_certificado(pfx_bytes: bytes, senha: str | None):
     """
@@ -182,6 +184,29 @@ def listar_certificados(
         "total": total,
     }
 
+@router.get("/listar_certificados_permitidos/{usuario_id}",response_model=list[CertificadoPermitidoResponse])
+def listar_certificados_permitidos(
+    usuario: Usuarios = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return listar_certificados_permitidos(db, usuario.usuario_id)
+
+@router.get("/{certificado_id}/validar_acesso",response_model=ValidarAcessoCertificadoResponse,)
+def validar_acesso(
+    certificado_id: int,
+    usuario: Usuarios = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    permitido = validar_acesso_certificado(
+        db=db,
+        usuario_id=usuario.usuario_id,
+        certificado_id=certificado_id,
+    )
+
+    return {
+        "certificado_id": certificado_id,
+        "permitido": permitido,
+    }
 
 @router.get("/{certificado_id}")
 def obter_certificado(

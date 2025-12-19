@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from backend.app.db.models import Certificados
 from backend.app.schemas.certificados import CertificadoCreate
 
@@ -48,3 +49,44 @@ def listar_certificados(db: Session, empresa_id: int, page: int, limit: int, sea
     dados = query.offset((page - 1) * limit).limit(limit).all()
 
     return dados, total
+
+def listar_certificados_permitidos(
+    db: Session,
+    usuario_id: int
+):
+    sql = text("""
+        SELECT *
+        FROM certificados_disponiveis(:usuario_id)
+    """)
+
+    result = db.execute(sql, {"usuario_id": usuario_id})
+
+    return [
+        {
+            "certificado_id": row.certificado_id,
+            "nome_arquivo": row.nome_arquivo,
+            "empresa_id": row.empresa_id,
+            "empresa_nome": row.empresa_nome,
+            "pode_acessar": row.pode_acessar,
+        }
+        for row in result
+    ]
+
+def validar_acesso_certificado(
+    db: Session,
+    usuario_id: int,
+    certificado_id: int,
+) -> bool:
+    sql = text("""
+        SELECT validar_acesso(:usuario_id, :certificado_id) AS permitido
+    """)
+
+    result = db.execute(
+        sql,
+        {
+            "usuario_id": usuario_id,
+            "certificado_id": certificado_id,
+        }
+    ).one()
+
+    return bool(result.permitido)

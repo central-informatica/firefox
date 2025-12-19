@@ -1,44 +1,56 @@
-from __future__ import annotations
-
-from alembic import context
-from sqlalchemy import pool
+import sys
+import os
 from logging.config import fileConfig
 
-from backend.app.db.session import engine
-from backend.app.db.base import Base
+from sqlalchemy import engine_from_config, pool
+from alembic import context
 
+# Adiciona raiz do projeto ao PYTHONPATH
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+)
 
+from backend.app.db.database import Base
+from backend.app.core.config import DATABASE_URL
+
+# Alembic Config
 config = context.config
 
+# Define URL do banco dinamicamente
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+print("ALEMBIC DATABASE_URL =", DATABASE_URL)
 
-
+# Metadata usada pelo autogenerate
 target_metadata = Base.metadata
 
 
-def run_migrations_offline() -> None:
-    """Executa migrations offline (gera SQL sem conectar no DB)."""
-    url = engine.url.render_as_string(hide_password=False)
-
+def run_migrations_offline():
+    """
+    Executa migrations em modo offline.
+    """
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        compare_type=True,
-        compare_server_default=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
     )
 
     with context.begin_transaction():
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
-    """Executa migrations online (conectado ao DB)."""
-
-    connectable = engine
+def run_migrations_online():
+    """
+    Executa migrations em modo online (conectado ao banco).
+    """
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
 
     with connectable.connect() as connection:
         context.configure(
@@ -46,15 +58,13 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             compare_type=True,
             compare_server_default=True,
-            process_revision_directives=None,
-            render_as_batch=False,
         )
 
         with context.begin_transaction():
             context.run_migrations()
 
 
-
+# Decide qual modo usar
 if context.is_offline_mode():
     run_migrations_offline()
 else:

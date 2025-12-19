@@ -13,3 +13,8 @@ MASTER_KEY = gerar_chave(password=os.getenv("MASTER_KEY"))
 
 STORAGE_DIR = os.getenv("CERT_STORAGE_DIR", "storage/certificados")
 Path(STORAGE_DIR).mkdir(parents=True, exist_ok=True)
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg2://postgres:postgres@127.0.0.1:5432/certprot"
+)
