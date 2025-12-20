@@ -19,9 +19,14 @@ from backend.app.api.routes.regras_acesso_hosts import router as regras_acesso_h
 
 app = FastAPI(title="Certificado Protegido")
 
+origins = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=FRONTEND_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

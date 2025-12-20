@@ -1,13 +1,93 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from fastapi import HTTPException
-from backend.app.db.models import Empresas
+from backend.app.db.models import Empresas, EmpresaMembros
 from backend.app.schemas.empresas import EmpresaCreate, EmpresaUpdate
 
 
 class CRUDEmpresas:
 
-    def listar(self, db: Session):
-        return db.query(Empresas).all()
+    def listar_paginado_do_usuario(
+        self,
+        db: Session,
+        usuario_id: int,
+        page: int = 1,
+        limit: int = 10,
+        search: str = "",
+        sort: str = "",
+    ):
+        # 1) Base tenant filter:
+        # - empresas onde é anfitrião
+        # - ou empresas onde é membro (empresa_membros)
+        query = (
+            db.query(Empresas)
+            .outerjoin(
+                EmpresaMembros,
+                EmpresaMembros.empresa_id == Empresas.empresa_id
+            )
+            .filter(
+                or_(
+                    Empresas.anfitria_usuario_id == usuario_id,
+                    EmpresaMembros.usuario_id == usuario_id,
+                )
+            )
+            .distinct()
+        )
+
+        # 2) Search
+        if search:
+            s = f"%{search.strip()}%"
+            query = query.filter(
+                or_(
+                    Empresas.razao_social.ilike(s),
+                    Empresas.fantasia.ilike(s),
+                    Empresas.cnpj.ilike(s),
+                )
+            )
+
+        # 3) Total
+        total = query.count()
+
+        # 4) Sort (whitelist)
+        if sort:
+            try:
+                field, direction = sort.split(".")
+            except ValueError:
+                raise HTTPException(400, "Parâmetro sort inválido. Use campo.asc ou campo.desc")
+
+            allowed = {
+                "empresa_id": Empresas.empresa_id,
+                "razao_social": Empresas.razao_social,
+                "fantasia": Empresas.fantasia,
+                "cnpj": Empresas.cnpj,
+                "timezone": Empresas.timezone,
+                "criado_em": Empresas.criado_em,
+            }
+
+            col = allowed.get(field)
+            if not col:
+                raise HTTPException(400, f"Campo de sort não permitido: {field}")
+
+            if direction not in ("asc", "desc"):
+                raise HTTPException(400, "Direção de sort inválida. Use asc ou desc")
+
+            query = query.order_by(col.asc() if direction == "asc" else col.desc())
+        else:
+            query = query.order_by(Empresas.empresa_id.desc())
+
+        # 5) Pagination
+        items = (
+            query
+            .offset((page - 1) * limit)
+            .limit(limit)
+            .all()
+        )
+
+        return items, total
+
+
+    #def listar(self, db: Session):
+    #    return db.query(Empresas).all()
 
     def get(self, db: Session, empresa_id: int):
         emp = db.query(Empresas).filter(Empresas.empresa_id == empresa_id).first()

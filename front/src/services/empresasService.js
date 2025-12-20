@@ -1,12 +1,22 @@
 // services/empresasService.js
+
+import { apiFetch } from "../api/api";
+
 // Lista
+function getCsrfToken() {
+  return document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("csrf_token="))
+    ?.split("=")[1];
+}
+
 export function getEmpresas() {
   return Promise.resolve(empresas);
 }
 
 export async function getEmpresasDoUsuario(userId) {
   console.log("Id do usuário logado: ", userId);
-  const res = await fetch(`http://127.0.0.1:8000/usuarios/${userId}/empresas`, {
+  const res = await apiFetch(`/usuarios/${userId}/empresas`, {
     credentials: "include",
   });
   return await res.json();
@@ -18,22 +28,41 @@ export function getEmpresa(id) {
 }
 
 // Empresas paginado
-export async function listarEmpresasPaginado({ page = 1, limit = 10, search = "", sort = "" }) {
-  const params = new URLSearchParams();
-
-  params.append("page", page);
-  params.append("limit", limit);
-  params.append("search", search);
-  params.append("sort", sort);
-
-  const res = await fetch(`http://127.0.0.1:8000/empresas?${params.toString()}`, {
-    credentials: "include",
+export async function listarEmpresasPaginado({
+  page = 1,
+  limit = 10,
+  search = "",
+  sort = "",
+}) {
+  const params = new URLSearchParams({
+    page,
+    limit,
+    search,
+    sort,
   });
 
-  if (!res.ok) throw new Error("Erro ao carregar empresas");
+  const csrfToken = getCsrfToken();
 
-  return await res.json(); // deve retornar { data: [...], total: X }
+  const res = await apiFetch(
+    `/empresas/?${params.toString()}`,
+    {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text);
+  }
+
+  return await res.json();
 }
+
 
 export function createEmpresa(data) {
   const nova = { id: Date.now(), ...data };

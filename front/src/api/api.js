@@ -5,16 +5,21 @@ const API_URL = "http://127.0.0.1:8000";
 let refreshing = false;
 let refreshPromise = null;
 
+/**
+ * Faz refresh da sessão quando o backend retornar 401.
+ * Usa cookies + CSRF corretamente.
+ */
 async function refreshTokens() {
   if (refreshing) return refreshPromise;
 
   refreshing = true;
+
   refreshPromise = fetch(`${API_URL}/auth/refresh`, {
     method: "POST",
-    // credentials: "include",
-    // headers: {
-    //   "X-CSRF-Token": getCookie("csrf_token") || "",
-    // },
+    credentials: "include", 
+    headers: {
+      "X-CSRF-Token": getCookie("csrf_token") || "",
+    },
   })
     .then((res) => {
       if (!res.ok) {
@@ -28,42 +33,53 @@ async function refreshTokens() {
   return refreshPromise;
 }
 
+/**
+ * Fetch centralizado da aplicação.
+ * - Envia cookies
+ * - Envia CSRF
+ * - Tenta refresh automático em 401
+ */
 export async function apiFetch(path, options = {}) {
   const csrf = getCookie("csrf_token") || "";
 
-  const response = await fetch(API_URL + path, {
-    // credentials: "include",
+  const response = await fetch(`${API_URL}${path}`, {
+    credentials: "include", 
     ...options,
-    // headers: {
-      // "X-CSRF-Token": csrf,
-      // ...(options.headers || {}),
-    // },
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": csrf, 
+      ...(options.headers || {}),
+    },
   });
 
+  // Se não for 401, retorna direto
   if (response.status !== 401) {
     return response;
   }
 
-  if (!csrf) {
+  // Não tenta refresh se:
+  // - não tem CSRF
+  // - já está tentando refresh
+  // - a rota já é refresh
+  if (!csrf || path === "/auth/refresh") {
     return response;
   }
 
-  if (path === "/auth/refresh") {
-    return response;
-  }
-
+  // Tenta refresh
   try {
     await refreshTokens();
-  } catch (err) {
+  } catch {
     return response;
   }
 
-  return fetch(API_URL + path, {
-    // credentials: "include",
+  // Reexecuta a request original após refresh
+  return fetch(`${API_URL}${path}`, {
+    credentials: "include",
     ...options,
-    // headers: {
-    //   "X-CSRF-Token": getCookie("csrf_token") || "",
-    //   ...(options.headers || {}),
-    // },
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": getCookie("csrf_token") || "",
+      ...(options.headers || {}),
+    },
   });
 }
