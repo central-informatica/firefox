@@ -1,17 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from backend.app.db.session import get_db
-from backend.app.db.models import Usuarios, Acesso
+from backend.app.db.models import Usuarios, AccessTokens
 from backend.app.schemas.auth import LoginJSON, UserCreate, UserOut
-from backend.app.core.security import (
-    hash_password,
-    verify_password,
-    gerar_token,
+from backend.app.schemas.token import TokenContext
+from backend.app.core.security import hash_password, verify_password
+from backend.app.core.token_security import (
+    generate_opaque_token,
+    hash_validator,
+    build_permissions,
+    calculate_token_expiration,
 )
 from backend.app.core.csrf import create_csrf_token
-from backend.app.core.validar_token import validar_token
+from backend.app.core.validar_token import validar_token, validar_token_universal
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -46,8 +49,16 @@ async def register_user(payload: UserCreate, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/login", response_model=UserOut)
-async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
+@router.post("/login-web", response_model=UserOut)
+async def auth_login_web(
+    payload: LoginJSON,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticate web application users.
+    Returns session token in HTTP-only cookie + CSRF token in readable cookie.
+    """
     user = (
         db.query(Usuarios)
         .filter(Usuarios.email == payload.email)
@@ -57,10 +68,21 @@ async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
     if not user or not verify_password(payload.senha, user.senha_hash):
         raise HTTPException(403, "As credenciais não conferem")
 
-    token = gerar_token()
+    full_token, selector, validator = generate_opaque_token()
 
-    acesso = Acesso(id_usuario=user.usuario_id, token=token, ativo=True)
-    db.add(acesso)
+    permissions = build_permissions(db, user.usuario_id)
+
+    access_token = AccessTokens(
+        usuario_id=user.usuario_id,
+        selector=selector,
+        validator_hash=hash_validator(validator),
+        tipo_cliente="WEB",
+        expires_at=calculate_token_expiration(minutes=15),
+        permissions=permissions,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
+    db.add(access_token)
     db.commit()
 
     csrf = create_csrf_token()
@@ -73,11 +95,10 @@ async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
             "empresa_id": 0,
         }
     )
-    # "empresa_id": user.empresa_id,
 
     response.set_cookie(
         key="session_token",
-        value=token,
+        value=full_token,
         httponly=True,
         secure=False,
         samesite="lax",
@@ -95,11 +116,75 @@ async def auth_login(payload: LoginJSON, db: Session = Depends(get_db)):
 
     return response
 
+
+@router.post("/login-desktop", response_model=dict)
+async def auth_login_desktop(
+    payload: LoginJSON,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticate desktop application users.
+    Returns access token in response body (to be sent in Authorization header).
+    Does not use cookies or CSRF tokens.
+    """
+    user = (
+        db.query(Usuarios)
+        .filter(Usuarios.email == payload.email)
+        .first()
+    )
+
+    if not user or not verify_password(payload.senha, user.senha_hash):
+        raise HTTPException(403, "As credenciais não conferem")
+
+    # Generate opaque token (selector.validator)
+    full_token, selector, validator = generate_opaque_token()
+
+    # Build permissions cache
+    permissions = build_permissions(db, user.usuario_id)
+
+    # Create access token record for DESKTOP client
+    access_token = AccessTokens(
+        usuario_id=user.usuario_id,
+        selector=selector,
+        validator_hash=hash_validator(validator),
+        tipo_cliente="DESKTOP",  # Desktop client type
+        expires_at=calculate_token_expiration(minutes=15),
+        permissions=permissions,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
+    db.add(access_token)
+    db.commit()
+
+    # Return token in response body for desktop apps
+    return {
+        "access_token": full_token,
+        "token_type": "Bearer",
+        "expires_in": 900,  # 15 minutes in seconds
+        "user": {
+            "id": user.usuario_id,
+            "nome": user.nome,
+            "email": user.email,
+        }
+    }
+
+
 @router.get("/me", response_model=UserOut)
-async def auth_me(acesso=Depends(validar_token), db: Session = Depends(get_db)):
+async def auth_me(
+    token_context: TokenContext = Depends(validar_token_universal),
+    db: Session = Depends(get_db)
+):
+    """
+    Get current authenticated user information.
+
+    Works for both WEB and DESKTOP clients:
+    - WEB: Send session cookie + X-CSRF-Token header
+    - DESKTOP: Send Authorization: Bearer <token> header
+    """
     usuario = (
         db.query(Usuarios)
-        .filter(Usuarios.usuario_id == acesso.id_usuario)
+        .filter(Usuarios.usuario_id == token_context.usuario_id)
         .first()
     )
 
@@ -112,59 +197,37 @@ async def auth_me(acesso=Depends(validar_token), db: Session = Depends(get_db)):
         "email": usuario.email,
         "empresa_id": 0,
     }
-    #  "empresa_id": usuario.empresa_id,
 
 @router.post("/logout")
-async def auth_logout(acesso=Depends(validar_token), db: Session = Depends(get_db)):
-    acesso.ativo = False
-    db.commit()
+async def auth_logout(
+    token_context: TokenContext = Depends(validar_token_universal),
+    db: Session = Depends(get_db)
+):
+    """
+    Logout and revoke the current token.
 
-    response = JSONResponse({"detail": "Logout realizado com sucesso."})
-    response.delete_cookie("session_token", path="/")
-    response.delete_cookie("csrf_token", path="/")
-    return response
-
-@router.post("/refresh", response_model=UserOut)
-async def refresh_token(acesso=Depends(validar_token), db: Session = Depends(get_db)):
-    acesso.ativo = False
-    db.commit()
-
-    novo_token = gerar_token()
-    novo = Acesso(id_usuario=acesso.id_usuario, token=novo_token, ativo=True)
-    db.add(novo)
-    db.commit()
-
-    csrf = create_csrf_token()
-
-    usuario = (
-        db.query(Usuarios)
-        .filter(Usuarios.usuario_id == acesso.id_usuario)
+    Works for both WEB and DESKTOP clients:
+    - WEB: Revokes token and deletes cookies
+    - DESKTOP: Revokes token (client should discard the token)
+    """
+    # Revoke the current token
+    token_record = (
+        db.query(AccessTokens)
+        .filter(AccessTokens.token_id == token_context.token_id)
         .first()
     )
 
-    response = JSONResponse({
-        "id": usuario.usuario_id,
-        "nome": usuario.nome,
-        "email": usuario.email,
-        "empresa_id": usuario.empresa_id,
-    })
+    if token_record:
+        token_record.revogado = True
+        token_record.revogado_em = calculate_token_expiration(minutes=0)  # now
+        token_record.revogado_motivo = "logout"
+        db.commit()
 
-    response.set_cookie(
-        key="session_token",
-        value=novo_token,
-        httponly=True,
-        secure=False,
-        samesite="none",
-        path="/",
-    )
+    response = JSONResponse({"detail": "Logout realizado com sucesso."})
 
-    response.set_cookie(
-        key="csrf_token",
-        value=csrf,
-        httponly=False,
-        secure=False,
-        samesite="none",
-        path="/",
-    )
+    # Delete cookies only for WEB clients
+    if token_context.is_web_client():
+        response.delete_cookie("session_token", path="/")
+        response.delete_cookie("csrf_token", path="/")
 
     return response
