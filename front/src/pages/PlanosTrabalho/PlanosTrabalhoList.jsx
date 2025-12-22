@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiPlus, FiEdit2, FiFlag, FiCheckCircle, FiUsers, FiCalendar
 } from "react-icons/fi";
 import DataTable from "../../components/Tables/DataTable";
-import { listarPlanosTrabalhoPaginado } from "../../services/planosTrabalhoService";
+import { listarPlanosTrabalho } from "../../services/planosTrabalhoService";
 
 const PlanosTrabalhoList = () => {
   const navigate = useNavigate();
+  const [totalPlanos, setTotalPlanos] = useState(0);
 
   const columns = [
     {
@@ -50,7 +52,7 @@ const PlanosTrabalhoList = () => {
       header: "Ações",
       cell: ({ row }) => (
         <button
-          onClick={() => navigate(`/planos/editar/${row.original.id}`)}
+          onClick={() => navigate(`/planos/editar/${row.original.plano_id}`)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
         >
           <FiEdit2 size={16} />
@@ -60,9 +62,12 @@ const PlanosTrabalhoList = () => {
     },
   ];
 
-  const fetchPlanos = ({ page, limit, search, sort }) => {
-    return listarPlanosTrabalhoPaginado({ page, limit, search, sort });
-  };
+  const fetchPlanos = async (params) => {
+    const res = await listarPlanosTrabalho(params);
+    setTotalPlanos(res.total);
+    return res;
+};
+
 
   return (
     <div className="space-y-6 w-full">
@@ -100,7 +105,7 @@ const PlanosTrabalhoList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Total de Planos</p>
-              <p className="text-2xl font-bold text-gray-800">8</p>
+              <p className="text-2xl font-bold text-gray-800">{totalPlanos}</p>
             </div>
           </div>
         </div>

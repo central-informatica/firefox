@@ -1,3 +1,4 @@
+import {useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { listarEmpresasPaginado } from "../../services/empresasService";
 import {
@@ -7,6 +8,7 @@ import DataTable from "../../components/Tables/DataTable";
 
 const EmpresasList = () => {
   const navigate = useNavigate();
+  const [totalEmpresas, setTotalEmpresas] = useState(0);
 
   const columns = [
     {
@@ -68,8 +70,10 @@ const EmpresasList = () => {
     },
   ];
 
-  const fetchEmpresas = ({ page, limit, search, sort }) => {
-    return listarEmpresasPaginado({ page, limit, search, sort });
+  const fetchEmpresas = async ({ page, limit, search, sort }) => {
+    const res = await listarEmpresasPaginado({ page, limit, search, sort });
+    setTotalEmpresas(res.total); 
+    return res;
   };
 
   return (
@@ -99,7 +103,7 @@ const EmpresasList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Total de Empresas</p>
-              <p className="text-2xl font-bold text-gray-800">12</p>
+              <p className="text-2xl font-bold text-gray-800">{totalEmpresas}</p>
             </div>
           </div>
         </div>
@@ -111,7 +115,7 @@ const EmpresasList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Empresas Ativas</p>
-              <p className="text-2xl font-bold text-gray-800">11</p>
+              <p className="text-2xl font-bold text-gray-800">{totalEmpresas}</p>
             </div>
           </div>
         </div>
@@ -133,6 +137,7 @@ const EmpresasList = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <DataTable
           columns={columns}
+          total={totalEmpresas}
           fetchData={fetchEmpresas}
           limit={10}
         />

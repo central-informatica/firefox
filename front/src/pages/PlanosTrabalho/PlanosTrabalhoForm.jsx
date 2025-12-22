@@ -10,8 +10,8 @@ import Label from "../../components/Label/Label";
 
 import {
   getPlanoTrabalho,
-  createPlanoTrabalho,
-  updatePlanoTrabalho,
+  criarPlanoTrabalho,
+  atualizarPlanoTrabalho,
 } from "../../services/planosTrabalhoService";
 
 const PlanosTrabalhoForm = () => {
@@ -27,38 +27,44 @@ const PlanosTrabalhoForm = () => {
   });
 
   useEffect(() => {
-    if (isEdit) {
-      getPlanoTrabalho(id).then((data) => {
-        if (data) setForm(data);
+    if (!isEdit) return;
+
+    getPlanoTrabalho(id).then((data) => {
+      setForm({
+        nome: data.nome ?? "",
+        descricao: data.descricao ?? "",
       });
-    }
+    });
   }, [id, isEdit]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((old) => ({ ...old, [name]: value }));
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+  e.preventDefault();
 
-    try {
-      if (isEdit) {
-        await updatePlanoTrabalho(id, form);
-      } else {
-        await createPlanoTrabalho(form);
-      }
-
-      setIsSaved(true);
-      setTimeout(() => {
-        navigate("/planos");
-      }, 800);
-    } catch (error) {
-      console.error(error);
-      setIsLoading(false);
+  if (isEdit) {
+      await atualizarPlanoTrabalho(id, {
+        nome: form.nome,
+        descricao: form.descricao,
+      });
+    } else {
+      await criarPlanoTrabalho({
+        nome: form.nome,
+        descricao: form.descricao,
+      });
     }
+
+    navigate("/planos");
   };
+
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 animate-[fadeInUp_0.6s_ease-out]">

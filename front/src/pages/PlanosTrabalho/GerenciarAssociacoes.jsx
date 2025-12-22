@@ -14,7 +14,7 @@ import {
 import Select from "../../components/Select/Select";
 import Label from "../../components/Label/Label";
 
-import { listarPlanosTrabalhoPaginado } from "../../services/planosTrabalhoService";
+import { listarPlanosTrabalho } from "../../services/planosTrabalhoService";
 import { getGruposByPlano, getUsuariosByGrupo, getCertificadosByGrupo, addUsuarioToGrupo, removeUsuarioFromGrupo, addCertificadoToGrupo, removeCertificadoFromGrupo } from "../../services/gruposService";
 import { getUsuarios } from "../../services/usuariosService";
 import { getCertificadosSimples } from "../../services/certificadosService";
@@ -41,7 +41,7 @@ const GerenciarAssociacoes = () => {
   // Carregar planos iniciais
   useEffect(() => {
     const carregarPlanos = async () => {
-      const resultado = await listarPlanosTrabalhoPaginado({ page: 1, limit: 100 });
+      const resultado = await listarPlanosTrabalho({ page: 1, limit: 100 });
       setPlanos(resultado.data || []);
     };
     carregarPlanos();
