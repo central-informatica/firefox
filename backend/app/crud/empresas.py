@@ -1,10 +1,9 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import text, or_
 from fastapi import HTTPException
 from backend.app.db.models import Empresas, EmpresaMembros, Usuarios
 from backend.app.schemas.empresas import EmpresaCreate, EmpresaUpdate
 from backend.app.api.deps import get_current_user
-
 
 class CRUDEmpresas:
 
@@ -86,9 +85,24 @@ class CRUDEmpresas:
 
         return items, total
 
+    def listar_empresas_usuario(self, db: Session, usuario_id: int):
+        sql = text("""
+            SELECT DISTINCT
+                e.empresa_id,
+                e.razao_social,
+                e.fantasia
+            FROM empresas e
+            LEFT JOIN empresa_membros em
+                ON em.empresa_id = e.empresa_id
+            WHERE
+                e.anfitria_usuario_id = :usuario_id
+                OR em.usuario_id = :usuario_id
+            ORDER BY e.fantasia NULLS LAST, e.razao_social
+        """)
 
-    #def listar(self, db: Session):
-    #    return db.query(Empresas).all()
+        result = db.execute(sql, {"usuario_id": usuario_id}).mappings().all()
+        return result
+    
 
     def get(self, db: Session, empresa_id: int):
         emp = db.query(Empresas).filter(Empresas.empresa_id == empresa_id).first()

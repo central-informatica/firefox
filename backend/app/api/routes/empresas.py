@@ -37,6 +37,23 @@ def listar_empresas(
         "total": total,
     }
 
+@router.get("/minhas")
+def listar_minhas_empresas(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    usuario_id = current_user.usuarios.usuario_id
+    print("🔥 usuario_id usado:", usuario_id)
+
+    empresas = crud_empresas.listar_empresas_usuario(db, usuario_id)
+    print("🔥 empresas retornadas:", empresas)
+
+    return {
+        "data": empresas,
+        "total": len(empresas)
+    }
+
+
 @router.get("/{empresa_id}", response_model=EmpresaOut)
 def get_empresa(empresa_id: int, db: Session = Depends(get_db)):
     return crud_empresas.get(db, empresa_id)

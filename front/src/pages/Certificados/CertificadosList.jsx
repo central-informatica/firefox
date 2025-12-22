@@ -23,14 +23,16 @@ import {
   FiFilter
 } from "react-icons/fi";
 
-import SelectCustom from "../../components/Select/Select";
+//import SelectCustom from "../../components/Select/SelectEmpresa";
 import DataTable from "../../components/Tables/DataTable";
+import SelectEmpresa from "../../components/Select/SelectEmpresa";
 
 export default function CertificadosList() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const [empresasDoUsuario, setEmpresasDoUsuario] = useState([]);
+  const [empresaId, setEmpresaId] = useState(null);
   const [empresaFiltro, setEmpresaFiltro] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [stats, setStats] = useState({ total: 0, ativos: 0, expirados: 0 });
@@ -222,14 +224,12 @@ export default function CertificadosList() {
               <FiBriefcase className="text-gray-400" size={14} />
               Empresa
             </label>
-            <SelectCustom
-              placeholder="Selecione uma empresa"
-              value={empresaFiltro}
-              onChange={(value) => {
-                setEmpresaFiltro(value);
-                setReloadKey((old) => old + 1);
+            <SelectEmpresa
+              value={empresaId}
+              onChange={(id) => {
+                setEmpresaId(id);
+                setReloadKey((k) => k + 1);
               }}
-              options={empresasDoUsuario}
             />
           </div>
         </div>

@@ -1,9 +1,15 @@
 import { ReplaceAll } from "lucide-react";
 import { apiFetch } from "../api/api";
 
-/**
- * LISTAGEM PAGINADA
- */
+export async function listarMinhasEmpresas() {
+  const response = await apiFetch("/empresas/minhas");
+  const json = await response.json();
+
+  console.log("🟢 JSON da API:", json);
+
+  return json;
+}
+
 export async function listarEmpresasPaginado({
   page = 1,
   limit = 10,
