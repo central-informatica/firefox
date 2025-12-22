@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from fastapi import HTTPException
-from backend.app.db.models import Empresas, EmpresaMembros
+from backend.app.db.models import Empresas, EmpresaMembros, Usuarios
 from backend.app.schemas.empresas import EmpresaCreate, EmpresaUpdate
+from backend.app.api.deps import get_current_user
 
 
 class CRUDEmpresas:
@@ -95,7 +96,7 @@ class CRUDEmpresas:
             raise HTTPException(404, "Empresa não encontrada")
         return emp
 
-    def criar(self, db: Session, data: EmpresaCreate):
+    def criar(self, db: Session, data: EmpresaCreate, current_user: Usuarios,):
         # Verificar duplicidade de CNPJ
         existente = (
             db.query(Empresas)
@@ -105,12 +106,11 @@ class CRUDEmpresas:
 
         if existente:
             raise HTTPException(400, "Já existe uma empresa cadastrada com este CNPJ.")
-
         nova = Empresas(
             razao_social=data.razao_social,
             fantasia=data.fantasia,
             cnpj=data.cnpj,
-            anfitria_usuario_id=data.anfitria_usuario_id,
+            anfitria_usuario_id=current_user.usuarios.usuario_id,
             timezone=data.timezone,
         )
 

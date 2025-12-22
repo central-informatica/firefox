@@ -16,7 +16,11 @@ import {
   updateEmpresa,
 } from "../../services/empresasService";
 
-const timezoneOptions = getTimezoneOptions();
+const timezones = Intl.supportedValuesOf("timeZone");
+const timezoneOptions = timezones.map((tz) => ({
+  value: tz,
+  label: tz,
+}));
 
 const EmpresaForm = () => {
   const { id } = useParams();
@@ -27,7 +31,7 @@ const EmpresaForm = () => {
   const [isSaved, setIsSaved] = useState(false);
 
   const [form, setForm] = useState({
-    nome: "",
+    razao_social: "",
     cnpj: "",
     timezone: "America/Sao_Paulo",
   });
@@ -111,9 +115,9 @@ const EmpresaForm = () => {
               </Label>
               <div className="relative">
                 <Input
-                  name="nome"
+                  name="razao_social"
                   placeholder="Digite o nome da empresa"
-                  value={form.nome}
+                  value={form.razao_social}
                   onChange={handleChange}
                   required
                   className="w-full transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"

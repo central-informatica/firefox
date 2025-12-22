@@ -58,7 +58,7 @@ const EmpresasList = () => {
       header: "Ações",
       cell: ({ row }) => (
         <button
-          onClick={() => navigate(`/empresas/editar/${row.original.id}`)}
+          onClick={() => navigate(`/empresas/editar/${row.original.empresa_id}`)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium transition-all duration-200"
         >
           <FiEdit2 size={16} />

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.api.deps import get_current_user
 
+from backend.app.db.models import Usuarios
 from backend.app.db.session import get_db
 from backend.app.schemas.empresas import (
     EmpresaCreate, EmpresaUpdate, EmpresaOut
@@ -42,8 +43,8 @@ def get_empresa(empresa_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=EmpresaOut)
-def criar_empresa(data: EmpresaCreate, db: Session = Depends(get_db)):
-    return crud_empresas.criar(db, data)
+def criar_empresa(data: EmpresaCreate, db: Session = Depends(get_db),current_user: Usuarios = Depends(get_current_user)):
+    return crud_empresas.criar(db, data,current_user=current_user,)
 
 
 @router.put("/{empresa_id}", response_model=EmpresaOut)
