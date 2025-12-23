@@ -14,11 +14,10 @@ import {
 } from "react-icons/fi";
 
 import Input from "../../components/Input/Input";
-import SelectCustom from "../../components/Select/Select";
+import SelectCustom from "../../components/Select/SelectEmpresa";
 import Label from "../../components/Label/Label";
 
 import { useAuth } from "../../auth/useAuth";
-import { getEmpresasDoUsuario } from "../../services/empresasService";
 import { createCertificado } from "../../services/certificadosService";
 
 export default function CertificadosForm() {
@@ -29,6 +28,7 @@ export default function CertificadosForm() {
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [empresaId, setEmpresaId] = useState(null);
 
   const [form, setForm] = useState({
     senha: "",
@@ -38,27 +38,6 @@ export default function CertificadosForm() {
     validade_inicio: "",
     valido_ate: "",
   });
-
-  const [empresas, setEmpresas] = useState([]);
-  const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
-
-  useEffect(() => {
-    if (!user) return;
-
-    getEmpresasDoUsuario(user.id).then((lista) => {
-      const opcoes = lista.map((e) => ({
-        value: e.empresa_id,
-        label: e.razao_social,
-      }));
-
-      setEmpresas(opcoes);
-
-      if (opcoes.length > 0) {
-        setEmpresaSelecionada(opcoes[0]);
-        setForm((f) => ({ ...f, empresa_id: opcoes[0].value }));
-      }
-    });
-  }, [user]);
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -107,6 +86,11 @@ export default function CertificadosForm() {
     }
   };
 
+  const handleEmpresaChange = (id) => {
+    setEmpresaId(id);
+    setForm((prev) => ({ ...prev, empresa_id: id }));
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -132,8 +116,7 @@ export default function CertificadosForm() {
       toast.success("Certificado enviado com sucesso!");
       navigate("/certificados");
     } catch (err) {
-      console.error(err);
-      toast.error("Erro ao enviar certificado.");
+      toast.error(err.toString().split("Error: ")[1] || "Erro ao enviar certificado.");
     } finally {
       setIsSubmitting(false);
     }
@@ -171,13 +154,10 @@ export default function CertificadosForm() {
                 Empresa
               </Label>
               <SelectCustom
-                options={empresas}
-                value={empresaSelecionada}
-                onChange={(opt) => {
-                  setEmpresaSelecionada(opt);
-                  setForm((f) => ({ ...f, empresa_id: opt.value }));
-                }}
+                  value={empresaId}
+                  onChange={handleEmpresaChange}
               />
+              
             </div>
 
             {/* Upload Area */}

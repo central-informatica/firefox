@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { getEmpresasDoUsuario } from "../../services/empresasService";
+// REMOVIDO: getEmpresasDoUsuario (SelectEmpresa é autônomo)
+// import { getEmpresasDoUsuario } from "../../services/empresasService";
 
 import {
   listarCertificadosPaginado,
@@ -31,28 +32,13 @@ export default function CertificadosList() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [empresasDoUsuario, setEmpresasDoUsuario] = useState([]);
+  // REMOVIDO: estados que duplicavam o carregamento de empresas
+  // const [empresasDoUsuario, setEmpresasDoUsuario] = useState([]);
+  // const [empresaFiltro, setEmpresaFiltro] = useState(null);
+
   const [empresaId, setEmpresaId] = useState(null);
-  const [empresaFiltro, setEmpresaFiltro] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [stats, setStats] = useState({ total: 0, ativos: 0, expirados: 0 });
-
-  useEffect(() => {
-    if (!user) return;
-
-    getEmpresasDoUsuario(user.id).then((empresas) => {
-      const opcoes = empresas.map((e) => ({
-        value: e.empresa_id,
-        label: e.razao_social,
-      }));
-
-      setEmpresasDoUsuario(opcoes);
-
-      if (opcoes.length > 0) {
-        setEmpresaFiltro(opcoes[0]);
-      }
-    });
-  }, [user]);
 
   const getCertificateStatus = (validoAte) => {
     const hoje = new Date();
@@ -179,8 +165,9 @@ export default function CertificadosList() {
   ];
 
   const fetchCertificados = ({ page, limit, search, sort }) => {
+    // 🔧 Correção: usar empresaId e não empresaFiltro
     return listarCertificadosPaginado({
-      empresa_id: empresaFiltro?.value,
+      empresa_id: empresaId,
       page,
       limit,
       search,
@@ -289,9 +276,10 @@ export default function CertificadosList() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-slideUp">
-        {empresaFiltro ? (
+        {/* 🔧 Correção: condição e key baseadas em empresaId */}
+        {empresaId ? (
           <DataTable
-            key={empresaFiltro.value + "-" + reloadKey}
+            key={empresaId + "-" + reloadKey}
             columns={columns}
             fetchData={fetchCertificados}
             limit={10}

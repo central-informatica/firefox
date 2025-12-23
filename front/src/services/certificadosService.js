@@ -39,17 +39,35 @@ export async function getCertificado(id) {
 }
 
 export async function createCertificado(formData) {
-  const res = await apiFetch(`/certificados`, {
+  const res = await apiFetch("/certificados/", {
     method: "POST",
     body: formData,
   });
-  console.log("Form data: ", res)
+
   if (!res.ok) {
-    throw new Error("Erro ao criar certificado");
+    let message = "Erro ao criar certificado";
+
+    try {
+      const errorBody = await res.json();
+
+      if (typeof errorBody.detail === "string") {
+        message = errorBody.detail;
+      } else if (Array.isArray(errorBody.detail)) {
+        message = errorBody.detail
+          .map((e) => e.msg)
+          .join(", ");
+      }
+    } catch {
+      // fallback se não for JSON
+      message = await res.text();
+    }
+
+    throw new Error(message);
   }
 
-  return res.json();
+  return await res.json();
 }
+
 
 export async function excluir_certificado(id) {
   const res = await apiFetch(`/certificados/${id}`, {
@@ -64,6 +82,7 @@ export async function excluir_certificado(id) {
 
   return res.json();
 }
+
 
 // Mock data para testes de associação
 const certificadosMock = [
@@ -91,4 +110,3 @@ const certificadosMock = [
 export function getCertificadosSimples() {
   return Promise.resolve(certificadosMock);
 }
-

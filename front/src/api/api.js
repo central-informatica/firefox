@@ -41,18 +41,18 @@ async function refreshTokens() {
  */
 export async function apiFetch(path, options = {}) {
   const csrf = getCookie("csrf_token") || "";
+  const isFormData = options.body instanceof FormData;
 
   const response = await fetch(`${API_URL}${path}`, {
-    credentials: "include", 
+    credentials: "include",
     ...options,
     headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": csrf, 
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      "X-CSRF-Token": csrf,
       ...(options.headers || {}),
     },
   });
 
-  // Se não for 401, retorna direto
   if (response.status !== 401) {
     return response;
   }
