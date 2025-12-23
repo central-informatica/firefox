@@ -29,7 +29,7 @@ class Usuarios(Base):
     nivel: Mapped[str] = mapped_column(Enum('ADMINISTRADOR', 'COMUM', name='usuario_nivel'), nullable=False, server_default=text("'COMUM'::usuario_nivel"), comment='Nivel global do usuario na plataforma SaaS. ADMINISTRADOR = acesso total ao sistema. COMUM = usuario padrao.')
     telefone: Mapped[Optional[str]] = mapped_column(String(40))
 
-    acesso: Mapped[list['Acesso']] = relationship('Acesso', back_populates='usuarios')
+    access_tokens: Mapped[list['AccessTokens']] = relationship('AccessTokens', back_populates='usuarios')
     empresas: Mapped[list['Empresas']] = relationship('Empresas', back_populates='anfitria_usuario')
     certificados: Mapped[list['Certificados']] = relationship('Certificados', back_populates='usuarios')
     empresa_convites: Mapped[list['EmpresaConvites']] = relationship('EmpresaConvites', back_populates='convidado_usuario')
@@ -37,21 +37,34 @@ class Usuarios(Base):
     grupos_usuarios: Mapped[list['GruposUsuarios']] = relationship('GruposUsuarios', back_populates='usuario')
 
 
-class Acesso(Base):
-    __tablename__ = 'acesso'
+class AccessTokens(Base):
+    __tablename__ = 'access_tokens'
     __table_args__ = (
-        ForeignKeyConstraint(['id_usuario'], ['usuarios.usuario_id'], name='acesso_id_usuario_fkey'),
-        PrimaryKeyConstraint('acesso_id', name='acesso_pkey'),
-        UniqueConstraint('token', name='acesso_token_key')
+        ForeignKeyConstraint(['usuario_id'], ['usuarios.usuario_id'], ondelete='CASCADE', name='access_tokens_usuario_fk'),
+        PrimaryKeyConstraint('token_id', name='access_tokens_pkey'),
+        UniqueConstraint('selector', name='access_tokens_selector_key'),
+        Index('idx_access_tokens_usuario', 'usuario_id'),
+        Index('idx_access_tokens_selector', 'selector', unique=True),
+        Index('idx_access_tokens_expires_at', 'expires_at'),
+        {'comment': 'Opaque access tokens with Argon2 hashing for secure authentication'}
     )
 
-    acesso_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    id_usuario: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    token: Mapped[str] = mapped_column(String(255), nullable=False)
-    ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'))
-    criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
+    token_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(BigInteger, nullable=False, comment='User owning this token')
+    selector: Mapped[str] = mapped_column(String(64), nullable=False, comment='First 32 bytes (base64url) for fast indexed lookup')
+    validator_hash: Mapped[str] = mapped_column(String(128), nullable=False, comment='Argon2 hash of validator (last 32 bytes)')
+    tipo_cliente: Mapped[str] = mapped_column(Enum('WEB', 'DESKTOP', name='client_type'), nullable=False, comment='Client type: WEB (cookies+CSRF) or DESKTOP (Bearer token)')
+    criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'), comment='Token creation timestamp')
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, comment='Token expiration timestamp (typically 15 minutes)')
+    ultimo_uso: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='Last time this token was used for authentication')
+    revogado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'), comment='Token revocation flag')
+    revogado_em: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='Timestamp when token was revoked')
+    revogado_motivo: Mapped[Optional[str]] = mapped_column(String(255), comment='Reason for revocation (logout, security, expired, etc)')
+    permissions: Mapped[dict] = mapped_column(JSONB, nullable=False, comment='Embedded permissions: user role + empresa memberships')
+    user_agent: Mapped[Optional[str]] = mapped_column(Text, comment='Client user agent string')
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), comment='Client IP address (IPv4 or IPv6)')
 
-    usuarios: Mapped['Usuarios'] = relationship('Usuarios', back_populates='acesso')
+    usuarios: Mapped['Usuarios'] = relationship('Usuarios', back_populates='access_tokens')
 
 
 class Empresas(Base):

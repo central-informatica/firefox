@@ -1,7 +1,7 @@
 from backend.app.db.models import (
     Base,
     Usuarios,
-    Acesso,
+    AccessTokens,
     Empresas,
     Certificados,
     EmpresaMembros,

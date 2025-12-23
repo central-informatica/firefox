@@ -2,68 +2,41 @@ import { getCookie } from "./cookies";
 
 const API_URL = "http://127.0.0.1:8000";
 
-let refreshing = false;
-let refreshPromise = null;
+/**
+ * Basic API fetch without authentication
+ * Use this for public endpoints (login, register, etc.)
+ */
+export async function apiFetch(path, options = {}) {
+  const response = await fetch(API_URL + path, {
+    credentials: "include", // Send cookies
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+    },
+  });
 
-async function refreshTokens() {
-  if (refreshing) return refreshPromise;
-
-  refreshing = true;
-  refreshPromise = fetch(`${API_URL}/auth/refresh`, {
-    method: "POST",
-    // credentials: "include",
-    // headers: {
-    //   "X-CSRF-Token": getCookie("csrf_token") || "",
-    // },
-  })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error("Refresh falhou");
-      }
-    })
-    .finally(() => {
-      refreshing = false;
-    });
-
-  return refreshPromise;
+  return response;
 }
 
-export async function apiFetch(path, options = {}) {
+/**
+ * API fetch with CSRF token authentication
+ * Use this for protected endpoints that require authentication
+ */
+export async function apiFetchWithToken(path, options = {}) {
   const csrf = getCookie("csrf_token") || "";
 
-  const response = await fetch(API_URL + path, {
-    // credentials: "include",
-    ...options,
-    // headers: {
-      // "X-CSRF-Token": csrf,
-      // ...(options.headers || {}),
-    // },
-  });
-
-  if (response.status !== 401) {
-    return response;
-  }
-
   if (!csrf) {
-    return response;
+    console.warn("CSRF token not found. User may not be authenticated.");
   }
 
-  if (path === "/auth/refresh") {
-    return response;
-  }
-
-  try {
-    await refreshTokens();
-  } catch (err) {
-    return response;
-  }
-
-  return fetch(API_URL + path, {
-    // credentials: "include",
+  const response = await fetch(API_URL + path, {
+    credentials: "include", // Send session_token cookie
     ...options,
-    // headers: {
-    //   "X-CSRF-Token": getCookie("csrf_token") || "",
-    //   ...(options.headers || {}),
-    // },
+    headers: {
+      "X-CSRF-Token": csrf, // Send CSRF token in header
+      ...(options.headers || {}),
+    },
   });
+
+  return response;
 }
