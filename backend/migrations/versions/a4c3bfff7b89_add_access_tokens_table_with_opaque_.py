@@ -21,7 +21,7 @@ from sqlalchemy.dialects.postgresql import ENUM
 
 # revision identifiers, used by Alembic.
 revision: str = 'a4c3bfff7b89'
-down_revision: Union[str, Sequence[str], None] = None#'15e059b580f1'
+down_revision: Union[str, Sequence[str], None] = "8dab8acbe204" #'15e059b580f1'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
