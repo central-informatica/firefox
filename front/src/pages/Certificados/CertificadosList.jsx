@@ -32,13 +32,9 @@ export default function CertificadosList() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // REMOVIDO: estados que duplicavam o carregamento de empresas
-  // const [empresasDoUsuario, setEmpresasDoUsuario] = useState([]);
-  // const [empresaFiltro, setEmpresaFiltro] = useState(null);
-
   const [empresaId, setEmpresaId] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [stats, setStats] = useState({ total: 0, ativos: 0, expirados: 0 });
+  const [stats, setStats] = useState({ total: 0, ativos: 0, expirando: 0, expirados: 0, });
 
   const getCertificateStatus = (validoAte) => {
     const hoje = new Date();
@@ -53,6 +49,56 @@ export default function CertificadosList() {
       return { status: "ativo", label: "Ativo", color: "green", dias: diasRestantes };
     }
   };
+
+  useEffect(() => {
+  if (!empresaId) {
+    setStats({ total: 0, ativos: 0, expirando: 0, expirados: 0});
+    return;
+  }
+
+  async function carregarStats() {
+    try {
+      const res = await listarCertificadosPaginado({
+        empresa_id: empresaId,
+        page: 1,
+        limit: 1000, // suficiente para stats
+        search: "",
+        sort: "",
+      });
+
+      const certificados = res.data || [];
+
+      let _ativos = 0;
+      let _expirando = 0;
+      let _expirados = 0;
+
+      certificados.forEach((c) => {
+        const statusInfo = getCertificateStatus(c.valido_ate);
+
+        if (statusInfo.status === "ativo") _ativos++;
+        else if (statusInfo.status === "expirando") _expirando++;
+        else if (statusInfo.status === "expirado") _expirados++;
+      });
+
+      setStats({
+        total: certificados.length,
+        ativos: _ativos,
+        expirando: _expirando,
+        expirados: _expirados,
+      });
+
+      console.log("Contadores:", { _ativos, _expirando, _expirados });
+
+      console.log("Contadores:", { _ativos, _expirando, _expirados });
+    } catch (err) {
+      console.error("Erro ao carregar estatísticas:", err);
+      setStats({ total: 0, ativos: 0, expirando: 0, expirados: 0 });
+    }
+  }
+
+  carregarStats();
+}, [empresaId, reloadKey]);
+
 
   const columns = [
     {
@@ -223,7 +269,7 @@ export default function CertificadosList() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slideUp">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-slideUp">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-50 rounded-xl">
@@ -255,6 +301,17 @@ export default function CertificadosList() {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Expirando em breve</p>
+              <p className="text-2xl font-bold text-gray-800">{stats.expirando || 0}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-50 rounded-xl">
+              <FiAlertCircle className="text-red-600" size={24} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-medium">Certificados Expirados</p>
               <p className="text-2xl font-bold text-gray-800">{stats.expirados || 0}</p>
             </div>
           </div>
