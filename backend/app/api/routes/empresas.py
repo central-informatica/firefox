@@ -25,7 +25,7 @@ def listar_empresas(
 ):
     items, total = crud_empresas.listar_paginado_do_usuario(
         db=db,
-        usuario_id=current_user.usuarios.usuario_id,
+        usuario_id=current_user.usuario_id,
         page=page,
         limit=limit,
         search=search,

@@ -20,7 +20,7 @@ def listar_planos_trabalho(
     db: Session = Depends(get_db),
     current_session = Depends(get_current_user),
 ):
-    empresa_id = current_session.usuarios.empresas[0].empresa_id
+    empresa_id = current_session.empresas[0].empresa_id
 
     items, total = crud_planos_trabalho.listar(
         db=db,
@@ -42,7 +42,7 @@ def getPlanoTrabalho(
     db: Session = Depends(get_db),
     current_session = Depends(get_current_user),
 ):
-    usuario_id = current_session.usuarios.usuario_id
+    usuario_id = current_session.usuario_id
     return crud_planos_trabalho.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
 
 
@@ -77,7 +77,7 @@ def atualizar_plano_trabalho(
     db: Session = Depends(get_db),
     current_session = Depends(get_current_user),
 ):
-    usuario_id = current_session.usuarios.usuario_id
+    usuario_id = current_session.usuario_id
     return crud_planos_trabalho.atualizar(db, usuario_id=usuario_id, plano_id=plano_id, data=data)
 
 
@@ -87,6 +87,6 @@ def deletar_plano_trabalho(
     db: Session = Depends(get_db),
     current_session = Depends(get_current_user),
 ):
-    usuario_id = current_session.usuarios.usuario_id
+    usuario_id = current_session.usuario_id
     crud_planos_trabalho.deletar(db, usuario_id=usuario_id, plano_id=plano_id)
     return {"ok": True}

@@ -5,10 +5,12 @@ import {
 } from "react-icons/fi";
 import DataTable from "../../components/Tables/DataTable";
 import { listarPlanosTrabalho } from "../../services/planosTrabalhoService";
+//import {listarTotalGruposTrabalho} from "../../services/gruposService";
 
 const PlanosTrabalhoList = () => {
   const navigate = useNavigate();
   const [totalPlanos, setTotalPlanos] = useState(0);
+  const [totalGrupos, setTotalGrupos] = useState(0);
 
   const columns = [
     {
@@ -64,8 +66,11 @@ const PlanosTrabalhoList = () => {
 
   const fetchPlanos = async (params) => {
     const res = await listarPlanosTrabalho(params);
+    //const resGrupo await listarTotalGruposTrabalho();
+    //setTotalGrupos(res.total_grupos || 0);
     setTotalPlanos(res.total);
     return res;
+
 };
 
 
@@ -117,7 +122,7 @@ const PlanosTrabalhoList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Planos Ativos</p>
-              <p className="text-2xl font-bold text-gray-800">7</p>
+              <p className="text-2xl font-bold text-gray-800">{totalPlanos}</p>
             </div>
           </div>
         </div>
@@ -129,7 +134,7 @@ const PlanosTrabalhoList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Grupos Ativos</p>
-              <p className="text-2xl font-bold text-gray-800">24</p>
+              <p className="text-2xl font-bold text-gray-800">{totalGrupos}</p>
             </div>
           </div>
         </div>

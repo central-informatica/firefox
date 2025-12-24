@@ -1,5 +1,5 @@
 // src/services/planosTrabalhoService.js
-import { apiFetch } from "../api/api"; // ajuste o caminho conforme seu projeto
+import { apiFetch, apiFetchWithToken } from "../api/api"; // ajuste o caminho conforme seu projeto
 
 export async function listarPlanosTrabalho(params = {}) {
   const {
@@ -16,7 +16,7 @@ export async function listarPlanosTrabalho(params = {}) {
     sort: sort || "",
   }).toString();
   
-  const res = await apiFetch(`/planos-trabalho/?${query}`);
+  const res = await apiFetchWithToken(`/planos-trabalho/?${query}`);
   
   // apiFetch retorna Response (fetch). Então precisa parsear JSON.
   if (!res.ok) {
@@ -32,7 +32,7 @@ export async function listarPlanosTrabalho(params = {}) {
 }
 
 export async function getPlanoTrabalho(id) {
-  const response = await apiFetch(`/planos-trabalho/${id}`);
+  const response = await apiFetchWithToken(`/planos-trabalho/${id}`);
   if (response instanceof Response) {
     return await response.json();
   }
@@ -42,18 +42,20 @@ export async function getPlanoTrabalho(id) {
 
 export async function criarPlanoTrabalho(payload) {
   // payload só: { nome, descricao } (empresa_id vem do usuário logado no backend)
-  return apiFetch("/planos-trabalho/", {
+  return apiFetchWithToken("/planos-trabalho/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export async function atualizarPlanoTrabalho(planoId, payload) {
-  return apiFetch(`/planos-trabalho/${planoId}`, {
+  console.log("Updating PlanoTrabalho ID:", planoId, "with payload:", payload);
+  return apiFetchWithToken(`/planos-trabalho/${planoId}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
 }
+
 
 export async function deletarPlanoTrabalho(planoId) {
   return apiFetch(`/planos-trabalho/${planoId}`, {

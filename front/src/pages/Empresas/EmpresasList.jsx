@@ -1,14 +1,20 @@
 import {useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { listarEmpresasPaginado } from "../../services/empresasService";
+import { useAuth } from "../../auth/useAuth";
 import {
   FiPlus, FiEdit2, FiClock, FiBriefcase, FiTrendingUp, FiMapPin
 } from "react-icons/fi";
 import DataTable from "../../components/Tables/DataTable";
 
 const EmpresasList = () => {
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [totalEmpresas, setTotalEmpresas] = useState(0);
+
+  if (loading || !user) {
+    return null;
+  }
 
   const columns = [
     {

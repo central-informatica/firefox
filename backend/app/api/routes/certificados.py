@@ -14,14 +14,14 @@ from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 
 from backend.app.core.config import MASTER_KEY
-from backend.app.core.security import validar_token
+from backend.app.core.validar_token import validar_token
+from backend.app.schemas.token import TokenContext
 from backend.app.db.session import get_db
 from backend.app.db.models import Certificados
 from backend.app.db.models import Usuarios
-from backend.app.api.deps import get_current_user
 from backend.app.utils.crypto_utils import encrypt_pfx, decrypt_pfx
 from backend.app.schemas.certificados import SignRequest,CertificadoPermitidoResponse, ValidarAcessoCertificadoResponse
-from backend.app.crud.certificado import listar_certificados_permitidos, validar_acesso_certificado
+from backend.app.crud.certificado import listar_certificados_permitidos as crud_listar_certificados_permitidos, validar_acesso_certificado
 
 router = APIRouter(prefix="/certificados", tags=["certificados"])
 
@@ -61,14 +61,14 @@ async def upload_certificado(
     emitido_por: str = Form(""),
     validade_inicio: str = Form(""),
     valido_ate: str = Form(""),
-    acesso=Depends(validar_token),
+    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
     """
     Recebe um .pfx, extrai os dados principais, criptografa e grava no banco.
     """
-    
-    id_usuario = acesso.id_usuario
+
+    id_usuario = token_context.usuario_id
 
     if not arquivo.filename.lower().endswith(".pfx"):
         raise HTTPException(status_code=400, detail="Envie um arquivo .pfx válido")
@@ -133,7 +133,7 @@ def listar_certificados(
     limit: int = 10,
     search: str = "",
     sort: str = "",
-    acesso=Depends(validar_token),
+    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
     """
@@ -186,20 +186,28 @@ def listar_certificados(
 
 @router.get("/listar_certificados_permitidos/{usuario_id}",response_model=list[CertificadoPermitidoResponse])
 def listar_certificados_permitidos(
-    usuario: Usuarios = Depends(get_current_user),
+    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
-    return listar_certificados_permitidos(db, usuario.usuario_id)
+    """
+    Lista todos os certificados que o usuário autenticado tem permissão para acessar.
+    Usa o usuario_id extraído do token de autenticação.
+    """
+    return crud_listar_certificados_permitidos(db, token_context.usuario_id)
 
 @router.get("/{certificado_id}/validar_acesso",response_model=ValidarAcessoCertificadoResponse,)
 def validar_acesso(
     certificado_id: int,
-    usuario: Usuarios = Depends(get_current_user),
+    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
+    """
+    Valida se o usuário autenticado tem acesso ao certificado especificado.
+    Usa o usuario_id extraído do token de autenticação.
+    """
     permitido = validar_acesso_certificado(
         db=db,
-        usuario_id=usuario.usuario_id,
+        usuario_id=token_context.usuario_id,
         certificado_id=certificado_id,
     )
 
@@ -211,7 +219,7 @@ def validar_acesso(
 @router.get("/{certificado_id}")
 def obter_certificado(
     certificado_id: int,
-    acesso=Depends(validar_token),
+    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
     cert = db.query(Certificados).filter(
@@ -237,14 +245,14 @@ def obter_certificado(
 @router.delete("/{certificado_id}")
 def excluir_certificado(
     certificado_id: int,
-    acesso=Depends(validar_token),
+    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
     """
     Remove um certificado do banco. (Opcional: remove o arquivo físico)
     Garante que o certificado pertence ao usuário logado.
     """
-    id_usuario = acesso.id_usuario
+    id_usuario = token_context.usuario_id
 
     cert = db.query(Certificados).filter(
         Certificados.certificado_id == certificado_id
@@ -273,14 +281,14 @@ def excluir_certificado(
 
 @router.get("/api/certificates")
 async def list_certificates_for_sign(
-    acesso=Depends(validar_token),
+    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
     """
     Lista os certificados do usuário para uso em assinatura:
     retorna DER em base64.
     """
-    id_usuario = acesso.id_usuario
+    id_usuario = token_context.usuario_id
 
     certificados = db.query(Certificados).filter(
         Certificados.criado_por == id_usuario
@@ -321,14 +329,14 @@ async def list_certificates_for_sign(
 @router.post("/api/sign")
 async def sign_digest(
     payload: SignRequest,
-    acesso=Depends(validar_token),
+    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
     """
     Recebe o hash (em base64) e o cert_id, recupera o certificado,
     descriptografa e assina usando SHA256 com RSA.
     """
-    id_usuario = acesso.id_usuario
+    id_usuario = token_context.usuario_id
 
     cert = db.query(Certificados).filter(
         Certificados.certificado_id == payload.cert_id,

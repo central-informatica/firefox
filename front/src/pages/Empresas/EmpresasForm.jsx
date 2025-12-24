@@ -56,6 +56,7 @@ const EmpresaForm = () => {
       if (isEdit) {
         await updateEmpresa(id, form);
       } else {
+        console.log(form);
         await createEmpresa(form);
       }
 

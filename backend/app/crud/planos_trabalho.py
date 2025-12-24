@@ -54,11 +54,21 @@ class CRUDPlanosTrabalho:
 
     def atualizar(self, db: Session, usuario_id: int, plano_id: int, data: PlanoTrabalhoUpdate):
         plano = self.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
+        from sqlalchemy import inspect
+        print("ANTES DO UPDATE:")
+        print("plano:", plano)
+        print("persistent:", inspect(plano).persistent)
+        print("detached:", inspect(plano).detached)
+        print("pending:", inspect(plano).pending)
+        print("dirty:", inspect(plano).modified)
 
         if data.nome is not None:
             plano.nome = data.nome
         if data.descricao is not None:
             plano.descricao = data.descricao
+        
+        print("DEPOIS DO UPDATE:")
+        print("dirty:", inspect(plano).modified)
 
         try:
             db.commit()

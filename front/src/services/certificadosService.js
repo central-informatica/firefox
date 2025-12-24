@@ -1,4 +1,4 @@
-import { apiFetch } from "../api/api";
+import { apiFetch, apiFetchWithToken } from "../api/api";
 
 export async function listarCertificadosPaginado({
   empresa_id,
@@ -39,7 +39,7 @@ export async function getCertificado(id) {
 }
 
 export async function createCertificado(formData) {
-  const res = await apiFetch("/certificados/", {
+  const res = await apiFetchWithToken("/certificados/", {
     method: "POST",
     body: formData,
   });
@@ -70,7 +70,7 @@ export async function createCertificado(formData) {
 
 
 export async function excluir_certificado(id) {
-  const res = await apiFetch(`/certificados/${id}`, {
+  const res = await apiFetchWithToken(`/certificados/${id}`, {
     method: "DELETE",
   });
 

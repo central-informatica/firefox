@@ -48,23 +48,28 @@ const PlanosTrabalhoForm = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (isEdit) {
-      await atualizarPlanoTrabalho(id, {
-        nome: form.nome,
-        descricao: form.descricao,
-      });
-    } else {
-      await criarPlanoTrabalho({
-        nome: form.nome,
-        descricao: form.descricao,
-      });
+    const payload = {};
+
+    if (form.nome && form.nome.trim() !== "") {
+      payload.nome = form.nome.trim();
     }
 
-    navigate("/planos");
-  };
+    if (form.descricao && form.descricao.trim() !== "") {
+      payload.descricao = form.descricao.trim();
+    }
 
+    if (Object.keys(payload).length === 0) {
+      toast.warning("Nenhuma alteração foi feita.");
+      return;
+    }
+
+    const response = await atualizarPlanoTrabalho(id, payload);
+    if (response.ok) {
+      navigate("/planos");
+    }
+  };
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 animate-[fadeInUp_0.6s_ease-out]">

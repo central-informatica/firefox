@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { FiLogOut } from "react-icons/fi";
 import {
   FiGrid, FiUsers, FiSettings, FiLifeBuoy, FiCreditCard,
   FiFlag, FiChevronDown, FiChevronRight, FiMenu, FiX, FiChevronsLeft, FiChevronsRight
@@ -6,6 +7,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { useSidebar } from "../../contexts/SidebarContext";
+
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -15,6 +17,16 @@ export default function Sidebar() {
 
   const { user, logout } = useAuth();
   const { expanded, setExpanded } = useSidebar();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (err) {
+      console.error("Erro ao fazer logout", err);
+    }
+  };
+
 
   const menu = [
     { id: "dashboard", label: "Dashboard", icon: <FiGrid />, path: "/dashboard" },
@@ -203,6 +215,41 @@ export default function Sidebar() {
             </div>
           ))}
         </nav>
+        
+        {/* LOGOUT BUTTON */}
+        <div className="p-3">
+          <div
+            onClick={handleLogout}
+            className={`
+              group relative flex items-center px-3 py-3 rounded-xl cursor-pointer
+              transition-all duration-300
+              ${expanded ? 'justify-start' : 'justify-center'}
+              text-gray-700 hover:bg-red-50 hover:text-red-600
+            `}
+          >
+            {/* ICON */}
+            <span className={`text-xl transition-all duration-300 flex-shrink-0 ${
+              expanded ? 'mr-3' : 'mr-0'
+            }`}>
+              <FiLogOut />
+            </span>
+
+            {/* LABEL */}
+            <span className={`font-medium transition-all duration-300 whitespace-nowrap ${
+              expanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 overflow-hidden'
+            }`}>
+              Sair
+            </span>
+
+            {/* TOOLTIP (collapsed) */}
+            {!expanded && (
+              <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-50 shadow-xl">
+                Sair
+                <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* USER PROFILE */}
         <div className={`

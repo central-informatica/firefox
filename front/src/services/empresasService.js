@@ -1,12 +1,9 @@
-import { ReplaceAll } from "lucide-react";
-import { apiFetch } from "../api/api";
+//import { ReplaceAll } from "lucide-react";
+import { apiFetch, apiFetchWithToken } from "../api/api";
 
 export async function listarMinhasEmpresas() {
-  const response = await apiFetch("/empresas/minhas");
+  const response = await apiFetchWithToken("/empresas/minhas");
   const json = await response.json();
-
-  console.log("🟢 JSON da API:", json);
-
   return json;
 }
 
@@ -23,7 +20,7 @@ export async function listarEmpresasPaginado({
     sort,
   });
 
-  const res = await apiFetch(`/empresas/?${params.toString()}`);
+  const res = await apiFetchWithToken(`/empresas/?${params.toString()}`);
 
   if (!res.ok) {
     throw new Error(await res.text());
@@ -41,7 +38,7 @@ export async function getEmpresasDoUsuario(userId) {
 }
 
 export async function getEmpresa(id) {
-  const res = await apiFetch(`/empresas/${id}`);
+  const res = await apiFetchWithToken(`/empresas/${id}`);
 
   if (!res.ok) {
     throw new Error(await res.text());
@@ -56,7 +53,7 @@ export async function getEmpresa(id) {
 export async function createEmpresa(data) {
   data.cnpj = data.cnpj.replace(/\D/g, ""); // Remove formatação
   console.log(data.cnpj)
-  const res = await apiFetch(`/empresas/`, {
+  const res = await apiFetchWithToken(`/empresas/`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -72,7 +69,7 @@ export async function createEmpresa(data) {
  * UPDATE
  */
 export async function updateEmpresa(id, data) {
-  const res = await apiFetch(`/empresas/${id}`, {
+  const res = await apiFetchWithToken(`/empresas/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
@@ -88,7 +85,7 @@ export async function updateEmpresa(id, data) {
  * DELETE
  */
 export async function deleteEmpresa(id) {
-  const res = await apiFetch(`/empresas/${id}`, {
+  const res = await apiFetchWithToken(`/empresas/${id}`, {
     method: "DELETE",
   });
 

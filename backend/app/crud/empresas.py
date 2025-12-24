@@ -124,7 +124,7 @@ class CRUDEmpresas:
             razao_social=data.razao_social,
             fantasia=data.fantasia,
             cnpj=data.cnpj,
-            anfitria_usuario_id=current_user.usuarios.usuario_id,
+            anfitria_usuario_id=current_user.usuario_id,
             timezone=data.timezone,
         )
 

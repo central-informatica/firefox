@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "../api/api";
+import { apiFetch, apiFetchWithToken } from "../api/api";
+import { loginWeb, getMe, logout as logoutApi } from "../api/auth/auth";
 
 export const AuthContext = createContext();
 
@@ -12,7 +13,7 @@ export function AuthProvider({ children }) {
   // Carrega usuário ativo da sessão
   async function loadUser() {
     try {
-      const res = await apiFetch("/auth/me");
+      const res = await getMe();
 
       if (res.ok) {
         const data = await res.json();
@@ -33,17 +34,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function login(email, senha) {
-    const response = await apiFetch("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, senha }),
-    });
+    const response = await loginWeb(email, senha);
 
     if (!response.ok) {
       throw new Error("Login inválido");
     }
 
-    // opcional: backend retorna dados completos do usuário
+    // Backend retorna dados completos do usuário
     const data = await response.json();
     setUser(data);
 
@@ -52,7 +49,7 @@ export function AuthProvider({ children }) {
 
   // REGISTER
   async function register({ nome, email, senha, telefone }) {
-    const response = await apiFetch("/auth/register", {
+    const response = await apiFetchWithToken("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nome, email, senha, telefone }),
@@ -79,7 +76,7 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     try {
-      await apiFetch("/auth/logout", { method: "POST" });
+      await logoutApi();
     } catch (err) {
       console.error("Erro ao fazer logout:", err);
     }
