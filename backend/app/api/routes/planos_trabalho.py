@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from backend.app.db.session import get_db
@@ -17,10 +17,14 @@ def listar_planos_trabalho(
     limit: int = 10,
     search: str | None = None,
     sort: str | None = None,
+    empresa_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
     current_session = Depends(get_current_user),
 ):
-    empresa_id = current_session.empresas[0].empresa_id
+    if empresa_id is None:
+        empresa_id = current_session.empresas[0].empresa_id
+    
+    print("DEBUG empresa_id usado:", empresa_id)
 
     items, total = crud_planos_trabalho.listar(
         db=db,

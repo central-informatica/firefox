@@ -42,7 +42,7 @@ def listar_minhas_empresas(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    usuario_id = current_user.usuarios.usuario_id
+    usuario_id = current_user.usuario_id
     print("🔥 usuario_id usado:", usuario_id)
 
     empresas = crud_empresas.listar_empresas_usuario(db, usuario_id)

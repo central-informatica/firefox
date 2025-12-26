@@ -7,6 +7,7 @@ export async function listarPlanosTrabalho(params = {}) {
     limit = 10,
     search = "",
     sort = "",
+    empresa_id,
   } = params;
 
   const query = new URLSearchParams({
@@ -14,8 +15,10 @@ export async function listarPlanosTrabalho(params = {}) {
     limit: String(limit),
     search: search || "",
     sort: sort || "",
+    ...(empresa_id ? { empresa_id: String(empresa_id) } : {})
   }).toString();
-  
+
+  console.log("DEBUG empresa_id enviado:", empresa_id);
   const res = await apiFetchWithToken(`/planos-trabalho/?${query}`);
   
   // apiFetch retorna Response (fetch). Então precisa parsear JSON.

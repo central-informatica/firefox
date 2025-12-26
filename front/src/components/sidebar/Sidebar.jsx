@@ -50,6 +50,15 @@ export default function Sidebar() {
     },
     { id: "usuarios", label: "Usuários", icon: <FiUsers />, path: "/usuarios" },
     {
+      id: "grupos",
+      label: "Grupos",
+      icon: <FiGrid />,
+      children: [
+        { id: "grupo-lista", label: "Listar grupos", path: "/grupos" },
+        { id: "grupo-novo", label: "Novo grupo", path: "/grupos/novo" },
+      ]
+    },
+    {
       id: "certificados",
       label: "Certificados",
       icon: <FiCreditCard />,
