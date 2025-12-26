@@ -1,14 +1,65 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from backend.app.db.models import Grupos, EmpresaMembros
-
-def listar_grupos(db: Session):
-    return db.query(Grupos).all()
-
+from backend.app.db.models import Grupos, EmpresaMembros, Certificados, GruposCertificados
+from backend.app.crud.certificado import get_certificado_por_empresa
 
 def get_grupo(db: Session, grupo_id: int):
     return db.query(Grupos).filter(Grupos.grupo_id == grupo_id).first()
 
+def listar_grupos(db: Session):
+    return db.query(Grupos).all()
+
+def listar_certificados_do_grupo(db: Session, grupo_id: int):
+    return (
+        db.query(Certificados)
+        .join(GruposCertificados, GruposCertificados.certificado_id == Certificados.certificado_id)
+        .filter(GruposCertificados.grupo_id == grupo_id)
+        .all()
+    )
+
+def get_grupo_por_empresa(
+    db: Session,
+    grupo_id: int,
+    empresa_id: int,
+):
+    return (
+        db.query(Grupos)
+        .filter(
+            Grupos.grupo_id == grupo_id,
+            Grupos.empresa_id == empresa_id,
+        )
+        .first()
+    )
+
+
+def listar_grupos_por_empresa(
+    db: Session,
+    *,
+    empresa_id: int,
+    usuario_id: int,
+    plano_trabalho_id: int | None = None,
+):
+    if not _usuario_pertence_empresa(db, usuario_id, empresa_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Usuário não pertence à empresa",
+        )
+
+    if plano_trabalho_id:
+        grupos = db.query(Grupos).filter(
+            Grupos.plano_id == plano_trabalho_id
+        ).all()
+    else:
+        grupos = (
+            db.query(Grupos)
+            .filter(
+                Grupos.empresa_id == empresa_id,
+            )
+            .order_by(Grupos.nome)
+            .all()
+        )
+
+    return grupos
 
 def criar_grupo(db: Session, payload: dict):
     novo = Grupos(**payload)
@@ -17,6 +68,41 @@ def criar_grupo(db: Session, payload: dict):
     db.refresh(novo)
     return novo
 
+def adicionar_certificado_ao_grupo(
+    db: Session,
+    grupo_id: int,
+    certificado_id: int,
+    empresa_id: int,
+):
+    validar_grupo_e_certificado_do_tenant(
+        db=db,
+        grupo_id=grupo_id,
+        certificado_id=certificado_id,
+        empresa_id=empresa_id,
+    )
+
+    relacao = (
+        db.query(GruposCertificados)
+        .filter(
+            GruposCertificados.grupo_id == grupo_id,
+            GruposCertificados.certificado_id == certificado_id,
+        )
+        .first()
+    )
+
+    if relacao:
+        return relacao
+
+    relacao = GruposCertificados(
+        grupo_id=grupo_id,
+        certificado_id=certificado_id,
+    )
+
+    db.add(relacao)
+    db.commit()
+    db.refresh(relacao)
+
+    return relacao
 
 #def atualizar_grupo(db: Session, grupo_id: int, dados: dict):
 #    grupo = get_grupo(db, grupo_id)
@@ -78,35 +164,56 @@ def deletar_grupo(db: Session, grupo_id: int):
     db.commit()
     return True
 
-
-def listar_grupos_por_empresa(
+def remover_certificado_do_grupo(
     db: Session,
-    *,
+    grupo_id: int,
+    certificado_id: int,
     empresa_id: int,
-    usuario_id: int,
-    plano_trabalho_id: int | None = None,
 ):
-    if not _usuario_pertence_empresa(db, usuario_id, empresa_id):
-        raise HTTPException(
-            status_code=403,
-            detail="Usuário não pertence à empresa",
-        )
+    validar_grupo_e_certificado_do_tenant(
+        db=db,
+        grupo_id=grupo_id,
+        certificado_id=certificado_id,
+        empresa_id=empresa_id,
+    )
 
-    if plano_trabalho_id:
-        grupos = db.query(Grupos).filter(
-            Grupos.plano_id == plano_trabalho_id
-        ).all()
-    else:
-        grupos = (
-            db.query(Grupos)
-            .filter(
-                Grupos.empresa_id == empresa_id,
+    relacao = (
+        db.query(GruposCertificados)
+        .filter(
+            GruposCertificados.grupo_id == grupo_id,
+            GruposCertificados.certificado_id == certificado_id,
+        )
+        .first()
+    )
+
+    if not relacao:
+        return False
+
+    db.delete(relacao)
+    db.commit()
+
+    return True
+
+
+def validar_grupo_e_certificado_do_tenant(
+    db: Session,
+    grupo_id: int,
+    certificado_id: int | None,
+    empresa_id: int,
+):
+    grupo = get_grupo_por_empresa(db, grupo_id, empresa_id)
+    if not grupo:
+        raise HTTPException(status_code=403, detail="Grupo não pertence à empresa")
+
+    if certificado_id:
+        certificado = get_certificado_por_empresa(db, certificado_id, empresa_id)
+        if not certificado:
+            raise HTTPException(
+                status_code=403,
+                detail="Certificado não pertence à empresa",
             )
-            .order_by(Grupos.nome)
-            .all()
-        )
 
-    return grupos
+    return grupo
 
 def _usuario_pertence_empresa(db: Session, usuario_id: int, empresa_id: int) -> bool:
     return (

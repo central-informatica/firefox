@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
@@ -13,16 +13,33 @@ import {
   FiAlertCircle,
 } from "react-icons/fi";
 
+// ✅ Ajuste o caminho/nome do service conforme seu projeto
+import {
+  listarCertificadosDaEmpresa,
+  listarCertificadosDoGrupo,
+  adicionarCertificadoAoGrupo,
+  removerCertificadoDoGrupo,
+} from "../../services/certificadosService";
+
 export default function GerenciarAssociacoes() {
   const navigate = useNavigate();
 
-  // Estados principais
+  // Estados principais (UI)
   const [empresaId, setEmpresaId] = useState(null);
-  const [planoTrabalho, setPlanoTrabalho] = useState(null);
-  const [grupo, setGrupo] = useState(null);
+
+  // ✅ Como seus selects retornam ID, guarde como ID
+  const [planoId, setPlanoId] = useState(null);
+  const [grupoId, setGrupoId] = useState(null);
 
   // UI
   const [notification, setNotification] = useState(null);
+
+  // Certificados
+  const [certificadosDisponiveis, setCertificadosDisponiveis] = useState([]);
+  const [certificadosDoGrupo, setCertificadosDoGrupo] = useState([]);
+
+  // Loading simples (opcional)
+  const [loadingCertificados, setLoadingCertificados] = useState(false);
 
   const showNotification = (message, type = "success") => {
     setNotification({ message, type });
@@ -32,24 +49,92 @@ export default function GerenciarAssociacoes() {
   // Handlers
   const handleEmpresaChange = (id) => {
     setEmpresaId(id);
-    setPlanoTrabalho(null);
-    setGrupo(null);
+    setPlanoId(null);
+    setGrupoId(null);
+    setCertificadosDisponiveis([]);
+    setCertificadosDoGrupo([]);
   };
 
-  const handlePlanoChange = (opt) => {
-    setPlanoTrabalho(opt);
-    setGrupo(null);
+  // ✅ recebe ID do select
+  const handlePlanoChange = (id) => {
+    console.log("Plano selecionado:", typeof id, id);
+    setPlanoId(id);
+    setGrupoId(null);
+    setCertificadosDisponiveis([]);
+    setCertificadosDoGrupo([]);
   };
 
-  const handleGrupoChange = (opt) => {
-    setGrupo(opt);
+  // ✅ recebe ID do select
+  const handleGrupoChange = (id) => {
+    setGrupoId(id);
   };
 
-  // IDs derivados
-  const planoTrabalhoId =
-    planoTrabalho && typeof planoTrabalho === "object"
-      ? planoTrabalho.value
-      : null;
+  const carregarCertificadosDoGrupo = async () => {
+    if (!empresaId || !grupoId) return;
+
+    setLoadingCertificados(true);
+    try {
+      // 1) Certificados já vinculados ao grupo
+      const vinculados = await listarCertificadosDoGrupo(grupoId);
+
+      // 2) Certificados da empresa
+      const todosEmpresa = await listarCertificadosDaEmpresa(empresaId);
+
+      // 3) Separar disponíveis
+      const vinculadosIds = new Set(
+        (Array.isArray(vinculados) ? vinculados : []).map((c) => c.certificado_id)
+      );
+
+      const disponiveis = (Array.isArray(todosEmpresa) ? todosEmpresa : []).filter(
+        (c) => !vinculadosIds.has(c.certificado_id)
+      );
+
+      setCertificadosDoGrupo(Array.isArray(vinculados) ? vinculados : []);
+      setCertificadosDisponiveis(Array.isArray(disponiveis) ? disponiveis : []);
+    } catch (err) {
+      console.error("Erro ao carregar certificados:", err);
+      showNotification("Erro ao carregar certificados", "error");
+    } finally {
+      setLoadingCertificados(false);
+    }
+  };
+
+  // ✅ Esse effect é quem chama a carga (agora com ids corretos)
+  useEffect(() => {
+    // log deve aparecer sempre que mudar empresaId ou grupoId
+    console.log("Carregando certificados para empresa:", empresaId, "e grupo:", grupoId);
+
+    if (!empresaId || !grupoId) return;
+
+    // limpar enquanto carrega
+    setCertificadosDisponiveis([]);
+    setCertificadosDoGrupo([]);
+    carregarCertificadosDoGrupo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaId, grupoId]);
+
+  // Ações (vincular / desvincular)
+  const handleVincular = async (certificadoId) => {
+    try {
+      await adicionarCertificadoAoGrupo(grupoId, certificadoId);
+      showNotification("Certificado vinculado com sucesso!");
+      carregarCertificadosDoGrupo();
+    } catch (err) {
+      console.error(err);
+      showNotification("Erro ao vincular certificado", "error");
+    }
+  };
+
+  const handleDesvincular = async (certificadoId) => {
+    try {
+      await removerCertificadoDoGrupo(grupoId, certificadoId);
+      showNotification("Certificado removido do grupo!");
+      carregarCertificadosDoGrupo();
+    } catch (err) {
+      console.error(err);
+      showNotification("Erro ao remover certificado", "error");
+    }
+  };
 
   return (
     <div className="space-y-6 w-full animate-[fadeInUp_0.6s_ease-out]">
@@ -110,7 +195,7 @@ export default function GerenciarAssociacoes() {
             </Label>
             <SelectPlanoTrabalho
               empresaId={empresaId}
-              value={planoTrabalhoId}
+              value={planoId}
               onChange={handlePlanoChange}
               isDisabled={!empresaId}
             />
@@ -123,17 +208,17 @@ export default function GerenciarAssociacoes() {
             </Label>
             <SelectGrupo
               empresaId={empresaId}
-              planoTrabalhoId={planoTrabalhoId}
-              value={grupo}
+              planoTrabalhoId={planoId}
+              value={grupoId}
               onChange={handleGrupoChange}
-              isDisabled={!planoTrabalhoId}
+              isDisabled={!planoId}
             />
           </div>
         </div>
       </div>
 
       {/* Empty State */}
-      {!grupo && (
+      {!grupoId && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -144,9 +229,106 @@ export default function GerenciarAssociacoes() {
             </h3>
             <p className="text-gray-600">
               Selecione uma empresa e um plano de trabalho. Em seguida, escolha
-              um grupo existente ou crie um novo grupo diretamente dentro do
-              plano selecionado.
+              um grupo para gerenciar os certificados vinculados.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Listas de certificados (só aparece com grupo selecionado) */}
+      {grupoId && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-800">
+              Certificados do Grupo
+            </h2>
+            {loadingCertificados && (
+              <span className="text-sm text-gray-500">Carregando...</span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Disponíveis */}
+            <div className="border border-gray-100 rounded-xl p-4">
+              <h3 className="font-semibold text-gray-800 mb-3">
+                Disponíveis na empresa
+              </h3>
+
+              {certificadosDisponiveis.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  Nenhum certificado disponível.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {certificadosDisponiveis.map((c) => (
+                    <li
+                      key={c.certificado_id}
+                      className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800 truncate">
+                          {c.nome || `Certificado #${c.certificado_id}`}
+                        </p>
+                        {c.cnpj && (
+                          <p className="text-xs text-gray-500 truncate">
+                            CNPJ: {c.cnpj}
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleVincular(c.certificado_id)}
+                        className="px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition"
+                      >
+                        Adicionar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Vinculados */}
+            <div className="border border-gray-100 rounded-xl p-4">
+              <h3 className="font-semibold text-gray-800 mb-3">
+                Já vinculados ao grupo
+              </h3>
+
+              {certificadosDoGrupo.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  Nenhum certificado vinculado.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {certificadosDoGrupo.map((c) => (
+                    <li
+                      key={c.certificado_id}
+                      className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800 truncate">
+                          {c.nome || `Certificado #${c.certificado_id}`}
+                        </p>
+                        {c.cnpj && (
+                          <p className="text-xs text-gray-500 truncate">
+                            CNPJ: {c.cnpj}
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDesvincular(c.certificado_id)}
+                        className="px-3 py-2 rounded-lg bg-gray-200 text-gray-800 text-sm hover:bg-gray-300 transition"
+                      >
+                        Remover
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       )}

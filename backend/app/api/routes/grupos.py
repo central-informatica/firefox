@@ -6,10 +6,13 @@ from backend.app.db.session import get_db
 from backend.app.crud.grupos import (
     listar_grupos,
     listar_grupos_por_empresa,
+    listar_certificados_do_grupo,
     get_grupo,
     criar_grupo,
     atualizar_grupo,
     deletar_grupo,
+    adicionar_certificado_ao_grupo,
+    remover_certificado_do_grupo,
 )
 
 router = APIRouter(prefix="/grupos", tags=["Grupos"])
@@ -43,6 +46,19 @@ def listar_grupos_empresa(
 
     return grupos
 
+@router.get("/{grupo_id}/certificados")
+def listar_certificados_grupo(
+    grupo_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    certificados = listar_certificados_do_grupo(
+        db=db,
+        grupo_id=grupo_id,
+    )
+
+    return certificados
+
 
 @router.post("/")
 def criar(payload: dict, db: Session = Depends(get_db)):
@@ -64,3 +80,42 @@ def remover(grupo_id: int, db: Session = Depends(get_db)):
     if not sucesso:
         raise HTTPException(status_code=404, detail="Grupo não encontrado")
     return {"detail": "Grupo removido com sucesso"}
+
+@router.post("/{grupo_id}/certificados")
+def adicionar_certificado(
+    grupo_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    empresa_id = current_user.empresas[0].empresa_id
+    certificado_id = payload.get("certificado_id")
+
+    if not certificado_id:
+        raise HTTPException(status_code=400, detail="certificado_id é obrigatório")
+
+    return adicionar_certificado_ao_grupo(
+        db=db,
+        grupo_id=grupo_id,
+        certificado_id=certificado_id,
+        empresa_id=empresa_id,
+    )
+
+
+@router.delete("/{grupo_id}/certificados/{certificado_id}")
+def remover_certificado(
+    grupo_id: int,
+    certificado_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    ok = remover_certificado_do_grupo(
+        db=db,
+        grupo_id=grupo_id,
+        certificado_id=certificado_id,
+    )
+
+    if not ok:
+        raise HTTPException(status_code=404, detail="Vínculo não encontrado")
+
+    return {"success": True}

@@ -137,6 +137,8 @@ export async function removeUsuarioFromGrupo(grupo_id, usuario_id) {
 export async function listarGruposPorEmpresa(empresaId, planoTrabalhoId = null) {
   if (!empresaId) return [];
 
+  console.log("listarGruposPorEmpresa chamado com empresaId:", empresaId, "planoTrabalhoId:", planoTrabalhoId);
+
   const params = new URLSearchParams();
   if (planoTrabalhoId) {
     params.append("plano_trabalho_id", String(planoTrabalhoId));

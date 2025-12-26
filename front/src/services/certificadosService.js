@@ -15,7 +15,7 @@ export async function listarCertificadosPaginado({
     sort,
   });
 
-  const res = await apiFetch(`/certificados?${params.toString()}`, {
+  const res = await apiFetchWithToken(`/certificados?${params.toString()}`, {
     method: "GET",
   });
 
@@ -27,7 +27,7 @@ export async function listarCertificadosPaginado({
 }
 
 export async function getCertificado(id) {
-  const res = await apiFetch(`/certificados/${id}`, {
+  const res = await apiFetchWithToken(`/certificados/${id}`, {
     method: "GET",
   });
 
@@ -109,4 +109,59 @@ const certificadosMock = [
 // Listar todos os certificados (mock)
 export function getCertificadosSimples() {
   return Promise.resolve(certificadosMock);
+}
+
+
+
+export async function listarCertificadosDaEmpresa(empresaId) {
+  if (!empresaId) return [];
+  const res = await apiFetchWithToken(`/certificados/?empresa_id=${empresaId}`);
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const json = await res.json();
+  return Array.isArray(json?.items) ? json.items : [];
+}
+
+
+/* Lista certificados já vinculados a um grupo */
+export async function listarCertificadosDoGrupo(grupoId) {
+  if (!grupoId) return [];
+  const res = await apiFetchWithToken(`/grupos/${grupoId}/certificados`);
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const json = await res.json();
+  return Array.isArray(json) ? json : [];
+}
+
+/* Adiciona certificado a um grupo */
+export async function adicionarCertificadoAoGrupo(grupoId, certificadoId) {
+  const res = await apiFetchWithToken(
+    `/grupos/${grupoId}/certificados`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        certificado_id: certificadoId,
+      }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return await res.json();
+}
+
+/* Remove vínculo de um certificado com o grupo*/
+export async function removerCertificadoDoGrupo(grupoId, certificadoId) {
+  const res = await apiFetchWithToken(
+    `/grupos/${grupoId}/certificados/${certificadoId}`,
+    {
+      method: "DELETE",
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return true;
 }

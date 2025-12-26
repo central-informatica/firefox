@@ -52,7 +52,7 @@ export default function SelectPlanoTrabalho({
       options={options}
       value={selected}
       isLoading={loading}
-      onChange={(opt) => onChange?.(opt)}
+      onChange={(opt) => onChange?.(opt ? opt.value : null)}
       placeholder={
         empresaId ? placeholder : "Selecione uma empresa primeiro"
       }
@@ -60,5 +60,6 @@ export default function SelectPlanoTrabalho({
       isDisabled={!empresaId}
       {...props}
     />
+
   );
 }

@@ -50,6 +50,21 @@ def listar_certificados(db: Session, empresa_id: int, page: int, limit: int, sea
 
     return dados, total
 
+def get_certificado_por_empresa(
+    db: Session,
+    certificado_id: int,
+    empresa_id: int,
+):
+    return (
+        db.query(Certificados)
+        .filter(
+            Certificados.certificado_id == certificado_id,
+            Certificados.empresa_id == empresa_id,
+        )
+        .first()
+    )
+
+
 def listar_certificados_permitidos(
     db: Session,
     usuario_id: int
