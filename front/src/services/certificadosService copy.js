@@ -164,15 +164,11 @@ export async function adicionarCertificadoAoGrupo(grupoId, certificadoId, empres
 }
 
 /* Remove vínculo de um certificado com o grupo*/
-export async function removerCertificadoDoGrupo(grupo_id, certificadoId, empresa_id) {
+export async function removerCertificadoDoGrupo(grupoId, certificadoId, empresa_id) {
   const res = await apiFetchWithToken(
-    `/grupos/${grupo_id}/remover/certificado`,
+    `/grupos/${grupoId}/certificados/${certificadoId}`,
     {
       method: "DELETE",
-      body: JSON.stringify({
-        certificado_id: certificadoId,
-        empresa_id: empresa_id,
-      }),
     }
   );
   if (!res.ok) {

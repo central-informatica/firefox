@@ -145,7 +145,7 @@ export default function GerenciarAssociacoes() {
 
   const handleDesvincular = async (certificadoId) => {
     try {
-      await removerCertificadoDoGrupo(grupoId, certificadoId);
+      await removerCertificadoDoGrupo(grupoId, certificadoId, empresaId);
       showNotification("Certificado removido do grupo!");
       carregarCertificadosDoGrupo();
     } catch (err) {

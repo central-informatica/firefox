@@ -103,6 +103,30 @@ def adicionar_certificado(
     )
 
 
+@router.delete("/{grupo_id}/remover/certificado")
+def remover_certificado(
+    grupo_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    # Obter empresa_id e certificado_id do payload
+    empresa_id = payload.get("empresa_id")
+    certificado_id = payload.get("certificado_id")
+
+    ok = remover_certificado_do_grupo(
+        db=db,
+        grupo_id=grupo_id,
+        certificado_id=certificado_id,
+        empresa_id=empresa_id
+    )
+
+    if not ok:
+        raise HTTPException(status_code=404, detail="Vínculo não encontrado")
+
+    return {"success": True}
+
+"""
 @router.delete("/{grupo_id}/certificados/{certificado_id}")
 def remover_certificado(
     grupo_id: int,
@@ -114,9 +138,11 @@ def remover_certificado(
         db=db,
         grupo_id=grupo_id,
         certificado_id=certificado_id,
+        empresa_id=empresa_id
     )
 
     if not ok:
         raise HTTPException(status_code=404, detail="Vínculo não encontrado")
 
     return {"success": True}
+"""
