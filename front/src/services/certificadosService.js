@@ -111,7 +111,17 @@ export function getCertificadosSimples() {
   return Promise.resolve(certificadosMock);
 }
 
+export async function listarCertificadosPermitidos() {
+  const res = await apiFetchWithToken(
+    `/certificados/listar_certificados_permitidos/`
+  );
 
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return res.json();
+}
 
 export async function listarCertificadosDaEmpresa(empresaId) {
   if (!empresaId) return [];
@@ -136,13 +146,14 @@ export async function listarCertificadosDoGrupo(grupoId) {
 }
 
 /* Adiciona certificado a um grupo */
-export async function adicionarCertificadoAoGrupo(grupoId, certificadoId) {
+export async function adicionarCertificadoAoGrupo(grupoId, certificadoId, empresaId) {
   const res = await apiFetchWithToken(
     `/grupos/${grupoId}/certificados`,
     {
       method: "POST",
       body: JSON.stringify({
         certificado_id: certificadoId,
+        empresa_id: empresaId,
       }),
     }
   );

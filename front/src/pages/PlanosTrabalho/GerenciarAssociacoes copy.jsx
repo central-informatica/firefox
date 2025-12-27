@@ -85,13 +85,14 @@ export default function GerenciarAssociacoes() {
           sort: "",
         });
 
-        const todosPermitidos = Array.isArray(response?.data)? response.data: [];
-        // ✅ IDs dos certificados já vinculados AO GRUPO
+        const todosPermitidos = Array.isArray(response?.data)
+          ? response.data
+          : [];
+
         const certificadosNoGrupoIds = new Set(
           certificadosDoGrupo.map((c) => c.certificado_id)
         );
 
-        // ✅ Disponíveis = permitidos - já vinculados
         const disponiveis = todosPermitidos.filter(
           (c) => !certificadosNoGrupoIds.has(c.certificado_id)
         );
@@ -108,10 +109,23 @@ export default function GerenciarAssociacoes() {
 
     setLoadingCertificados(true);
     try {
-      // ✅ BUSCA SOMENTE certificados vinculados ao grupo
+      // 1) Certificados já vinculados ao grupo
       const vinculados = await listarCertificadosDoGrupo(grupoId);
-      // ✅ ATUALIZA APENAS certificadosDoGrupo
+
+      // 2) Certificados da empresa
+      const todosEmpresa = await listarCertificadosDaEmpresa(empresaId);
+
+      // 3) Separar disponíveis
+      const vinculadosIds = new Set(
+        (Array.isArray(vinculados) ? vinculados : []).map((c) => c.certificado_id)
+      );
+
+      const disponiveis = (Array.isArray(todosEmpresa) ? todosEmpresa : []).filter(
+        (c) => !vinculadosIds.has(c.certificado_id)
+      );
+
       setCertificadosDoGrupo(Array.isArray(vinculados) ? vinculados : []);
+      setCertificadosDisponiveis(Array.isArray(disponiveis) ? disponiveis : []);
     } catch (err) {
       console.error("Erro ao carregar certificados:", err);
       showNotification("Erro ao carregar certificados", "error");
@@ -123,7 +137,7 @@ export default function GerenciarAssociacoes() {
   useEffect(() => {
     if (!empresaId) return;
     carregarCertificadosDisponiveis();
-  }, [empresaId, certificadosDoGrupo]);
+  }, [empresaId]);
 
   // ✅ Esse effect é quem chama a carga (agora com ids corretos)
   useEffect(() => {

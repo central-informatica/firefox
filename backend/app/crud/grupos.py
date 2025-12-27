@@ -96,6 +96,7 @@ def adicionar_certificado_ao_grupo(
     relacao = GruposCertificados(
         grupo_id=grupo_id,
         certificado_id=certificado_id,
+        empresa_id=empresa_id,
     )
 
     db.add(relacao)

@@ -88,7 +88,8 @@ def adicionar_certificado(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user),
 ):
-    empresa_id = current_user.empresas[0].empresa_id
+    empresa_id = payload.get("empresa_id")   ##current_user.empresas[0].empresa_id
+    print("empresa_id no adicionar_certificado:", empresa_id)
     certificado_id = payload.get("certificado_id")
 
     if not certificado_id:

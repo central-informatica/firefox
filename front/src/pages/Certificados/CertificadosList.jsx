@@ -191,7 +191,7 @@ export default function CertificadosList() {
               if (!confirm(`Deseja realmente excluir o certificado "${row.original.nome_arquivo}"?\n\nEsta ação não pode ser desfeita.`)) return;
 
               try {
-                await excluir_certificado(row.original.id);
+                await excluir_certificado(row.original.certificado_id);
                 toast.success("Certificado excluído com sucesso!");
                 setReloadKey((old) => old + 1);
               } catch (err) {

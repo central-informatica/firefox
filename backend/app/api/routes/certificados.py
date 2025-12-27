@@ -18,7 +18,7 @@ from backend.app.core.validar_token import validar_token
 from backend.app.schemas.token import TokenContext
 from backend.app.db.session import get_db
 from backend.app.db.models import Certificados
-from backend.app.db.models import Usuarios
+from backend.app.api.deps import get_current_user
 from backend.app.utils.crypto_utils import encrypt_pfx, decrypt_pfx
 from backend.app.schemas.certificados import SignRequest,CertificadoPermitidoResponse, ValidarAcessoCertificadoResponse
 from backend.app.crud.certificado import listar_certificados_permitidos as crud_listar_certificados_permitidos, validar_acesso_certificado
@@ -161,7 +161,7 @@ def listar_certificados(
     data = []
     for c in registros:
         item = {
-            "id": c.certificado_id,
+            "certificado_id": c.certificado_id,
             "empresa_id": c.empresa_id,
             "criado_por": c.criado_por,
             "nome_arquivo": c.nome_arquivo,
@@ -184,16 +184,22 @@ def listar_certificados(
         "total": total,
     }
 
-@router.get("/listar_certificados_permitidos/{usuario_id}",response_model=list[CertificadoPermitidoResponse])
+@router.get(
+    "/listar_certificados_permitidos",
+    response_model=list[CertificadoPermitidoResponse]
+)
 def listar_certificados_permitidos(
-    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
-    """
-    Lista todos os certificados que o usuário autenticado tem permissão para acessar.
-    Usa o usuario_id extraído do token de autenticação.
-    """
-    return crud_listar_certificados_permitidos(db, token_context.usuario_id)
+    
+    certificados = crud_listar_certificados_permitidos(
+        db=db,
+        usuario_id=current_user.usuario_id,
+    )
+    print("Certificados permitidos encontrados:", len(certificados))
+    return certificados
+
 
 @router.get("/{certificado_id}/validar_acesso",response_model=ValidarAcessoCertificadoResponse,)
 def validar_acesso(
