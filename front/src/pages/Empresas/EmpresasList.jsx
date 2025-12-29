@@ -6,6 +6,7 @@ import {
   FiPlus, FiEdit2, FiClock, FiBriefcase, FiTrendingUp, FiMapPin
 } from "react-icons/fi";
 import DataTable from "../../components/Tables/DataTable";
+import formatCNPJ from "../../utils/formatCNPJ"
 
 const EmpresasList = () => {
   const { user, loading } = useAuth();
@@ -28,7 +29,7 @@ const EmpresasList = () => {
           <div>
             <div className="font-semibold text-gray-800">{row.original.razao_social}</div>
             <div className="text-xs text-gray-500">
-              {row.original.cnpj || "CNPJ não informado"}
+              {formatCNPJ(row.original.cnpj) || "CNPJ não informado"}
             </div>
           </div>
         </div>
@@ -39,7 +40,7 @@ const EmpresasList = () => {
       accessorKey: "cnpj",
       cell: ({ row }) => (
         <span className="text-sm text-gray-600 font-mono">
-          {row.original.cnpj || "-"}
+          {formatCNPJ(row.original.cnpj) || "-"}
         </span>
       ),
     },
