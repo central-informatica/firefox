@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
 import SelectPlanoTrabalho from "../../components/Select/SelectPlanoTrabalho";
+import CertificadoCard from "../../components/Cards/CertificadoCard";
 import SelectGrupo from "../../components/Select/SelectGrupo";
 import Label from "../../components/Label/Label";
-
+import { formatDate } from "../../utils/date";
 import {
   FiArrowLeft,
   FiUsers,
@@ -281,29 +282,31 @@ export default function GerenciarAssociacoes() {
                   {certificadosDisponiveis.map((c) => (
                     <li
                       key={c.certificado_id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100"
+                      className="p-3 rounded-lg border border-gray-100"
                     >
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800 truncate">
-                          {c.nome_arquivo || `Certificado #${c.certificado_id}`}
-                        </p>
-                        {c.cnpj && (
-                          <p className="text-xs text-gray-500 truncate">
-                            CNPJ: {c.cnpj}
-                          </p>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleVincular(c.certificado_id)}
-                        className="px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition"
+                      <CertificadoCard
+                        certificado={{
+                          certificado_id: c.certificado_id,
+                          nome_arquivo: c.nome_arquivo,
+                          proprietario: c.proprietario,
+                          emitido_por: c.emitido_por,
+                          data_inicio: c.data_inicio,
+                          valido_ate: c.valido_ate,
+                          cnpj: c.cnpj,
+                        }}
                       >
-                        Adicionar
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => handleVincular(c.certificado_id)}
+                          className="px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition"
+                        >
+                          Adicionar
+                        </button>
+                      </CertificadoCard>
                     </li>
                   ))}
                 </ul>
+
               )}
             </div>
 
@@ -322,26 +325,27 @@ export default function GerenciarAssociacoes() {
                   {certificadosDoGrupo.map((c) => (
                     <li
                       key={c.certificado_id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100"
+                      className="p-3 rounded-lg border border-gray-100"
                     >
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800 truncate">
-                          {c.nome || `Certificado #${c.certificado_id}`}
-                        </p>
-                        {c.cnpj && (
-                          <p className="text-xs text-gray-500 truncate">
-                            CNPJ: {c.cnpj}
-                          </p>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDesvincular(c.certificado_id)}
-                        className="px-3 py-2 rounded-lg bg-gray-200 text-gray-800 text-sm hover:bg-gray-300 transition"
+                      <CertificadoCard
+                        certificado={{
+                          certificado_id: c.certificado_id,
+                          nome_arquivo: c.nome_arquivo,
+                          proprietario: c.proprietario,
+                          emitido_por: c.emitido_por,
+                          data_inicio: c.data_inicio,
+                          valido_ate: c.valido_ate,
+                          cnpj: c.cnpj,
+                        }}
                       >
-                        Remover
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDesvincular(c.certificado_id)}
+                          className="px-3 py-2 rounded-lg bg-gray-200 text-gray-800 text-sm hover:bg-gray-300 transition"
+                        >
+                          Remover
+                        </button>
+                      </CertificadoCard>
                     </li>
                   ))}
                 </ul>
