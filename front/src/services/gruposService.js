@@ -5,11 +5,14 @@ import { apiFetchWithToken } from "../api/api"; // ajuste o path se no seu proje
 
 function qs(params = {}) {
   const clean = Object.fromEntries(
-    Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== "")
+    Object.entries(params).filter(
+      ([_, v]) => v !== undefined && v !== null && v !== ""
+    )
   );
   const query = new URLSearchParams(clean).toString();
   return query ? `?${query}` : "";
 }
+
 
 async function parseJsonSafe(res) {
   const text = await res.text();
@@ -46,13 +49,34 @@ export async function listarGruposPorPlano(plano_id, params = {}) {
 
 // Listar todos os grupos (mantém o mesmo nome do mock)
 export async function getGrupos(params = {}) {
-  // Ex.: GET /grupos/?page=1&limit=10&search=&sort=
-  const res = await apiFetchWithToken(`/grupos/${qs(params)}`, {
-    method: "GET",
+  const { empresa_id, plano_id, ...queryParams } = params;
+
+  if (!empresa_id) {
+    throw new Error("empresa_id é obrigatório para listar grupos");
+  }
+
+  const query = qs({
+    ...queryParams,
+    plano_id, // ✅ agora entra na query
   });
-  await ensureOk(res);
-  return await res.json();
+
+  const url = `/grupos/empresa/${empresa_id}${query}`;
+
+  const res = await apiFetchWithToken(url);
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  const data = await res.json();
+
+  return {
+    data: Array.isArray(data) ? data : [],
+    total: data.length,
+  };
 }
+
+
 
 // Obter grupo por ID
 export async function getGrupoById(id) {
@@ -77,12 +101,12 @@ export async function criarGrupo(data) {
 export async function atualizarGrupo(id, data) {
   const res = await apiFetchWithToken(`/grupos/${id}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+        data: data,
+        empresa_id: empresaId,
+      }),
   });
-  await ensureOk(res);
+  //await ensureOk(res);
   return await res.json();
 }
 

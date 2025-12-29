@@ -30,7 +30,6 @@ export async function listarEmpresasPaginado({
 }
 
 export async function getEmpresasDoUsuario(userId) {
-  console.log("Id do usuário logado: ", userId);
   const res = await fetch(`http://127.0.0.1:8000/usuarios/${userId}/empresas`, {
     credentials: "include",
   });
@@ -52,7 +51,6 @@ export async function getEmpresa(id) {
  */
 export async function createEmpresa(data) {
   data.cnpj = data.cnpj.replace(/\D/g, ""); // Remove formatação
-  console.log(data.cnpj)
   const res = await apiFetchWithToken(`/empresas/`, {
     method: "POST",
     body: JSON.stringify(data),

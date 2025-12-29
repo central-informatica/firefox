@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiPlus,
+  FiFilter,
+  FiBriefcase,
   FiEdit2,
   FiUsers,
   FiCheckCircle,
@@ -10,10 +12,34 @@ import {
 
 import DataTable from "../../components/Tables/DataTable";
 import { getGrupos } from "../../services/gruposService";
+import SelectEmpresa from "../../components/Select/SelectEmpresa";
+import SelectPlanoTrabalho from "../../components/Select/SelectPlanoTrabalho";
 
 const GruposList = () => {
   const navigate = useNavigate();
   const [totalGrupos, setTotalGrupos] = useState(0);
+  const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
+  const [planoIdSelecionado, setPlanoId] = useState(null);
+  
+  const handlePlanoChange = (planoId) => {
+    setPlanoId(planoId);
+  }
+
+  const handleEmpresaChange = (empresaId) => {
+    setEmpresaSelecionada(empresaId);
+    console.log("Empresa selecionada:", empresaSelecionada, empresaId);
+  }
+
+  const fetchGrupos = async (params) => {
+    const res = await getGrupos({
+      ...params,
+      empresa_id: empresaSelecionada,
+      plano_id: planoIdSelecionado,
+    });
+
+    setTotalGrupos(res.total);
+    return res;
+  };
 
   const columns = [
     {
@@ -70,12 +96,6 @@ const GruposList = () => {
     },
   ];
 
-  const fetchGrupos = async (params) => {
-    const res = await getGrupos(params);
-    setTotalGrupos(res.total);
-    return res;
-  };
-
   return (
     <div className="space-y-6 w-full">
       {/* Header */}
@@ -97,7 +117,6 @@ const GruposList = () => {
           Novo Grupo
         </button>
       </div>
-
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
@@ -131,11 +150,51 @@ const GruposList = () => {
             </div>
           </div>
         </div>
+        {/* Filter Card */}
       </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 animate-slideUp">
+        <div className="flex items-center gap-3 mb-3">
+          <FiFilter className="text-emerald-600" size={18} />
+          <h3 className="font-semibold text-gray-800">Filtros</h3>
+        </div>
 
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Empresa */}
+          <div className="flex-1 max-w-sm">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FiBriefcase className="text-gray-400" size={14} />
+              Empresa
+            </label>
+
+            <SelectEmpresa
+          value={empresaSelecionada}
+          onChange={handleEmpresaChange}
+          />
+          </div>
+
+          {/* Plano de Trabalho */}
+          <div className="flex-1 max-w-sm">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FiLayers className="text-gray-400" size={14} />
+              Plano de Trabalho
+            </label>
+
+            <SelectPlanoTrabalho
+          empresaId={empresaSelecionada}
+          value={planoIdSelecionado}
+          onChange={handlePlanoChange}
+          isDisabled={!empresaSelecionada}
+          />
+          </div>
+        </div>
+      </div>
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <DataTable columns={columns} fetchData={fetchGrupos} limit={10} />
+        <DataTable 
+          key={`${empresaSelecionada ?? "all"}-${planoIdSelecionado ?? "all"}`}
+          columns={columns} 
+          fetchData={fetchGrupos} limit={10} 
+        />
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from backend.app.db.models import Usuarios
 from backend.app.api.deps import get_current_user
 from backend.app.db.session import get_db
 
 from backend.app.crud.grupos import (
-    listar_grupos,
     listar_grupos_por_empresa,
     listar_certificados_do_grupo,
     get_grupo,
@@ -18,9 +18,21 @@ from backend.app.crud.grupos import (
 router = APIRouter(prefix="/grupos", tags=["Grupos"])
 
 
-@router.get("/")
-def listar(db: Session = Depends(get_db)):
-    grupos = listar_grupos(db)
+@router.get("/empresa/{empresa_id}")
+def listar_grupos_empresa(
+    empresa_id: int,
+    plano_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    print("listar_grupos_empresa:: empresa_id recebido:", plano_id)
+    grupos = listar_grupos_por_empresa(
+        db=db,
+        empresa_id=empresa_id,
+        usuario_id=current_user.usuario_id, 
+        plano_id=plano_id,
+    )
+
     return grupos
 
 @router.get("/{grupo_id}")
@@ -30,21 +42,6 @@ def obter(grupo_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Grupo não encontrado")
     return grupo
 
-@router.get("/empresa/{empresa_id}")
-def listar_grupos_empresa(
-    empresa_id: int,
-    plano_trabalho_id: int | None = None,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
-):
-    grupos = listar_grupos_por_empresa(
-        db=db,
-        empresa_id=empresa_id,
-        usuario_id=current_user.usuario_id,
-        plano_trabalho_id=plano_trabalho_id,
-    )
-
-    return grupos
 
 @router.get("/{grupo_id}/certificados")
 def listar_certificados_grupo(
@@ -68,7 +65,12 @@ def criar(payload: dict, db: Session = Depends(get_db)):
 
 @router.put("/{grupo_id}")
 def atualizar(grupo_id: int, payload: dict, db: Session = Depends(get_db)):
-    grupo = atualizar_grupo(db, grupo_id, payload)
+    grupo = atualizar_grupo(
+        db=db, 
+        grupo_id=grupo_id, 
+        empresa_id=payload.get("empresa_id"),
+        payload=payload
+    )
     if not grupo:
         raise HTTPException(status_code=404, detail="Grupo não encontrado")
     return grupo

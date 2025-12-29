@@ -32,7 +32,7 @@ export default function CertificadoCard({ certificado, children }) {
           )}
           {valido_ate && (
             <span>
-              <strong>Validade:</strong> {valido_ate}
+              <strong>Validade:</strong> {formatDate(valido_ate)}
             </span>
           )}
         </div>

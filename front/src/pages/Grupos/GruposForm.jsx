@@ -2,16 +2,17 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   FiUsers,
-  FiAlignLeft,
   FiSave,
   FiArrowLeft,
-  FiCheck,
   FiInfo,
 } from "react-icons/fi";
+import { toast } from "react-toastify";
 
 import Input from "../../components/Input/Input";
 import TextArea from "../../components/TextArea/TextArea";
 import Label from "../../components/Label/Label";
+import SelectEmpresa from "../../components/Select/SelectEmpresa";
+import SelectPlanoTrabalho from "../../components/Select/SelectPlanoTrabalho";
 
 import {
   getGrupoById,
@@ -29,6 +30,9 @@ const GruposForm = () => {
     descricao: "",
   });
 
+  const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
+  const [planoSelecionado, setPlanoSelecionado] = useState(null);
+  
   useEffect(() => {
     if (!isEdit) return;
 
@@ -45,12 +49,31 @@ const GruposForm = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handlePlanoChange =(plano_id) => {
+    setPlanoSelecionado(plano_id);
+  }
+
+  const handleEmpresaChange = (empresa) => {
+    setEmpresaSelecionada(empresa);
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const payload = {};
     if (form.nome?.trim()) payload.nome = form.nome.trim();
-
+    if (empresaSelecionada) {
+      payload.empresa_id = empresaSelecionada;
+    }else{
+      toast.warning("Selecione uma empresa");
+      return
+    }
+    if (planoSelecionado) {
+      payload.plano_id = planoSelecionado;
+    }else{
+      toast.warning("Selecione um plano de trabalho");
+      return
+    }
     if (Object.keys(payload).length === 0) return;
 
     const response = isEdit
@@ -83,6 +106,32 @@ const GruposForm = () => {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
+            <div className="flex flex-col md:flex-row gap-4">
+            {/* Empresa */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Empresa
+              </label>
+
+              <SelectEmpresa
+                value={empresaSelecionada}
+                onChange={handleEmpresaChange}
+              />
+            </div>
+
+            {/* Plano de Trabalho */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Plano de trabalho
+              </label>
+
+              <SelectPlanoTrabalho
+                empresaId={empresaSelecionada}
+                value={planoSelecionado}
+                onChange={handlePlanoChange}
+              />
+            </div>
+          </div>
             <Label>Nome do Grupo</Label>
             <Input
               name="nome"

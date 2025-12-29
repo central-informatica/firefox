@@ -31,35 +31,31 @@ def get_grupo_por_empresa(
         .first()
     )
 
-
 def listar_grupos_por_empresa(
     db: Session,
     *,
     empresa_id: int,
     usuario_id: int,
-    plano_trabalho_id: int | None = None,
+    plano_id: int | None = None,
 ):
+    print("listar_grupos_por_empresa chamado com empresa_id:", empresa_id, "usuario_id:", usuario_id, "plano_id:", plano_id)
     if not _usuario_pertence_empresa(db, usuario_id, empresa_id):
         raise HTTPException(
             status_code=403,
             detail="Usuário não pertence à empresa",
         )
 
-    if plano_trabalho_id:
-        grupos = db.query(Grupos).filter(
-            Grupos.plano_id == plano_trabalho_id
-        ).all()
-    else:
-        grupos = (
-            db.query(Grupos)
-            .filter(
-                Grupos.empresa_id == empresa_id,
-            )
-            .order_by(Grupos.nome)
-            .all()
+    query = db.query(Grupos).filter(
+        Grupos.empresa_id == empresa_id
+    )
+
+    if plano_id:
+        query = query.filter(
+            Grupos.plano_id == plano_id
         )
 
-    return grupos
+    return query.order_by(Grupos.nome).all()
+
 
 def criar_grupo(db: Session, payload: dict):
     novo = Grupos(**payload)
