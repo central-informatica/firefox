@@ -1,44 +1,75 @@
-let usuarios = [
-  {
-    id: 1,
-    nome: "Fabricio Peruzzolo",
-    email: "fabricio@centrnet.com.br",
-    telefone: "(69) 98422-6006",
-    email_verificado: true,
-    atualizado_em: "2025-11-28",
-    nivel: "ADMINISTRADOR"
-  },
-  {
-    id: 2,
-    nome: "Rafaela da Silva",
-    email: "rafa@provedor.com.br",
-    telefone: "(69) 98422-3421",
-    email_verificado: true,
-    atualizado_em: "2025-11-29",
-    nivel: "COMUM"
-  },
-];
+import {apiFetchWithToken} from "../api/api";
 
-export const getUsuarios = () => {
-  return Promise.resolve(usuarios);
+export async function listarUsuariosPaginado({
+  empresa_id,
+  page = 1,
+  limit = 10,
+  search = "",
+  sort = "",
+}) {
+  const params = new URLSearchParams({
+    page,
+    limit,
+    search,
+    sort,
+  });
+
+  const res = await apiFetchWithToken(
+    `/usuarios/empresas/${empresa_id}/usuarios?${params.toString()}`
+  );
+  
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json(); // { data, total }
+}
+
+export async function getUsuarioById(id){
+   const res = await apiFetchWithToken(`/usuarios/${id}`);
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json();
 };
 
-export const getUsuarioById = (id) => {
-  return Promise.resolve(usuarios.find((u) => u.id === Number(id)));
+export async function createUsuario(usuario){
+  const res = await apiFetchWithToken(`/usuarios/`, {
+    method: "POST",
+    body: JSON.stringify(usuario),
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json();
 };
 
-export const createUsuario = (data) => {
-  const novo = { id: Date.now(), ...data };
-  usuarios.push(novo);
-  return Promise.resolve(novo);
-};
+export async function updateUsuario(empresaId, id, usuario) {
+  const params = new URLSearchParams();
+  if (empresaId) params.set("empresa_id", empresaId);
 
-export const updateUsuario = (id, data) => {
-  usuarios = usuarios.map((u) => (u.id === Number(id) ? { ...u, ...data } : u));
-  return Promise.resolve();
-};
+  const res = await apiFetchWithToken(`/usuarios/${id}?${params.toString()}`, {
+    method: "PUT",
+    body: JSON.stringify(usuario),
+  });
 
-export const deleteUsuario = (id) => {
-  usuarios = usuarios.filter((u) => u.id !== Number(id));
-  return Promise.resolve();
-};
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
+
+export async function deletarUsuario(empresaId, usuarioId) {
+  const params = new URLSearchParams();
+  if (empresaId) params.set("empresa_id", empresaId);
+
+  const res = await apiFetchWithToken(
+    `/usuarios/${usuarioId}?${params.toString()}`,
+    { method: "DELETE" }
+  );
+
+  if (!res.ok) throw new Error(await res.text());
+  return true;
+}

@@ -38,7 +38,6 @@ def listar_grupos_por_empresa(
     usuario_id: int,
     plano_id: int | None = None,
 ):
-    print("listar_grupos_por_empresa chamado com empresa_id:", empresa_id, "usuario_id:", usuario_id, "plano_id:", plano_id)
     if not _usuario_pertence_empresa(db, usuario_id, empresa_id):
         raise HTTPException(
             status_code=403,

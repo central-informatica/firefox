@@ -167,9 +167,9 @@ const GruposList = () => {
             </label>
 
             <SelectEmpresa
-          value={empresaSelecionada}
-          onChange={handleEmpresaChange}
-          />
+              value={empresaSelecionada}
+              onChange={handleEmpresaChange}
+            />
           </div>
 
           {/* Plano de Trabalho */}

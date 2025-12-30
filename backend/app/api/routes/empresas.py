@@ -37,6 +37,10 @@ def listar_empresas(
         "total": total,
     }
 
+@router.post("/", response_model=EmpresaOut)
+def criar_empresa(data: EmpresaCreate, db: Session = Depends(get_db),current_user: Usuarios = Depends(get_current_user)):
+    return crud_empresas.criar(db, data,current_user=current_user,)
+
 @router.get("/minhas")
 def listar_minhas_empresas(
     db: Session = Depends(get_db),
@@ -54,21 +58,15 @@ def listar_minhas_empresas(
     }
 
 
-@router.get("/{empresa_id}", response_model=EmpresaOut)
+@router.get("/id/{empresa_id}", response_model=EmpresaOut)
 def get_empresa(empresa_id: int, db: Session = Depends(get_db)):
     return crud_empresas.get(db, empresa_id)
 
-
-@router.post("/", response_model=EmpresaOut)
-def criar_empresa(data: EmpresaCreate, db: Session = Depends(get_db),current_user: Usuarios = Depends(get_current_user)):
-    return crud_empresas.criar(db, data,current_user=current_user,)
-
-
-@router.put("/{empresa_id}", response_model=EmpresaOut)
+@router.put("/id/{empresa_id}", response_model=EmpresaOut)
 def atualizar_empresa(empresa_id: int, data: EmpresaUpdate, db: Session = Depends(get_db)):
     return crud_empresas.atualizar(db, empresa_id, data)
 
 
-@router.delete("/{empresa_id}")
+@router.delete("/id/{empresa_id}")
 def deletar_empresa(empresa_id: int, db: Session = Depends(get_db)):
     return crud_empresas.deletar(db, empresa_id)

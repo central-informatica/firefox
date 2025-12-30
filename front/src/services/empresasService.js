@@ -37,7 +37,7 @@ export async function getEmpresasDoUsuario(userId) {
 }
 
 export async function getEmpresa(id) {
-  const res = await apiFetchWithToken(`/empresas/${id}`);
+  const res = await apiFetchWithToken(`/empresas/id/${id}`);
 
   if (!res.ok) {
     throw new Error(await res.text());
@@ -67,7 +67,7 @@ export async function createEmpresa(data) {
  * UPDATE
  */
 export async function updateEmpresa(id, data) {
-  const res = await apiFetchWithToken(`/empresas/${id}`, {
+  const res = await apiFetchWithToken(`/empresas/id/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
@@ -83,7 +83,7 @@ export async function updateEmpresa(id, data) {
  * DELETE
  */
 export async function deleteEmpresa(id) {
-  const res = await apiFetchWithToken(`/empresas/${id}`, {
+  const res = await apiFetchWithToken(`/empresas/id/${id}`, {
     method: "DELETE",
   });
 
