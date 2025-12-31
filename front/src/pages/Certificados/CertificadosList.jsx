@@ -27,6 +27,7 @@ import {
 //import SelectCustom from "../../components/Select/SelectEmpresa";
 import DataTable from "../../components/Tables/DataTable";
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
+import ConfirmModal from "../../components/ConfirmModal";
 
 export default function CertificadosList() {
   const navigate = useNavigate();
@@ -35,6 +36,11 @@ export default function CertificadosList() {
   const [empresaId, setEmpresaId] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [stats, setStats] = useState({ total: 0, ativos: 0, expirando: 0, expirados: 0, });
+
+  // Confirmation modal state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState(null); // { id, nome }
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const getCertificateStatus = (validoAte) => {
     const hoje = new Date();
@@ -187,17 +193,9 @@ export default function CertificadosList() {
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <button
-            onClick={async () => {
-              if (!confirm(`Deseja realmente excluir o certificado "${row.original.nome_arquivo}"?\n\nEsta ação não pode ser desfeita.`)) return;
-
-              try {
-                await excluir_certificado(row.original.certificado_id);
-                toast.success("Certificado excluído com sucesso!");
-                setReloadKey((old) => old + 1);
-              } catch (err) {
-                console.error(err);
-                toast.error("Erro ao excluir certificado.");
-              }
+            onClick={() => {
+              setConfirmData({ id: row.original.certificado_id, nome: row.original.nome_arquivo });
+              setConfirmOpen(true);
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group"
             title="Excluir certificado"
@@ -219,6 +217,24 @@ export default function CertificadosList() {
       search,
       sort,
     });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmData) return;
+    setIsDeleting(true);
+
+    try {
+      await excluir_certificado(confirmData.id);
+      toast.success("Certificado excluído com sucesso!");
+      setReloadKey((old) => old + 1);
+      setConfirmOpen(false);
+      setConfirmData(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao excluir certificado.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -354,6 +370,17 @@ export default function CertificadosList() {
             </div>
           </div>
         )}
+
+        <ConfirmModal
+          open={confirmOpen}
+          title={`Excluir certificado?`}
+          description={confirmData ? `Deseja realmente excluir o certificado "${confirmData.nome}"? Esta ação não pode ser desfeita.` : ''}
+          confirmText="Excluir"
+          cancelText="Cancelar"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setConfirmOpen(false)}
+          loading={isDeleting}
+        />
       </div>
     </div>
   );
