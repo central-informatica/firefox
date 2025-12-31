@@ -2,12 +2,13 @@ import { getTimezoneOptions } from "../../services/timezoneService";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  FiBriefcase, FiFileText, FiClock, FiSave, FiArrowLeft, FiCheck
+  FiBriefcase, FiFileText, FiClock, FiSave, FiArrowLeft, FiCheck, FiTag
 } from "react-icons/fi";
 
 import Input from "../../components/Input/Input";
 import InputMask from "../../components/Input/InputMask";
 import Select from "../../components/Select/Select";
+import SelectRamo from "../../components/Select/SelectRamo";
 import Label from "../../components/Label/Label";
 
 import {
@@ -34,6 +35,7 @@ const EmpresaForm = () => {
     razao_social: "",
     cnpj: "",
     timezone: "America/Sao_Paulo",
+    ramos_id: 1,
   });
 
   useEffect(() => {
@@ -144,6 +146,22 @@ const EmpresaForm = () => {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">Digite apenas números, a máscara será aplicada automaticamente</p>
+            </div>
+
+            {/* Ramo de Atuação */}
+            <div className="group">
+              <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <FiTag className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
+                Ramo de Atuação
+              </Label>
+              <div className="relative">
+                <SelectRamo
+                  value={form.ramos_id}
+                  onChange={(val) => setForm({ ...form, ramos_id: val })}
+                  placeholder="Selecione o ramo de atuação"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Selecione o ramo de atuação da empresa</p>
             </div>
 
             {/* Fuso Horário */}

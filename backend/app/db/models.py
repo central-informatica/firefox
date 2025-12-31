@@ -10,6 +10,19 @@ class Base(DeclarativeBase):
     pass
 
 
+class Ramos(Base):
+    __tablename__ = 'ramos'
+    __table_args__ = (
+        PrimaryKeyConstraint('ramos_id', name='ramos_pkey'),
+        {'comment': 'Ramos de atuação das empresas.'}
+    )
+
+    ramos_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    ramo: Mapped[str] = mapped_column(String(80), nullable=False, comment='Nome do ramo de atuação.')
+
+    empresas: Mapped[list['Empresas']] = relationship('Empresas', back_populates='ramo_rel')
+
+
 class Usuarios(Base):
     __tablename__ = 'usuarios'
     __table_args__ = (
@@ -71,10 +84,12 @@ class Empresas(Base):
     __tablename__ = 'empresas'
     __table_args__ = (
         ForeignKeyConstraint(['anfitria_usuario_id'], ['usuarios.usuario_id'], ondelete='RESTRICT', onupdate='CASCADE', name='empresas_anfitria_fk'),
+        ForeignKeyConstraint(['ramos_id'], ['ramos.ramos_id'], ondelete='RESTRICT', onupdate='CASCADE', name='empresas_ramos_fk'),
         PrimaryKeyConstraint('empresa_id', name='empresas_pkey'),
         UniqueConstraint('cnpj', name='empresas_cnpj_key'),
         Index('idx_empresas_cnpj', 'cnpj'),
         Index('idx_empresas_timezone', 'timezone'),
+        Index('idx_empresas_ramos', 'ramos_id'),
         {'comment': 'Empresas cadastradas na plataforma (multi-tenant).'}
     )
 
@@ -82,11 +97,13 @@ class Empresas(Base):
     razao_social: Mapped[str] = mapped_column(String(120), nullable=False, comment='Razao social da empresa.')
     cnpj: Mapped[str] = mapped_column(String(14), nullable=False, comment='CNPJ da empresa, sem formatacao.')
     anfitria_usuario_id: Mapped[int] = mapped_column(BigInteger, nullable=False, comment='Usuario que criou a empresa (anfitriao/superadmin).')
+    ramos_id: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default=text('1'), comment='Ramo de atuação da empresa.')
     timezone: Mapped[str] = mapped_column(String(50), nullable=False, server_default=text("'America/Sao_Paulo'::character varying"), comment='Fuso horario da empresa no padrao IANA (ex: America/Sao_Paulo).')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
     fantasia: Mapped[Optional[str]] = mapped_column(String(120), comment='Nome fantasia da empresa.')
 
     anfitria_usuario: Mapped['Usuarios'] = relationship('Usuarios', back_populates='empresas')
+    ramo_rel: Mapped['Ramos'] = relationship('Ramos', back_populates='empresas')
     certificados: Mapped[list['Certificados']] = relationship('Certificados', back_populates='empresa')
     empresa_convites: Mapped[list['EmpresaConvites']] = relationship('EmpresaConvites', back_populates='empresa')
     empresa_membros: Mapped[list['EmpresaMembros']] = relationship('EmpresaMembros', back_populates='empresa')
