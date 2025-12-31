@@ -15,6 +15,7 @@ from backend.app.api.routes.grupos_certificados import router as grupos_certific
 from backend.app.api.routes.grupos_usuarios import router as grupos_usuarios_router
 from backend.app.api.routes.regras_acesso import router as regras_acesso
 from backend.app.api.routes.regras_acesso_hosts import router as regras_acesso_hosts
+from backend.app.api.routes.global_urls import router as global_urls_router
 
 
 app = FastAPI(title="Certificado Protegido")
@@ -45,6 +46,7 @@ app.include_router(planos_trabalho_router)
 app.include_router(feriados_router)
 app.include_router(regras_acesso)
 app.include_router(regras_acesso_hosts)
+app.include_router(global_urls_router)
 
 @app.get("/")
 def healthcheck():

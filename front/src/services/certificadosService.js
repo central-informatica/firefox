@@ -2,6 +2,7 @@ import { apiFetch, apiFetchWithToken } from "../api/api";
 
 export async function listarCertificadosPaginado({
   empresa_id,
+  grupo_id = undefined,
   page = 1,
   limit = 10,
   search = "",
@@ -14,6 +15,8 @@ export async function listarCertificadosPaginado({
     search,
     sort,
   });
+
+  if (grupo_id !== undefined && grupo_id !== null) params.append('grupo_id', String(grupo_id));
 
   const res = await apiFetchWithToken(`/certificados?${params.toString()}`, {
     method: "GET",

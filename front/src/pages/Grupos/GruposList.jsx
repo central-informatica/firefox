@@ -109,13 +109,23 @@ const GruposList = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => navigate("/grupos/novo")}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-        >
-          <FiPlus size={20} />
-          Novo Grupo
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/grupos/novo")}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+          >
+            <FiPlus size={20} />
+            Novo Grupo
+          </button>
+
+          <button
+            onClick={() => navigate("/grupos/associar-usuarios")}
+            className="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200"
+          >
+            <FiUsers size={18} />
+            Associar Usuários
+          </button>
+        </div>
       </div>
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

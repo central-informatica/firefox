@@ -97,6 +97,7 @@ class Empresas(Base):
     grupos_usuarios: Mapped[list['GruposUsuarios']] = relationship('GruposUsuarios', back_populates='empresa')
     regras_acesso: Mapped[list['RegrasAcesso']] = relationship('RegrasAcesso', back_populates='empresa')
     regras_acesso_hosts: Mapped[list['RegrasAcessoHosts']] = relationship('RegrasAcessoHosts', back_populates='empresa')
+    global_urls: Mapped[list['GlobalUrls']] = relationship('GlobalUrls', back_populates='empresa')
 
 
 class Certificados(Base):
@@ -330,3 +331,21 @@ class RegrasAcessoHosts(Base):
 
     empresa: Mapped['Empresas'] = relationship('Empresas', back_populates='regras_acesso_hosts')
     grupo: Mapped['Grupos'] = relationship('Grupos', back_populates='regras_acesso_hosts')
+
+
+class GlobalUrls(Base):
+    __tablename__ = 'global_urls'
+    __table_args__ = (
+        ForeignKeyConstraint(['empresa_id'], ['empresas.empresa_id'], ondelete='CASCADE', name='global_urls_empresa_fk'),
+        PrimaryKeyConstraint('global_urls_id', name='global_urls_pkey'),
+        Index('idx_global_urls_emp', 'empresa_id'),
+        {'comment': 'URLs globais cadastradas por empresa.'}
+    )
+
+    global_urls_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, comment='Identificador único')
+    url: Mapped[Optional[str]] = mapped_column(Text, comment='URL cadastrada')
+    criado_em: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('now()'), comment='Data de criação')
+    inativo: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text('false'), comment='Indica se a URL está inativa')
+    empresa_id: Mapped[int] = mapped_column(BigInteger, nullable=False, comment='Chave estrangeira da empresa')
+
+    empresa: Mapped['Empresas'] = relationship('Empresas', back_populates='global_urls')

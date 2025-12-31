@@ -200,6 +200,7 @@ async def upload_certificado(
 @router.get("/")
 def listar_certificados(
     empresa_id: int,
+    grupo_id: int | None = None,
     page: int = 1,
     limit: int = 10,
     search: str = "",
@@ -211,6 +212,12 @@ def listar_certificados(
     Lista certificados da empresa, com paginação e filtro por nome de arquivo.
     """
     query = db.query(Certificados).filter(Certificados.empresa_id == empresa_id)
+
+    # Filter by group if provided (join GruposCertificados)
+    if grupo_id:
+        from backend.app.db.models import GruposCertificados
+        query = query.join(GruposCertificados, GruposCertificados.certificado_id == Certificados.certificado_id)
+        query = query.filter(GruposCertificados.grupo_id == grupo_id)
 
     if search:
         like = f"%{search}%"

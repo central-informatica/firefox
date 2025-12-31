@@ -154,6 +154,19 @@ export async function removeUsuarioFromGrupo(grupo_id, usuario_id) {
   return await parseJsonSafe(res);
 }
 
+// Adicionar múltiplos usuários ao grupo (bulk)
+export async function addUsuariosToGrupoBulk(grupo_id, usuario_ids, empresa_id = null) {
+  const payload = { grupo_id, usuario_ids };
+  if (empresa_id) payload.empresa_id = empresa_id;
+  const res = await apiFetchWithToken(`/grupos/${grupo_id}/usuarios/bulk`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  await ensureOk(res);
+  return await res.json();
+}
+
 /**
  * Lista os grupos de uma empresa específica
  * (tenant-safe: backend valida se o usuário pertence à empresa)
@@ -207,6 +220,14 @@ export async function addCertificadoToGrupo(grupo_id, certificado_id) {
   });
   await ensureOk(res);
   return await parseJsonSafe(res);
+}
+
+// Listar associações grupos<->usuarios por empresa
+export async function listarGruposUsuariosPorEmpresa(empresaId) {
+  if (!empresaId) return [];
+  const res = await apiFetchWithToken(`/grupos-usuarios/empresa/${empresaId}`);
+  await ensureOk(res);
+  return await res.json();
 }
 
 // Remover certificado do grupo

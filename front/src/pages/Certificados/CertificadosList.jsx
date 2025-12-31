@@ -21,12 +21,14 @@ import {
   FiAlertCircle,
   FiCheckCircle,
   FiBriefcase,
-  FiFilter
+  FiFilter,
+  FiUsers,
 } from "react-icons/fi";
 
 //import SelectCustom from "../../components/Select/SelectEmpresa";
 import DataTable from "../../components/Tables/DataTable";
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
+import SelectGrupo from "../../components/Select/SelectGrupo";
 import ConfirmModal from "../../components/ConfirmModal";
 
 export default function CertificadosList() {
@@ -36,6 +38,7 @@ export default function CertificadosList() {
   const [empresaId, setEmpresaId] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [stats, setStats] = useState({ total: 0, ativos: 0, expirando: 0, expirados: 0, });
+  const [selectedGroup, setSelectedGroup] = useState(null);
 
   // Confirmation modal state
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -64,13 +67,17 @@ export default function CertificadosList() {
 
   async function carregarStats() {
     try {
-      const res = await listarCertificadosPaginado({
+      const params = {
         empresa_id: empresaId,
         page: 1,
         limit: 1000, // suficiente para stats
         search: "",
         sort: "",
-      });
+      };
+
+      if (selectedGroup && selectedGroup.grupo_id) params.grupo_id = selectedGroup.grupo_id;
+
+      const res = await listarCertificadosPaginado(params);
 
       const certificados = res.data || [];
 
@@ -95,7 +102,6 @@ export default function CertificadosList() {
 
       console.log("Contadores:", { _ativos, _expirando, _expirados });
 
-      console.log("Contadores:", { _ativos, _expirando, _expirados });
     } catch (err) {
       console.error("Erro ao carregar estatísticas:", err);
       setStats({ total: 0, ativos: 0, expirando: 0, expirados: 0 });
@@ -103,7 +109,7 @@ export default function CertificadosList() {
   }
 
   carregarStats();
-}, [empresaId, reloadKey]);
+}, [empresaId, reloadKey, selectedGroup]);
 
 
   const columns = [
@@ -210,13 +216,17 @@ export default function CertificadosList() {
 
   const fetchCertificados = ({ page, limit, search, sort }) => {
     // 🔧 Correção: usar empresaId e não empresaFiltro
-    return listarCertificadosPaginado({
+    const params = {
       empresa_id: empresaId,
       page,
       limit,
       search,
       sort,
-    });
+    };
+
+    if (selectedGroup && selectedGroup.grupo_id) params.grupo_id = selectedGroup.grupo_id;
+
+    return listarCertificadosPaginado(params);
   };
 
   const handleConfirmDelete = async () => {
@@ -277,8 +287,31 @@ export default function CertificadosList() {
               value={empresaId}
               onChange={(id) => {
                 setEmpresaId(id);
+                setSelectedGroup(null);
                 setReloadKey((k) => k + 1);
               }}
+            />
+          </div>
+
+          <div className="flex-1 max-w-sm">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FiUsers className="text-gray-400" size={14} />
+              Grupo
+            </label>
+            <SelectGrupo
+              empresaId={empresaId}
+              value={selectedGroup?.grupo_id || null}
+              onChange={(val) => {
+                // value is grupo_id
+                if (!val) {
+                  setSelectedGroup(null);
+                } else {
+                  const g = { grupo_id: val };
+                  setSelectedGroup(g);
+                }
+                setReloadKey((k) => k + 1);
+              }}
+              isDisabled={!empresaId}
             />
           </div>
         </div>

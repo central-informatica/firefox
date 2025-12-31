@@ -11,6 +11,7 @@ import PlanosForm from "./pages/PlanosTrabalho/PlanosTrabalhoForm"
 import GerenciarAssociacoes from "./pages/PlanosTrabalho/GerenciarAssociacoes"
 import GruposList from "./pages/Grupos/GruposList";
 import GruposForm from "./pages/Grupos/GruposForm";
+import AssociarUsuarios from "./pages/Grupos/AssociarUsuarios";
 
 
 export default function AppRoutes() {
@@ -42,6 +43,7 @@ export default function AppRoutes() {
       <Route path="/grupos" element={<GruposList />} />
       <Route path="/grupos/novo" element={<GruposForm />} />
       <Route path="/grupos/editar/:id" element={<GruposForm />} />
+      <Route path="/grupos/associar-usuarios" element={<AssociarUsuarios />} />
 
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>

@@ -16,15 +16,16 @@ export default function SelectGrupo({
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 🔁 Carrega grupos sempre que o plano muda
+  // 🔁 Carrega grupos sempre que a empresa ou o plano mudam
   useEffect(() => {
-    if (!empresaId || !planoTrabalhoId) {
+    if (!empresaId) {
       setOptions([]);
       return;
     }
 
     setLoading(true);
 
+    // Se planoTrabalhoId estiver presente, passamos como filtro; caso contrário, listamos por empresa
     listarGruposPorEmpresa(empresaId, planoTrabalhoId)
       .then((grupos) => {
         setOptions(
@@ -77,16 +78,16 @@ export default function SelectGrupo({
   return (
     <CreatableSelect
       isClearable
-      isDisabled={isDisabled || !planoTrabalhoId}
+      isDisabled={isDisabled || !empresaId}
       isLoading={loading}
       options={options}
       value={selected}
       onChange={(opt) => onChange?.(opt ? opt.value : null)}
       onCreateOption={handleCreate}
       placeholder={
-        !planoTrabalhoId
-          ? "Selecione um plano primeiro"
-          : placeholder
+        !empresaId
+          ? "Selecione uma empresa primeiro"
+          : (!planoTrabalhoId ? placeholder : placeholder)
       }
       formatCreateLabel={(input) => `Criar grupo "${input}"`}
     />

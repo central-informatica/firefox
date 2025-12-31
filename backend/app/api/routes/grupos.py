@@ -105,6 +105,64 @@ def adicionar_certificado(
     )
 
 
+# =====================
+# Usuários <-> Grupos
+# =====================
+from backend.app.crud.grupos_usuarios import crud_grupos_usuarios
+from backend.app.schemas.grupos_usuarios import GrupoUsuarioCreate, GrupoUsuarioBulkCreate
+
+
+@router.get("/{grupo_id}/usuarios")
+def listar_usuarios_do_grupo(grupo_id: int, db: Session = Depends(get_db)):
+    registros = crud_grupos_usuarios.listar_por_grupo(db, grupo_id)
+    # Mapear para dados do usuário (se houver relacionamento)
+    usuarios = []
+    for r in registros:
+        try:
+            u = r.usuarios
+            usuarios.append({
+                "usuario_id": u.usuario_id,
+                "nome": u.nome,
+                "email": u.email,
+            })
+        except Exception:
+            usuarios.append({
+                "usuario_id": r.usuario_id,
+            })
+    return usuarios
+
+
+@router.post("/{grupo_id}/usuarios", status_code=201)
+def adicionar_usuario_ao_grupo(grupo_id: int, payload: dict, db: Session = Depends(get_db)):
+    usuario_id = payload.get("usuario_id")
+    empresa_id = payload.get("empresa_id")
+    if not usuario_id:
+        raise HTTPException(status_code=400, detail="usuario_id é obrigatório")
+
+    data = GrupoUsuarioCreate(empresa_id=empresa_id or None, grupo_id=grupo_id, usuario_id=usuario_id)
+    return crud_grupos_usuarios.criar(db, data)
+
+
+@router.delete("/{grupo_id}/usuarios/{usuario_id}")
+def remover_usuario_do_grupo(grupo_id: int, usuario_id: int, db: Session = Depends(get_db)):
+    # procurar vínculo e deletar
+    registros = crud_grupos_usuarios.listar_por_grupo(db, grupo_id)
+    target = None
+    for r in registros:
+        if r.usuario_id == usuario_id:
+            target = r
+            break
+    if not target:
+        raise HTTPException(status_code=404, detail="Vínculo não encontrado")
+    return crud_grupos_usuarios.deletar(db, target.grupo_usuario_id)
+
+
+@router.post("/{grupo_id}/usuarios/bulk")
+def adicionar_usuarios_em_lote(grupo_id: int, payload: GrupoUsuarioBulkCreate, db: Session = Depends(get_db)):
+    # Usa o CRUD criar_bulk
+    resumo = crud_grupos_usuarios.criar_bulk(db, grupo_id, payload.usuario_ids, payload.empresa_id)
+    return resumo
+
 @router.delete("/{grupo_id}/remover/certificado")
 def remover_certificado(
     grupo_id: int,
