@@ -54,13 +54,15 @@ def extrair_info_certificado(pfx_bytes: bytes, senha: str | None):
 
 @router.post("/")
 async def upload_certificado(
-    empresa_id: int = Form(...),
+    empresa_id: int | None = Form(None),
     senha: str = Form(""),
     arquivo: UploadFile = File(...),
     proprietario: str = Form(""),
     emitido_por: str = Form(""),
     validade_inicio: str = Form(""),
     valido_ate: str = Form(""),
+    auto_create_empresa: bool = Form(False),
+    manual_cnpj: str | None = Form(None),
     token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
@@ -85,6 +87,70 @@ async def upload_certificado(
             detail="Não foi possível ler o certificado. Verifique a senha informada.",
         )
 
+    # If auto-create company was requested, attempt to resolve or create the company
+    target_empresa_id = empresa_id
+
+    if not target_empresa_id and auto_create_empresa:
+        # try manual CNPJ first
+        cnpj_digits = None
+        if manual_cnpj:
+            cnpj_digits = ''.join(filter(str.isdigit, manual_cnpj))
+            if len(cnpj_digits) != 14:
+                raise HTTPException(status_code=400, detail="CNPJ inválido. Deve conter 14 dígitos.")
+
+        # If no manual CNPJ, attempt to extract from certificate subject/issuer
+        if not cnpj_digits:
+            import re
+            try:
+                _, certificate_obj, _ = pkcs12.load_key_and_certificates(pfx_bytes, senha.encode() if senha else None)
+                subject_str = certificate_obj.subject.rfc4514_string()
+                issuer_str = certificate_obj.issuer.rfc4514_string()
+                match = re.search(r"(\d{14})", subject_str) or re.search(r"(\d{14})", issuer_str)
+                if match:
+                    cnpj_digits = match.group(1)
+            except Exception:
+                # If we cannot parse the certificate again, proceed without cnpj
+                cnpj_digits = None
+
+        # If we have a CNPJ, find or create the company
+        from backend.app.db.models import Empresas, Usuarios
+        from backend.app.schemas.empresas import EmpresaCreate
+        from backend.app.crud.empresas import crud_empresas
+
+        if cnpj_digits:
+            existing = db.query(Empresas).filter(Empresas.cnpj == cnpj_digits).first()
+            if existing:
+                target_empresa_id = existing.empresa_id
+            else:
+                # create company with owner as razao_social
+                current_user = db.query(Usuarios).filter(Usuarios.usuario_id == token_context.usuario_id).first()
+                if not current_user:
+                    raise HTTPException(status_code=400, detail="Usuário não encontrado para criação da empresa")
+
+                empresa_data = EmpresaCreate(
+                    razao_social=proprietario_auto or emitido_por_auto or "Empresa do certificado",
+                    cnpj=cnpj_digits,
+                )
+
+                nova = crud_empresas.criar(db, empresa_data, current_user=current_user)
+                target_empresa_id = nova.empresa_id
+        else:
+            # fallback: try to match by name
+            from backend.app.db.models import Empresas
+            nome_busca = (proprietario_auto or emitido_por_auto or "").strip()
+            if nome_busca:
+                existing = (
+                    db.query(Empresas)
+                    .filter(Empresas.razao_social.ilike(nome_busca))
+                    .first()
+                )
+                if existing:
+                    target_empresa_id = existing.empresa_id
+                else:
+                    raise HTTPException(status_code=400, detail=f"CNPJ não encontrado no certificado e nenhuma empresa com nome '{nome_busca}' existe. Forneça 'manual_cnpj' para criar a empresa automaticamente.")
+            else:
+                raise HTTPException(status_code=400, detail="CNPJ não encontrado no certificado. Forneça 'manual_cnpj' para criar a empresa automaticamente.")
+
     proprietario_final = proprietario or proprietario_auto
     emitido_por_final = emitido_por or emitido_por_auto
 
@@ -98,13 +164,18 @@ async def upload_certificado(
     else:
         valido_ate_dt = valido_ate_auto
 
+    # Determine final empresa to use (either provided or created/found)
+    final_empresa_id = target_empresa_id or empresa_id
+    if not final_empresa_id:
+        raise HTTPException(status_code=400, detail="É necessário informar 'empresa_id' ou habilitar 'auto_create_empresa' para que a empresa seja criada automaticamente.")
+
     encrypted_pfx = encrypt_pfx(pfx_bytes, MASTER_KEY)
     senha_bytes = senha.encode() if senha is not None else b""
     encrypted_senha = encrypt_pfx(senha_bytes, MASTER_KEY)
 
     
     cert = Certificados(
-        empresa_id=empresa_id,
+        empresa_id=final_empresa_id,
         criado_por=id_usuario,
         nome_arquivo=arquivo.filename,
         encrypted=json.dumps(encrypted_pfx),

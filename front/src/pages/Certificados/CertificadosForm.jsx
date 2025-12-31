@@ -30,11 +30,13 @@ export default function CertificadosForm() {
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [empresaId, setEmpresaId] = useState(null);
+  const [autoCreateEmpresa, setAutoCreateEmpresa] = useState(false);
 
-  // Track uploads that failed specifically due to password issues
-  const [failedUploads, setFailedUploads] = useState([]); // [{ file, error, password }]
+  // Track uploads that failed specifically due to password or cnpj issues
+  const [failedUploads, setFailedUploads] = useState([]); // [{ file, error, password, cnpj }]
 
   const isPasswordError = (msg = "") => /senha/i.test(msg);
+  const isCnpjError = (msg = "") => /cnpj/i.test(msg);
 
   const retrySingle = async (index) => {
     const entry = failedUploads[index];
@@ -42,8 +44,10 @@ export default function CertificadosForm() {
     setIsSubmitting(true);
     try {
       const data = new FormData();
-      data.append("empresa_id", form.empresa_id);
+      if (!autoCreateEmpresa && form.empresa_id) data.append("empresa_id", form.empresa_id);
       data.append("senha", entry.password || "");
+      if (entry.cnpj) data.append("manual_cnpj", entry.cnpj);
+      if (autoCreateEmpresa || entry.cnpj) data.append("auto_create_empresa", "true");
       data.append("arquivo", entry.file);
       await createCertificado(data);
 
@@ -69,8 +73,10 @@ export default function CertificadosForm() {
     setIsSubmitting(true);
     const promises = failedUploads.map((entry) => {
       const data = new FormData();
-      data.append("empresa_id", form.empresa_id);
+      if (!autoCreateEmpresa && form.empresa_id) data.append("empresa_id", form.empresa_id);
       data.append("senha", entry.password || "");
+      if (entry.cnpj) data.append("manual_cnpj", entry.cnpj);
+      if (autoCreateEmpresa || entry.cnpj) data.append("auto_create_empresa", "true");
       data.append("arquivo", entry.file);
       return createCertificado(data);
     });
@@ -188,8 +194,8 @@ export default function CertificadosForm() {
       return;
     }
 
-    if (!form.empresa_id) {
-      toast.error("Selecione uma empresa.");
+    if (!autoCreateEmpresa && !form.empresa_id) {
+      toast.error("Selecione uma empresa ou marque 'Criar empresa automaticamente'.");
       return;
     }
 
@@ -199,8 +205,9 @@ export default function CertificadosForm() {
       const results = await Promise.allSettled(
         files.map((f) => {
           const data = new FormData();
-          data.append("empresa_id", form.empresa_id);
+          if (!autoCreateEmpresa && form.empresa_id) data.append("empresa_id", form.empresa_id);
           data.append("senha", form.senha || "");
+          if (autoCreateEmpresa) data.append("auto_create_empresa", "true");
           data.append("arquivo", f);
           return createCertificado(data).then((res) => ({ status: 'fulfilled', res, file: f })).catch((err) => { throw { file: f, error: err } });
         })
@@ -209,6 +216,7 @@ export default function CertificadosForm() {
       // Normalize results
       const successes = [];
       const passwordFailures = [];
+      const cnpjFailures = [];
       const otherFailures = [];
 
       results.forEach((r) => {
@@ -222,6 +230,8 @@ export default function CertificadosForm() {
 
           if (isPasswordError(errorMsg)) {
             passwordFailures.push({ file, error: errorMsg, password: "" });
+          } else if (isCnpjError(errorMsg)) {
+            cnpjFailures.push({ file, error: errorMsg, cnpj: "" });
           } else {
             otherFailures.push({ file, error: errorMsg });
           }
@@ -234,10 +244,18 @@ export default function CertificadosForm() {
         toast.error(`${otherFailures.length} falha(s) ao enviar certificados. Veja console para detalhes.`);
       }
 
-      if (passwordFailures.length) {
-        setFailedUploads(passwordFailures);
-        toast.info("Alguns certificados exigem senha. Informe as senhas abaixo para tentar novamente.");
-      } else if (successes.length > 0 && otherFailures.length === 0) {
+      const mergedFailures = [...passwordFailures, ...cnpjFailures, ...otherFailures];
+
+      if (mergedFailures.length) {
+        setFailedUploads(mergedFailures);
+        if (cnpjFailures.length) {
+          toast.info("Alguns certificados exigem CNPJ para criar a empresa automaticamente. Informe o CNPJ por arquivo e tente novamente.");
+        } else if (passwordFailures.length) {
+          toast.info("Alguns certificados exigem senha. Informe as senhas abaixo para tentar novamente.");
+        } else {
+          toast.error(`${otherFailures.length} falha(s) ao enviar certificados. Veja console para detalhes.`);
+        }
+      } else if (successes.length > 0) {
         navigate("/certificados");
       }
     } catch (err) {
@@ -281,8 +299,33 @@ export default function CertificadosForm() {
               <SelectCustom
                   value={empresaId}
                   onChange={handleEmpresaChange}
+                  isDisabled={autoCreateEmpresa}
               />
-              
+
+              <div className="flex items-center gap-3 mt-3">
+                <label className="inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoCreateEmpresa}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setAutoCreateEmpresa(checked);
+                      if (checked) {
+                        // Clear selected company when opting to auto-create to avoid confusion
+                        setEmpresaId(null);
+                        setForm((prev) => ({ ...prev, empresa_id: null }));
+                      }
+                    }}
+                    className="form-checkbox h-5 w-5 text-emerald-600 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Criar empresa automaticamente a partir do certificado se não existir</span>
+                </label>
+              </div>
+
+              {autoCreateEmpresa && (
+                <p className="text-sm text-gray-500 mt-2">Ao marcar, não é necessário selecionar uma empresa — o sistema tentará criar ou encontrar automaticamente a empresa a partir do certificado.</p>
+              )}
+
             </div>
 
             {/* Upload Area */}
@@ -375,7 +418,7 @@ export default function CertificadosForm() {
 
                   {failedUploads.length > 0 && (
                     <div className="mt-4 border-t pt-4">
-                      <p className="text-sm font-medium text-red-700 mb-2">Alguns certificados exigem senha específica:</p>
+                      <p className="text-sm font-medium text-red-700 mb-2">Alguns certificados exigem atenção:</p>
                       <div className="space-y-3">
                         {failedUploads.map((f, idx) => (
                           <div key={f.file.name + f.file.size} className="flex items-center gap-3">
@@ -383,13 +426,29 @@ export default function CertificadosForm() {
                               <p className="text-sm font-semibold">{f.file.name}</p>
                               <p className="text-xs text-red-500">{f.error}</p>
                             </div>
-                            <input
-                              type="password"
-                              placeholder="Senha do certificado"
-                              value={f.password}
-                              onChange={(e) => setFailedUploads((prev) => prev.map((p, i) => i === idx ? { ...p, password: e.target.value } : p))}
-                              className="px-3 py-2 border rounded-lg"
-                            />
+
+                            {/* CNPJ input shown when error indicates CNPJ is required */}
+                            {isCnpjError(f.error) && (
+                              <input
+                                type="text"
+                                placeholder="CNPJ (somente dígitos)"
+                                value={f.cnpj}
+                                onChange={(e) => setFailedUploads((prev) => prev.map((p, i) => i === idx ? { ...p, cnpj: e.target.value } : p))}
+                                className="px-3 py-2 border rounded-lg"
+                              />
+                            )}
+
+                            {/* Password input shown when error indicates password is required */}
+                            {isPasswordError(f.error) && (
+                              <input
+                                type="password"
+                                placeholder="Senha do certificado"
+                                value={f.password}
+                                onChange={(e) => setFailedUploads((prev) => prev.map((p, i) => i === idx ? { ...p, password: e.target.value } : p))}
+                                className="px-3 py-2 border rounded-lg"
+                              />
+                            )}
+
                             <button
                               type="button"
                               onClick={() => retrySingle(idx)}
