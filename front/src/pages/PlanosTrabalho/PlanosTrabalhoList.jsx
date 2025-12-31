@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiPlus, FiEdit2, FiFlag, FiCheckCircle, FiUsers, FiCalendar
+  FiPlus, FiEdit2, FiFlag, FiCheckCircle, FiUsers, FiCalendar, FiFilter
 } from "react-icons/fi";
 import DataTable from "../../components/Tables/DataTable";
+import SelectEmpresa from "../../components/Select/SelectEmpresa";
+import Label from "../../components/Label/Label";
 import { listarPlanosTrabalho } from "../../services/planosTrabalhoService";
-//import {listarTotalGruposTrabalho} from "../../services/gruposService";
 
 const PlanosTrabalhoList = () => {
   const navigate = useNavigate();
   const [totalPlanos, setTotalPlanos] = useState(0);
   const [totalGrupos, setTotalGrupos] = useState(0);
+  const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
+  const [tableKey, setTableKey] = useState(0);
 
   const columns = [
     {
@@ -64,14 +67,19 @@ const PlanosTrabalhoList = () => {
     },
   ];
 
-  const fetchPlanos = async (params) => {
-    const res = await listarPlanosTrabalho(params);
-    //const resGrupo await listarTotalGruposTrabalho();
-    //setTotalGrupos(res.total_grupos || 0);
+  const handleEmpresaChange = (value) => {
+    setEmpresaSelecionada(value);
+    setTableKey(prev => prev + 1);
+  };
+
+  const fetchPlanos = useCallback(async (params) => {
+    const res = await listarPlanosTrabalho({
+      ...params,
+      empresa_id: empresaSelecionada
+    });
     setTotalPlanos(res.total);
     return res;
-
-};
+  }, [empresaSelecionada]);
 
 
   return (
@@ -98,6 +106,24 @@ const PlanosTrabalhoList = () => {
             <FiPlus size={20} />
             Novo Plano de Trabalho
           </button>
+        </div>
+      </div>
+
+      {/* Filtro de Empresa */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <FiFilter className="text-purple-600" size={18} />
+          Filtros
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label className="text-sm font-medium text-gray-700 mb-2">Empresa</Label>
+            <SelectEmpresa
+              placeholder="Todas as empresas"
+              value={empresaSelecionada}
+              onChange={handleEmpresaChange}
+            />
+          </div>
         </div>
       </div>
 
@@ -143,6 +169,7 @@ const PlanosTrabalhoList = () => {
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <DataTable
+          key={tableKey}
           columns={columns}
           fetchData={fetchPlanos}
           limit={10}

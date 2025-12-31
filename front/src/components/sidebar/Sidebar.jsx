@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { FiLogOut } from "react-icons/fi";
 import {
   FiGrid, FiUsers, FiSettings, FiLifeBuoy, FiCreditCard,
-  FiFlag, FiChevronDown, FiChevronRight, FiMenu, FiX, FiChevronsLeft, FiChevronsRight
+  FiFlag, FiChevronDown, FiChevronRight, FiMenu, FiX, FiChevronsLeft, FiChevronsRight,
+  FiShield
 } from "react-icons/fi";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
@@ -65,6 +66,14 @@ export default function Sidebar() {
       children: [
         { id: "cert-lista", label: "Listar certificados", path: "/certificados" },
         { id: "cert-grupos", label: "Grupos de certificados", path: "/certificados/grupos" }
+      ]
+    },
+    {
+      id: "seguranca",
+      label: "Segurança",
+      icon: <FiShield />,
+      children: [
+        { id: "seg-whitelist", label: "Endereços permitidos", path: "/seguranca/enderecos-permitidos" }
       ]
     },
     { id: "config", label: "Configurações", icon: <FiSettings />, path: "/config" },
