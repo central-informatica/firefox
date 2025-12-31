@@ -72,5 +72,5 @@ def build_permissions(db: Session, usuario_id: int) -> Dict:
     }
 
 
-def calculate_token_expiration(minutes: int = 15) -> datetime:
+def calculate_token_expiration(minutes: int = 480) -> datetime:
     return datetime.utcnow() + timedelta(minutes=minutes)

@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
-  FiFlag, FiFileText, FiAlignLeft, FiSave, FiArrowLeft, FiCheck, FiInfo
+  FiFlag, FiFileText, FiAlignLeft, FiSave, FiArrowLeft, FiCheck, FiInfo, FiBriefcase
 } from "react-icons/fi";
 
 import Input from "../../components/Input/Input";
 import TextArea from "../../components/TextArea/TextArea";
 import Label from "../../components/Label/Label";
+import SelectEmpresa from "../../components/Select/SelectEmpresa";
 
 import {
   getPlanoTrabalho,
-  createPlanoTrabalho,
-  updatePlanoTrabalho,
+  criarPlanoTrabalho,
+  atualizarPlanoTrabalho,
 } from "../../services/planosTrabalhoService";
 
 const PlanosTrabalhoForm = () => {
@@ -22,40 +24,76 @@ const PlanosTrabalhoForm = () => {
   const [isSaved, setIsSaved] = useState(false);
 
   const [form, setForm] = useState({
+    empresa_id: null,
     nome: "",
     descricao: "",
   });
 
   useEffect(() => {
-    if (isEdit) {
-      getPlanoTrabalho(id).then((data) => {
-        if (data) setForm(data);
+    if (!isEdit) return;
+
+    getPlanoTrabalho(id).then((data) => {
+      setForm({
+        empresa_id: data.empresa_id ?? null,
+        nome: data.nome ?? "",
+        descricao: data.descricao ?? "",
       });
-    }
+    });
   }, [id, isEdit]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((old) => ({ ...old, [name]: value }));
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!form.nome || form.nome.trim() === "") {
+      toast.warning("Informe o nome do plano.");
+      return;
+    }
+
+    if (!isEdit && !form.empresa_id) {
+      toast.warning("Selecione uma empresa.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      const payload = {
+        nome: form.nome.trim(),
+        descricao: form.descricao?.trim() || "",
+      };
+
+      let response;
       if (isEdit) {
-        await updatePlanoTrabalho(id, form);
+        response = await atualizarPlanoTrabalho(id, payload);
       } else {
-        await createPlanoTrabalho(form);
+        response = await criarPlanoTrabalho({
+          ...payload,
+          empresa_id: form.empresa_id,
+        });
       }
 
-      setIsSaved(true);
-      setTimeout(() => {
-        navigate("/planos");
-      }, 800);
+      if (response.ok) {
+        setIsSaved(true);
+        toast.success(isEdit ? "Plano atualizado com sucesso!" : "Plano criado com sucesso!");
+        setTimeout(() => navigate("/planos"), 1000);
+      } else {
+        const errorText = await response.text();
+        toast.error(errorText || "Erro ao salvar plano.");
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao salvar plano:", error);
+      toast.error("Erro ao salvar plano.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -98,11 +136,27 @@ const PlanosTrabalhoForm = () => {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Empresa */}
+            {!isEdit && (
+              <div className="group">
+                <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <FiBriefcase className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
+                  Empresa *
+                </Label>
+                <SelectEmpresa
+                  placeholder="Selecione uma empresa"
+                  value={form.empresa_id}
+                  onChange={(val) => setForm(prev => ({ ...prev, empresa_id: val }))}
+                />
+                <p className="text-xs text-gray-500 mt-1">Selecione a empresa para este plano de trabalho</p>
+              </div>
+            )}
+
             {/* Nome do Plano */}
             <div className="group">
               <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FiFileText className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
-                Nome do Plano
+                Nome do Plano *
               </Label>
               <div className="relative">
                 <Input

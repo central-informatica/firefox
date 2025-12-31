@@ -18,7 +18,7 @@ from backend.app.core.validar_token import validar_token
 from backend.app.schemas.token import TokenContext
 from backend.app.db.session import get_db
 from backend.app.db.models import Certificados
-from backend.app.db.models import Usuarios
+from backend.app.api.deps import get_current_user
 from backend.app.utils.crypto_utils import encrypt_pfx, decrypt_pfx
 from backend.app.schemas.certificados import SignRequest,CertificadoPermitidoResponse, ValidarAcessoCertificadoResponse
 from backend.app.crud.certificado import listar_certificados_permitidos as crud_listar_certificados_permitidos, validar_acesso_certificado
@@ -54,13 +54,15 @@ def extrair_info_certificado(pfx_bytes: bytes, senha: str | None):
 
 @router.post("/")
 async def upload_certificado(
-    empresa_id: int = Form(...),
+    empresa_id: int | None = Form(None),
     senha: str = Form(""),
     arquivo: UploadFile = File(...),
     proprietario: str = Form(""),
     emitido_por: str = Form(""),
     validade_inicio: str = Form(""),
     valido_ate: str = Form(""),
+    auto_create_empresa: bool = Form(False),
+    manual_cnpj: str | None = Form(None),
     token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
 ):
@@ -85,6 +87,70 @@ async def upload_certificado(
             detail="Não foi possível ler o certificado. Verifique a senha informada.",
         )
 
+    # If auto-create company was requested, attempt to resolve or create the company
+    target_empresa_id = empresa_id
+
+    if not target_empresa_id and auto_create_empresa:
+        # try manual CNPJ first
+        cnpj_digits = None
+        if manual_cnpj:
+            cnpj_digits = ''.join(filter(str.isdigit, manual_cnpj))
+            if len(cnpj_digits) != 14:
+                raise HTTPException(status_code=400, detail="CNPJ inválido. Deve conter 14 dígitos.")
+
+        # If no manual CNPJ, attempt to extract from certificate subject/issuer
+        if not cnpj_digits:
+            import re
+            try:
+                _, certificate_obj, _ = pkcs12.load_key_and_certificates(pfx_bytes, senha.encode() if senha else None)
+                subject_str = certificate_obj.subject.rfc4514_string()
+                issuer_str = certificate_obj.issuer.rfc4514_string()
+                match = re.search(r"(\d{14})", subject_str) or re.search(r"(\d{14})", issuer_str)
+                if match:
+                    cnpj_digits = match.group(1)
+            except Exception:
+                # If we cannot parse the certificate again, proceed without cnpj
+                cnpj_digits = None
+
+        # If we have a CNPJ, find or create the company
+        from backend.app.db.models import Empresas, Usuarios
+        from backend.app.schemas.empresas import EmpresaCreate
+        from backend.app.crud.empresas import crud_empresas
+
+        if cnpj_digits:
+            existing = db.query(Empresas).filter(Empresas.cnpj == cnpj_digits).first()
+            if existing:
+                target_empresa_id = existing.empresa_id
+            else:
+                # create company with owner as razao_social
+                current_user = db.query(Usuarios).filter(Usuarios.usuario_id == token_context.usuario_id).first()
+                if not current_user:
+                    raise HTTPException(status_code=400, detail="Usuário não encontrado para criação da empresa")
+
+                empresa_data = EmpresaCreate(
+                    razao_social=proprietario_auto or emitido_por_auto or "Empresa do certificado",
+                    cnpj=cnpj_digits,
+                )
+
+                nova = crud_empresas.criar(db, empresa_data, current_user=current_user)
+                target_empresa_id = nova.empresa_id
+        else:
+            # fallback: try to match by name
+            from backend.app.db.models import Empresas
+            nome_busca = (proprietario_auto or emitido_por_auto or "").strip()
+            if nome_busca:
+                existing = (
+                    db.query(Empresas)
+                    .filter(Empresas.razao_social.ilike(nome_busca))
+                    .first()
+                )
+                if existing:
+                    target_empresa_id = existing.empresa_id
+                else:
+                    raise HTTPException(status_code=400, detail=f"CNPJ não encontrado no certificado e nenhuma empresa com nome '{nome_busca}' existe. Forneça 'manual_cnpj' para criar a empresa automaticamente.")
+            else:
+                raise HTTPException(status_code=400, detail="CNPJ não encontrado no certificado. Forneça 'manual_cnpj' para criar a empresa automaticamente.")
+
     proprietario_final = proprietario or proprietario_auto
     emitido_por_final = emitido_por or emitido_por_auto
 
@@ -98,13 +164,18 @@ async def upload_certificado(
     else:
         valido_ate_dt = valido_ate_auto
 
+    # Determine final empresa to use (either provided or created/found)
+    final_empresa_id = target_empresa_id or empresa_id
+    if not final_empresa_id:
+        raise HTTPException(status_code=400, detail="É necessário informar 'empresa_id' ou habilitar 'auto_create_empresa' para que a empresa seja criada automaticamente.")
+
     encrypted_pfx = encrypt_pfx(pfx_bytes, MASTER_KEY)
     senha_bytes = senha.encode() if senha is not None else b""
     encrypted_senha = encrypt_pfx(senha_bytes, MASTER_KEY)
 
     
     cert = Certificados(
-        empresa_id=empresa_id,
+        empresa_id=final_empresa_id,
         criado_por=id_usuario,
         nome_arquivo=arquivo.filename,
         encrypted=json.dumps(encrypted_pfx),
@@ -129,6 +200,7 @@ async def upload_certificado(
 @router.get("/")
 def listar_certificados(
     empresa_id: int,
+    grupo_id: int | None = None,
     page: int = 1,
     limit: int = 10,
     search: str = "",
@@ -140,6 +212,12 @@ def listar_certificados(
     Lista certificados da empresa, com paginação e filtro por nome de arquivo.
     """
     query = db.query(Certificados).filter(Certificados.empresa_id == empresa_id)
+
+    # Filter by group if provided (join GruposCertificados)
+    if grupo_id:
+        from backend.app.db.models import GruposCertificados
+        query = query.join(GruposCertificados, GruposCertificados.certificado_id == Certificados.certificado_id)
+        query = query.filter(GruposCertificados.grupo_id == grupo_id)
 
     if search:
         like = f"%{search}%"
@@ -161,7 +239,7 @@ def listar_certificados(
     data = []
     for c in registros:
         item = {
-            "id": c.certificado_id,
+            "certificado_id": c.certificado_id,
             "empresa_id": c.empresa_id,
             "criado_por": c.criado_por,
             "nome_arquivo": c.nome_arquivo,
@@ -184,16 +262,22 @@ def listar_certificados(
         "total": total,
     }
 
-@router.get("/listar_certificados_permitidos/{usuario_id}",response_model=list[CertificadoPermitidoResponse])
+@router.get(
+    "/listar_certificados_permitidos",
+    response_model=list[CertificadoPermitidoResponse]
+)
 def listar_certificados_permitidos(
-    token_context: TokenContext = Depends(validar_token),
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
-    """
-    Lista todos os certificados que o usuário autenticado tem permissão para acessar.
-    Usa o usuario_id extraído do token de autenticação.
-    """
-    return crud_listar_certificados_permitidos(db, token_context.usuario_id)
+    
+    certificados = crud_listar_certificados_permitidos(
+        db=db,
+        usuario_id=current_user.usuario_id,
+    )
+    print("Certificados permitidos encontrados:", len(certificados))
+    return certificados
+
 
 @router.get("/{certificado_id}/validar_acesso",response_model=ValidarAcessoCertificadoResponse,)
 def validar_acesso(

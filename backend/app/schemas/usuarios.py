@@ -26,10 +26,18 @@ class UsuarioOut(UsuarioBase):
     email_verificado: bool
     criado_em: datetime
     atualizado_em: datetime
+    nivel: str
 
     class Config:
         orm_mode = True
 
+class UsuariosPaginadoOut(BaseModel):
+    data: list[UsuarioOut]
+    total: int
+    total_adm: int
+
+    class Config:
+        orm_mode = True
 
 class EmpresaDoUsuarioOut(BaseModel):
     empresa_id: int

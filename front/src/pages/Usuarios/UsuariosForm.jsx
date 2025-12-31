@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   FiUser,
@@ -23,6 +23,8 @@ import {
 const UsuarioForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
+  const empresaId = location.state?.empresa_id ?? null;
 
   const isEdit = Boolean(id);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,11 +55,14 @@ const UsuarioForm = () => {
       toast.error("Preencha todos os campos obrigatórios!");
       return;
     }
-
     setIsLoading(true);
     try {
       if (isEdit) {
-        await updateUsuario(id, form);
+        await updateUsuario(empresaId, id, {
+          nome: form.nome,
+          email: form.email,
+          telefone: form.telefone,
+        });
         toast.success("Usuário atualizado com sucesso!");
       } else {
         await createUsuario(form);
@@ -65,8 +70,8 @@ const UsuarioForm = () => {
       }
       navigate("/usuarios");
     } catch (error) {
-      console.error(error);
-      toast.error("Erro ao salvar usuário!");
+      var erro = JSON.parse(error.message)
+      toast.error(erro.detail);
     } finally {
       setIsLoading(false);
     }

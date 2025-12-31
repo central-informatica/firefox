@@ -6,15 +6,15 @@ from backend.app.db.session import get_db
 from backend.app.db.models import Usuarios, AccessTokens
 from backend.app.schemas.auth import LoginJSON, UserCreate, UserOut
 from backend.app.schemas.token import TokenContext
-from backend.app.core.security import hash_password, verify_password
+from backend.app.core.crypto import hash_argon2, verify_argon2
 from backend.app.core.token_security import (
     generate_opaque_token,
     hash_validator,
     build_permissions,
     calculate_token_expiration,
 )
-from backend.app.core.csrf import create_csrf_token
-from backend.app.core.validar_token import validar_token, validar_token_universal
+from backend.app.core.csrf import gerar_csrf_token
+from backend.app.core.validar_token import validar_token_universal
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -29,7 +29,7 @@ async def register_user(payload: UserCreate, db: Session = Depends(get_db)):
     if existente:
         raise HTTPException(400, "Email já está cadastrado.")
 
-    senha_hash = hash_password(payload.senha)
+    senha_hash = hash_argon2(payload.senha)
 
     novo = Usuarios(
         nome=payload.nome,
@@ -65,7 +65,7 @@ async def auth_login_web(
         .first()
     )
 
-    if not user or not verify_password(payload.senha, user.senha_hash):
+    if not user or not verify_argon2(payload.senha, user.senha_hash):
         raise HTTPException(403, "As credenciais não conferem")
 
     full_token, selector, validator = generate_opaque_token()
@@ -85,7 +85,7 @@ async def auth_login_web(
     db.add(access_token)
     db.commit()
 
-    csrf = create_csrf_token()
+    csrf = gerar_csrf_token()
 
     response = JSONResponse(
         {
@@ -134,7 +134,7 @@ async def auth_login_desktop(
         .first()
     )
 
-    if not user or not verify_password(payload.senha, user.senha_hash):
+    if not user or not verify_argon2(payload.senha, user.senha_hash):
         raise HTTPException(403, "As credenciais não conferem")
 
     # Generate opaque token (selector.validator)

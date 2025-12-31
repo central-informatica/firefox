@@ -14,11 +14,10 @@ import {
 } from "react-icons/fi";
 
 import Input from "../../components/Input/Input";
-import SelectCustom from "../../components/Select/Select";
+import SelectCustom from "../../components/Select/SelectEmpresa";
 import Label from "../../components/Label/Label";
 
 import { useAuth } from "../../auth/useAuth";
-import { getEmpresasDoUsuario } from "../../services/empresasService";
 import { createCertificado } from "../../services/certificadosService";
 
 export default function CertificadosForm() {
@@ -26,9 +25,78 @@ export default function CertificadosForm() {
   const { user } = useAuth();
   const fileInputRef = useRef(null);
 
-  const [file, setFile] = useState(null);
+  // Support multiple files
+  const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [empresaId, setEmpresaId] = useState(null);
+  const [autoCreateEmpresa, setAutoCreateEmpresa] = useState(false);
+
+  // Track uploads that failed specifically due to password or cnpj issues
+  const [failedUploads, setFailedUploads] = useState([]); // [{ file, error, password, cnpj }]
+
+  const isPasswordError = (msg = "") => /senha/i.test(msg);
+  const isCnpjError = (msg = "") => /cnpj/i.test(msg);
+
+  const retrySingle = async (index) => {
+    const entry = failedUploads[index];
+    if (!entry) return;
+    setIsSubmitting(true);
+    try {
+      const data = new FormData();
+      if (!autoCreateEmpresa && form.empresa_id) data.append("empresa_id", form.empresa_id);
+      data.append("senha", entry.password || "");
+      if (entry.cnpj) data.append("manual_cnpj", entry.cnpj);
+      if (autoCreateEmpresa || entry.cnpj) data.append("auto_create_empresa", "true");
+      data.append("arquivo", entry.file);
+      await createCertificado(data);
+
+      // remove from failedUploads
+      setFailedUploads((prev) => prev.filter((_, i) => i !== index));
+      toast.success(`Arquivo ${entry.file.name} enviado com sucesso!`);
+
+      // if no more failed uploads and there were successes earlier, navigate
+      if (files.length > 0 && failedUploads.length <= 1) {
+        navigate("/certificados");
+      }
+    } catch (err) {
+      const msg = err?.message || String(err);
+      setFailedUploads((prev) => prev.map((f, i) => i === index ? { ...f, error: msg } : f));
+      toast.error(`Falha: ${msg}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const retryAllFailed = async () => {
+    if (!failedUploads.length) return;
+    setIsSubmitting(true);
+    const promises = failedUploads.map((entry) => {
+      const data = new FormData();
+      if (!autoCreateEmpresa && form.empresa_id) data.append("empresa_id", form.empresa_id);
+      data.append("senha", entry.password || "");
+      if (entry.cnpj) data.append("manual_cnpj", entry.cnpj);
+      if (autoCreateEmpresa || entry.cnpj) data.append("auto_create_empresa", "true");
+      data.append("arquivo", entry.file);
+      return createCertificado(data);
+    });
+
+    const results = await Promise.allSettled(promises);
+    const newFailed = [];
+    results.forEach((r, i) => {
+      if (r.status === "rejected") {
+        newFailed.push({ ...failedUploads[i], error: (r.reason?.message || String(r.reason)) });
+      }
+    });
+
+    setFailedUploads(newFailed);
+
+    const successes = results.filter((r) => r.status === "fulfilled").length;
+    if (successes) toast.success(`${successes} certificado(s) reenviados com sucesso!`);
+    if (newFailed.length) toast.error(`${newFailed.length} falha(s) persistem.`);
+    if (successes > 0 && newFailed.length === 0) navigate("/certificados");
+    setIsSubmitting(false);
+  };
 
   const [form, setForm] = useState({
     senha: "",
@@ -38,27 +106,6 @@ export default function CertificadosForm() {
     validade_inicio: "",
     valido_ate: "",
   });
-
-  const [empresas, setEmpresas] = useState([]);
-  const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
-
-  useEffect(() => {
-    if (!user) return;
-
-    getEmpresasDoUsuario(user.id).then((lista) => {
-      const opcoes = lista.map((e) => ({
-        value: e.empresa_id,
-        label: e.razao_social,
-      }));
-
-      setEmpresas(opcoes);
-
-      if (opcoes.length > 0) {
-        setEmpresaSelecionada(opcoes[0]);
-        setForm((f) => ({ ...f, empresa_id: opcoes[0].value }));
-      }
-    });
-  }, [user]);
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -82,58 +129,137 @@ export default function CertificadosForm() {
     e.stopPropagation();
     setIsDragging(false);
 
-    const files = e.dataTransfer.files;
-    if (files && files[0]) {
-      const selectedFile = files[0];
-      if (selectedFile.name.endsWith('.pfx') || selectedFile.name.endsWith('.p12')) {
-        setFile(selectedFile);
+    const dropped = Array.from(e.dataTransfer.files || []);
+    const accepted = [];
+    const rejected = [];
+
+    dropped.forEach((f) => {
+      const name = f.name.toLowerCase();
+      if ((name.endsWith('.pfx') || name.endsWith('.p12')) && f.size <= 10 * 1024 * 1024) {
+        accepted.push(f);
       } else {
-        toast.error("Por favor, selecione um arquivo .pfx ou .p12");
+        rejected.push(f.name);
       }
+    });
+
+    if (rejected.length) {
+      toast.error(`Arquivos rejeitados: ${rejected.join(', ')} (somente .pfx/.p12 e <=10MB)`);
+    }
+
+    if (accepted.length) {
+      setFiles((prev) => [...prev, ...accepted]);
     }
   };
 
   const handleFileSelect = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
+    const selected = Array.from(e.target.files || []);
+    const accepted = [];
+    const rejected = [];
+
+    selected.forEach((f) => {
+      const name = f.name.toLowerCase();
+      if ((name.endsWith('.pfx') || name.endsWith('.p12')) && f.size <= 10 * 1024 * 1024) {
+        accepted.push(f);
+      } else {
+        rejected.push(f.name);
+      }
+    });
+
+    if (rejected.length) {
+      toast.error(`Arquivos rejeitados: ${rejected.join(', ')} (somente .pfx/.p12 e <=10MB)`);
+    }
+
+    if (accepted.length) {
+      setFiles((prev) => [...prev, ...accepted]);
     }
   };
 
-  const handleRemoveFile = () => {
-    setFile(null);
+  const handleRemoveFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
+  const handleEmpresaChange = (id) => {
+    setEmpresaId(id);
+    setForm((prev) => ({ ...prev, empresa_id: id }));
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!file) {
-      toast.error("Selecione um arquivo PFX.");
+    if (!files.length) {
+      toast.error("Selecione pelo menos um arquivo PFX.");
       return;
     }
 
-    if (!form.empresa_id) {
-      toast.error("Selecione uma empresa.");
+    if (!autoCreateEmpresa && !form.empresa_id) {
+      toast.error("Selecione uma empresa ou marque 'Criar empresa automaticamente'.");
       return;
     }
 
     setIsSubmitting(true);
 
-    const data = new FormData();
-    data.append("empresa_id", form.empresa_id);
-    data.append("senha", form.senha || "");
-    data.append("arquivo", file);
-
     try {
-      await createCertificado(data);
-      toast.success("Certificado enviado com sucesso!");
-      navigate("/certificados");
+      const results = await Promise.allSettled(
+        files.map((f) => {
+          const data = new FormData();
+          if (!autoCreateEmpresa && form.empresa_id) data.append("empresa_id", form.empresa_id);
+          data.append("senha", form.senha || "");
+          if (autoCreateEmpresa) data.append("auto_create_empresa", "true");
+          data.append("arquivo", f);
+          return createCertificado(data).then((res) => ({ status: 'fulfilled', res, file: f })).catch((err) => { throw { file: f, error: err } });
+        })
+      );
+
+      // Normalize results
+      const successes = [];
+      const passwordFailures = [];
+      const cnpjFailures = [];
+      const otherFailures = [];
+
+      results.forEach((r) => {
+        if (r.status === "fulfilled") {
+          // our mapping resolved to an object in .then, so res in value
+          successes.push(r.value?.res || r.value);
+        } else {
+          const reason = r.reason || r.value;
+          const errorMsg = reason?.error?.message || reason?.message || String(reason);
+          const file = reason?.file || (r.value && r.value.file) || null;
+
+          if (isPasswordError(errorMsg)) {
+            passwordFailures.push({ file, error: errorMsg, password: "" });
+          } else if (isCnpjError(errorMsg)) {
+            cnpjFailures.push({ file, error: errorMsg, cnpj: "" });
+          } else {
+            otherFailures.push({ file, error: errorMsg });
+          }
+        }
+      });
+
+      if (successes.length) toast.success(`${successes.length} certificado(s) enviado(s) com sucesso!`);
+      if (otherFailures.length) {
+        console.error('Uploads com outros erros:', otherFailures);
+        toast.error(`${otherFailures.length} falha(s) ao enviar certificados. Veja console para detalhes.`);
+      }
+
+      const mergedFailures = [...passwordFailures, ...cnpjFailures, ...otherFailures];
+
+      if (mergedFailures.length) {
+        setFailedUploads(mergedFailures);
+        if (cnpjFailures.length) {
+          toast.info("Alguns certificados exigem CNPJ para criar a empresa automaticamente. Informe o CNPJ por arquivo e tente novamente.");
+        } else if (passwordFailures.length) {
+          toast.info("Alguns certificados exigem senha. Informe as senhas abaixo para tentar novamente.");
+        } else {
+          toast.error(`${otherFailures.length} falha(s) ao enviar certificados. Veja console para detalhes.`);
+        }
+      } else if (successes.length > 0) {
+        navigate("/certificados");
+      }
     } catch (err) {
-      console.error(err);
-      toast.error("Erro ao enviar certificado.");
+      toast.error(err.toString().split("Error: ")[1] || "Erro ao enviar certificados.");
     } finally {
       setIsSubmitting(false);
     }
@@ -157,7 +283,7 @@ export default function CertificadosForm() {
               </div>
               Novo Certificado Digital
             </h1>
-            <p className="text-gray-600 mt-1">Faça upload do seu certificado .pfx de forma segura</p>
+            <p className="text-gray-600 mt-1">Faça upload dos seus certificados .pfx de forma segura</p>
           </div>
         </div>
 
@@ -171,23 +297,45 @@ export default function CertificadosForm() {
                 Empresa
               </Label>
               <SelectCustom
-                options={empresas}
-                value={empresaSelecionada}
-                onChange={(opt) => {
-                  setEmpresaSelecionada(opt);
-                  setForm((f) => ({ ...f, empresa_id: opt.value }));
-                }}
+                  value={empresaId}
+                  onChange={handleEmpresaChange}
+                  isDisabled={autoCreateEmpresa}
               />
+
+              <div className="flex items-center gap-3 mt-3">
+                <label className="inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoCreateEmpresa}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setAutoCreateEmpresa(checked);
+                      if (checked) {
+                        // Clear selected company when opting to auto-create to avoid confusion
+                        setEmpresaId(null);
+                        setForm((prev) => ({ ...prev, empresa_id: null }));
+                      }
+                    }}
+                    className="form-checkbox h-5 w-5 text-emerald-600 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Criar empresa automaticamente a partir do certificado se não existir</span>
+                </label>
+              </div>
+
+              {autoCreateEmpresa && (
+                <p className="text-sm text-gray-500 mt-2">Ao marcar, não é necessário selecionar uma empresa — o sistema tentará criar ou encontrar automaticamente a empresa a partir do certificado.</p>
+              )}
+
             </div>
 
             {/* Upload Area */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <FiUploadCloud className="text-emerald-600" size={18} />
-                Certificado Digital (.pfx ou .p12)
+                Certificados Digitais (.pfx ou .p12)
               </Label>
 
-              {!file ? (
+              {files.length === 0 ? (
                 <div
                   onDragEnter={handleDragEnter}
                   onDragOver={handleDragOver}
@@ -207,6 +355,7 @@ export default function CertificadosForm() {
                     ref={fileInputRef}
                     type="file"
                     accept=".pfx,.p12"
+                    multiple
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -220,10 +369,10 @@ export default function CertificadosForm() {
                     </div>
 
                     <p className="text-lg font-semibold text-gray-700 mb-2">
-                      {isDragging ? 'Solte o arquivo aqui' : 'Arraste seu certificado ou clique para selecionar'}
+                      {isDragging ? 'Solte os arquivos aqui' : 'Arraste seus certificados ou clique para selecionar'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Formatos aceitos: .pfx, .p12 • Máx. 10MB
+                      Formatos aceitos: .pfx, .p12 • Máx. 10MB por arquivo
                     </p>
                   </div>
 
@@ -237,40 +386,86 @@ export default function CertificadosForm() {
                 </div>
               ) : (
                 <div className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl p-6 animate-slideUp">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <FiFile className="text-white" size={24} />
-                      </div>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-800 truncate">{file.name}</p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {(file.size / 1024).toFixed(2)} KB
-                          </p>
+                  <div className="space-y-4">
+                    {files.map((f, idx) => (
+                      <div key={f.name + f.size} className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <FiFile className="text-white" size={20} />
+                          </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={handleRemoveFile}
-                          className="flex-shrink-0 p-2 hover:bg-red-100 rounded-lg transition-all duration-200 text-red-600 group"
-                          title="Remover arquivo"
-                        >
-                          <FiX size={20} className="group-hover:rotate-90 transition-transform duration-200" />
-                        </button>
-                      </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="font-semibold text-gray-800 truncate">{f.name}</p>
+                              <p className="text-sm text-gray-600 mt-1">{(f.size / 1024).toFixed(2)} KB</p>
+                            </div>
 
-                      <div className="mt-3 flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-emerald-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full w-full animate-slideInLeft"></div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFile(idx)}
+                              className="flex-shrink-0 p-2 hover:bg-red-100 rounded-lg transition-all duration-200 text-red-600 group"
+                              title="Remover arquivo"
+                            >
+                              <FiX size={20} className="group-hover:rotate-90 transition-transform duration-200" />
+                            </button>
+                          </div>
                         </div>
-                        <FiCheck className="text-emerald-600 flex-shrink-0" size={16} />
                       </div>
-                    </div>
+                    ))}
                   </div>
+
+                  {failedUploads.length > 0 && (
+                    <div className="mt-4 border-t pt-4">
+                      <p className="text-sm font-medium text-red-700 mb-2">Alguns certificados exigem atenção:</p>
+                      <div className="space-y-3">
+                        {failedUploads.map((f, idx) => (
+                          <div key={f.file.name + f.file.size} className="flex items-center gap-3">
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold">{f.file.name}</p>
+                              <p className="text-xs text-red-500">{f.error}</p>
+                            </div>
+
+                            {/* CNPJ input shown when error indicates CNPJ is required */}
+                            {isCnpjError(f.error) && (
+                              <input
+                                type="text"
+                                placeholder="CNPJ (somente dígitos)"
+                                value={f.cnpj}
+                                onChange={(e) => setFailedUploads((prev) => prev.map((p, i) => i === idx ? { ...p, cnpj: e.target.value } : p))}
+                                className="px-3 py-2 border rounded-lg"
+                              />
+                            )}
+
+                            {/* Password input shown when error indicates password is required */}
+                            {isPasswordError(f.error) && (
+                              <input
+                                type="password"
+                                placeholder="Senha do certificado"
+                                value={f.password}
+                                onChange={(e) => setFailedUploads((prev) => prev.map((p, i) => i === idx ? { ...p, password: e.target.value } : p))}
+                                className="px-3 py-2 border rounded-lg"
+                              />
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => retrySingle(idx)}
+                              disabled={isSubmitting}
+                              className="px-3 py-2 bg-emerald-500 text-white rounded-lg"
+                            >
+                              Tentar
+                            </button>
+                          </div>
+                        ))}
+
+                        <div className="flex gap-2">
+                          <button type="button" onClick={retryAllFailed} disabled={isSubmitting} className="px-4 py-2 bg-emerald-600 text-white rounded-lg">Tentar todos</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -279,19 +474,19 @@ export default function CertificadosForm() {
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <FiLock className="text-emerald-600" size={18} />
-                Senha do Certificado
+                Senha padrão (opcional)
               </Label>
               <Input
                 name="senha"
                 type="password"
-                placeholder="Digite a senha do certificado (se houver)"
+                placeholder="Senha padrão para todos os arquivos (opcional)"
                 value={form.senha}
                 onChange={(e) => setForm({ ...form, senha: e.target.value })}
                 className="transition-all duration-200 focus:ring-2 focus:ring-emerald-500"
               />
               <p className="text-xs text-gray-500 flex items-center gap-1.5">
                 <FiAlertCircle size={12} />
-                A senha será criptografada e armazenada de forma segura
+                Senha padrão será usada para todos os arquivos; se falhar, você será solicitado a informar senha por arquivo
               </p>
             </div>
 
@@ -323,11 +518,11 @@ export default function CertificadosForm() {
 
               <button
                 type="submit"
-                disabled={!file || isSubmitting}
+                disabled={!files.length || isSubmitting}
                 className={`
                   flex-1 px-6 py-3 font-semibold rounded-xl transition-all duration-300 transform
                   flex items-center justify-center gap-2
-                  ${!file || isSubmitting
+                  ${!files.length || isSubmitting
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0'
                   }
@@ -344,7 +539,7 @@ export default function CertificadosForm() {
                 ) : (
                   <>
                     <FiUploadCloud size={20} />
-                    Enviar Certificado
+                    Enviar Certificados
                   </>
                 )}
               </button>

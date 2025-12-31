@@ -1,12 +1,19 @@
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiPlus, FiEdit2, FiFlag, FiCheckCircle, FiUsers, FiCalendar
+  FiPlus, FiEdit2, FiFlag, FiCheckCircle, FiUsers, FiCalendar, FiFilter
 } from "react-icons/fi";
 import DataTable from "../../components/Tables/DataTable";
-import { listarPlanosTrabalhoPaginado } from "../../services/planosTrabalhoService";
+import SelectEmpresa from "../../components/Select/SelectEmpresa";
+import Label from "../../components/Label/Label";
+import { listarPlanosTrabalho } from "../../services/planosTrabalhoService";
 
 const PlanosTrabalhoList = () => {
   const navigate = useNavigate();
+  const [totalPlanos, setTotalPlanos] = useState(0);
+  const [totalGrupos, setTotalGrupos] = useState(0);
+  const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
+  const [tableKey, setTableKey] = useState(0);
 
   const columns = [
     {
@@ -50,7 +57,7 @@ const PlanosTrabalhoList = () => {
       header: "Ações",
       cell: ({ row }) => (
         <button
-          onClick={() => navigate(`/planos/editar/${row.original.id}`)}
+          onClick={() => navigate(`/planos/editar/${row.original.plano_id}`)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
         >
           <FiEdit2 size={16} />
@@ -60,9 +67,20 @@ const PlanosTrabalhoList = () => {
     },
   ];
 
-  const fetchPlanos = ({ page, limit, search, sort }) => {
-    return listarPlanosTrabalhoPaginado({ page, limit, search, sort });
+  const handleEmpresaChange = (value) => {
+    setEmpresaSelecionada(value);
+    setTableKey(prev => prev + 1);
   };
+
+  const fetchPlanos = useCallback(async (params) => {
+    const res = await listarPlanosTrabalho({
+      ...params,
+      empresa_id: empresaSelecionada
+    });
+    setTotalPlanos(res.total);
+    return res;
+  }, [empresaSelecionada]);
+
 
   return (
     <div className="space-y-6 w-full">
@@ -91,6 +109,24 @@ const PlanosTrabalhoList = () => {
         </div>
       </div>
 
+      {/* Filtro de Empresa */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <FiFilter className="text-purple-600" size={18} />
+          Filtros
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label className="text-sm font-medium text-gray-700 mb-2">Empresa</Label>
+            <SelectEmpresa
+              placeholder="Todas as empresas"
+              value={empresaSelecionada}
+              onChange={handleEmpresaChange}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
@@ -100,7 +136,7 @@ const PlanosTrabalhoList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Total de Planos</p>
-              <p className="text-2xl font-bold text-gray-800">8</p>
+              <p className="text-2xl font-bold text-gray-800">{totalPlanos}</p>
             </div>
           </div>
         </div>
@@ -112,7 +148,7 @@ const PlanosTrabalhoList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Planos Ativos</p>
-              <p className="text-2xl font-bold text-gray-800">7</p>
+              <p className="text-2xl font-bold text-gray-800">{totalPlanos}</p>
             </div>
           </div>
         </div>
@@ -124,7 +160,7 @@ const PlanosTrabalhoList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Grupos Ativos</p>
-              <p className="text-2xl font-bold text-gray-800">24</p>
+              <p className="text-2xl font-bold text-gray-800">{totalGrupos}</p>
             </div>
           </div>
         </div>
@@ -133,6 +169,7 @@ const PlanosTrabalhoList = () => {
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <DataTable
+          key={tableKey}
           columns={columns}
           fetchData={fetchPlanos}
           limit={10}

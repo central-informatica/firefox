@@ -29,13 +29,22 @@ export async function apiFetchWithToken(path, options = {}) {
     console.warn("CSRF token not found. User may not be authenticated.");
   }
 
+  // If the body is FormData (multipart), DO NOT set Content-Type so browser sets the boundary automatically
+  const isFormData = options && options.body && typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+  const headers = {
+    "X-CSRF-Token": csrf, // Send CSRF token in header
+    ...(options.headers || {}),
+  };
+
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const response = await fetch(API_URL + path, {
     credentials: "include", // Send session_token cookie
     ...options,
-    headers: {
-      "X-CSRF-Token": csrf, // Send CSRF token in header
-      ...(options.headers || {}),
-    },
+    headers,
   });
 
   return response;
