@@ -4,7 +4,6 @@ from typing import Optional
 
 
 class PlanoTrabalhoBase(BaseModel):
-    empresa_id: int
     nome: constr(min_length=2, max_length=100)
     descricao: Optional[str] = None
 

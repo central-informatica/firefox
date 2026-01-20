@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, desenvolvimento, feature/*, fix/* ]
+  pull_request:
+    branches: [ main, desenvolvimento]
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: xsecurity_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.0.0
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root --with dev
+
+      - name: Install project
+        run: poetry install --no-interaction --with dev
+
+      - name: Create test environment file
+        run: |
+          echo "DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/xsecurity_test" > .env.test
+          echo "MASTER_KEY=test_master_key_for_ci" >> .env.test
+          echo "CERT_STORAGE_DIR=storage/certificados" >> .env.test
+
+      - name: Create storage directory
+        run: mkdir -p storage/certificados
+
+      - name: Run tests
+        run: poetry run pytest backend/tests/ -v --tb=short

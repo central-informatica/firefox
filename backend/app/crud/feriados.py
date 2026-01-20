@@ -9,9 +9,6 @@ class CRUDFeriados:
     def listar(self, db: Session):
         return db.query(Feriados).all()
 
-    def listar_por_empresa(self, db: Session, empresa_id: int):
-        return db.query(Feriados).filter(Feriados.empresa_id == empresa_id).all()
-
     def get(self, db: Session, feriado_id: int):
         feriado = db.query(Feriados).filter(Feriados.feriado_id == feriado_id).first()
         if not feriado:
@@ -22,7 +19,6 @@ class CRUDFeriados:
 
         # Evitar duplicidade caso não seja recorrente
         existente = db.query(Feriados).filter(
-            Feriados.empresa_id == data.empresa_id,
             Feriados.data == data.data
         ).first()
 
@@ -30,7 +26,6 @@ class CRUDFeriados:
             raise HTTPException(400, "Já existe um feriado cadastrado nesta data.")
 
         novo = Feriados(
-            empresa_id=data.empresa_id,
             data=data.data,
             nome=data.nome,
             recorrente=data.recorrente,
@@ -49,7 +44,6 @@ class CRUDFeriados:
         # Se a data está sendo alterada, verificar duplicidade
         if "data" in updates:
             existe = db.query(Feriados).filter(
-                Feriados.empresa_id == feriado.empresa_id,
                 Feriados.data == updates["data"],
                 Feriados.feriado_id != feriado_id
             ).first()

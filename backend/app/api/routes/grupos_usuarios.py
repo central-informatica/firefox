@@ -18,11 +18,6 @@ def listar(db: Session = Depends(get_db)):
     return crud_grupos_usuarios.listar(db)
 
 
-@router.get("/empresa/{empresa_id}", response_model=list[GrupoUsuarioOut])
-def listar_empresa(empresa_id: int, db: Session = Depends(get_db)):
-    return crud_grupos_usuarios.listar_por_empresa(db, empresa_id)
-
-
 @router.get("/grupo/{grupo_id}", response_model=list[GrupoUsuarioOut])
 def listar_grupo(grupo_id: int, db: Session = Depends(get_db)):
     return crud_grupos_usuarios.listar_por_grupo(db, grupo_id)
@@ -44,5 +39,5 @@ def atualizar(grupo_usuario_id: int, data: GrupoUsuarioUpdate, db: Session = Dep
 
 
 @router.delete("/{grupo_usuario_id}")
-def deletar(grupo_usuario_id: int, db: Session =Depends(get_db)):
+def deletar(grupo_usuario_id: int, db: Session = Depends(get_db)):
     return crud_grupos_usuarios.deletar(db, grupo_usuario_id)

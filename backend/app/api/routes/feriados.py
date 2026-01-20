@@ -18,11 +18,6 @@ def listar_feriados(db: Session = Depends(get_db)):
     return crud_feriados.listar(db)
 
 
-@router.get("/empresa/{empresa_id}", response_model=list[FeriadoOut])
-def listar_empresa_feriados(empresa_id: int, db: Session = Depends(get_db)):
-    return crud_feriados.listar_por_empresa(db, empresa_id)
-
-
 @router.get("/{feriado_id}", response_model=FeriadoOut)
 def obter_feriado(feriado_id: int, db: Session = Depends(get_db)):
     return crud_feriados.get(db, feriado_id)

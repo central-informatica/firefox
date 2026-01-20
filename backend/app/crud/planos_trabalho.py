@@ -12,11 +12,6 @@ class CRUDPlanosTrabalho:
     def listar(self, db: Session):
         return db.query(PlanosTrabalho).all()
 
-    def listar_por_empresa(self, db: Session, empresa_id: int):
-        return db.query(PlanosTrabalho).filter(
-            PlanosTrabalho.empresa_id == empresa_id
-        ).all()
-
     def get(self, db: Session, plano_id: int):
         plano = db.query(PlanosTrabalho).filter(
             PlanosTrabalho.plano_id == plano_id
@@ -29,20 +24,18 @@ class CRUDPlanosTrabalho:
 
     def criar(self, db: Session, data: PlanoTrabalhoCreate):
 
-        # Evitar duplicidade: UNIQUE (empresa_id, nome)
+        # Evitar duplicidade: UNIQUE nome
         existente = db.query(PlanosTrabalho).filter(
-            PlanosTrabalho.empresa_id == data.empresa_id,
             PlanosTrabalho.nome == data.nome
         ).first()
 
         if existente:
             raise HTTPException(
                 400,
-                "Já existe um plano de trabalho com este nome para esta empresa."
+                "Já existe um plano de trabalho com este nome."
             )
 
         novo = PlanosTrabalho(
-            empresa_id=data.empresa_id,
             nome=data.nome,
             descricao=data.descricao
         )
@@ -60,7 +53,6 @@ class CRUDPlanosTrabalho:
         # Verificar duplicidade se o nome for alterado
         if "nome" in updates:
             existe = db.query(PlanosTrabalho).filter(
-                PlanosTrabalho.empresa_id == plano.empresa_id,
                 PlanosTrabalho.nome == updates["nome"],
                 PlanosTrabalho.plano_id != plano_id
             ).first()
@@ -68,7 +60,7 @@ class CRUDPlanosTrabalho:
             if existe:
                 raise HTTPException(
                     400,
-                    "Já existe outro plano de trabalho com este nome para esta empresa."
+                    "Já existe outro plano de trabalho com este nome."
                 )
 
         for campo, valor in updates.items():

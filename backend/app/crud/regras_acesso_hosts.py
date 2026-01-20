@@ -13,13 +13,6 @@ class CRUDRegrasAcessoHosts:
     def listar(self, db: Session):
         return db.query(RegrasAcessoHosts).all()
 
-    def listar_por_empresa(self, db: Session, empresa_id: int):
-        return (
-            db.query(RegrasAcessoHosts)
-            .filter(RegrasAcessoHosts.empresa_id == empresa_id)
-            .all()
-        )
-
     def listar_por_grupo(self, db: Session, grupo_id: int):
         return (
             db.query(RegrasAcessoHosts)
@@ -40,13 +33,11 @@ class CRUDRegrasAcessoHosts:
     def criar(self, db: Session, data: RegraAcessoHostCreate):
 
         nova = RegrasAcessoHosts(
-            empresa_id=data.empresa_id,
             grupo_id=data.grupo_id,
             tipo_dia=data.tipo_dia,
             dias_especificos=data.dias_especificos,
             horarios=data.horarios,
             urls=data.urls,
-            bloquear_em_feriado=data.bloquear_em_feriado,
         )
 
         db.add(nova)

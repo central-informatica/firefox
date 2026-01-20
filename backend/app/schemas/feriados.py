@@ -4,7 +4,6 @@ from typing import Optional
 
 
 class FeriadoBase(BaseModel):
-    empresa_id: int
     data: date
     nome: constr(min_length=2, max_length=120)
     recorrente: bool = False

@@ -14,14 +14,6 @@ class CRUDRegrasAcesso:
         """Lista todas as regras de acesso."""
         return db.query(RegrasAcesso).all()
 
-    def listar_por_empresa(self, db: Session, empresa_id: int):
-        """Lista regras pertencentes a uma empresa específica."""
-        return (
-            db.query(RegrasAcesso)
-            .filter(RegrasAcesso.empresa_id == empresa_id)
-            .all()
-        )
-
     def listar_por_grupo(self, db: Session, grupo_id: int):
         """Lista regras aplicadas a um grupo específico."""
         return (
@@ -48,7 +40,6 @@ class CRUDRegrasAcesso:
 
         # Criação direta, tipos JSONB e ARRAY são aceitos naturalmente
         nova = RegrasAcesso(
-            empresa_id=data.empresa_id,
             grupo_id=data.grupo_id,
             tipo_dia=data.tipo_dia,  # Enum Python → Enum PG automaticamente
             dias_especificos=data.dias_especificos,

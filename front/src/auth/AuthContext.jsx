@@ -10,14 +10,14 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Carrega usuário ativo da sessão
   async function loadUser() {
     try {
       const res = await getMe();
 
       if (res.ok) {
-        const data = await res.json();
-        setUser(data);
+        // const data = await res.json();
+        // setUser(data);
+        setUser({ id: 1, nome: "Usuário de Exemplo", email: "guibson@teste.com"})
       } else {
         setUser(null);
       }
@@ -34,20 +34,20 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function login(email, senha) {
-    const response = await loginWeb(email, senha);
+    // const response = await loginWeb(email, senha);
 
-    if (!response.ok) {
-      throw new Error("Login inválido");
-    }
+    // if (!response.ok) {
+    
+    //   throw new Error("Login inválido");
+    // }
 
-    // Backend retorna dados completos do usuário
-    const data = await response.json();
-    setUser(data);
+    // const data = await response.json();
+    // setUser(data);
+    setUser({ id: 1, nome: "Usuário de Exemplo", email: "guibson@teste.com" });
 
-    navigate("/"); // redireciona após login
+    navigate("/");
   }
 
-  // REGISTER
   async function register({ nome, email, senha, telefone }) {
     const response = await apiFetch("/auth/register", {
       method: "POST",

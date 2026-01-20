@@ -18,11 +18,6 @@ def listar(db: Session = Depends(get_db)):
     return crud_planos_trabalho.listar(db)
 
 
-@router.get("/empresa/{empresa_id}", response_model=list[PlanoTrabalhoOut])
-def listar_empresa(empresa_id: int, db: Session = Depends(get_db)):
-    return crud_planos_trabalho.listar_por_empresa(db, empresa_id)
-
-
 @router.get("/{plano_id}", response_model=PlanoTrabalhoOut)
 def obter(plano_id: int, db: Session = Depends(get_db)):
     return crud_planos_trabalho.get(db, plano_id)

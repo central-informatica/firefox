@@ -18,11 +18,6 @@ def listar(db: Session = Depends(get_db)):
     return crud_regras_acesso.listar(db)
 
 
-@router.get("/empresa/{empresa_id}", response_model=list[RegraAcessoOut])
-def listar_empresa(empresa_id: int, db: Session = Depends(get_db)):
-    return crud_regras_acesso.listar_por_empresa(db, empresa_id)
-
-
 @router.get("/grupo/{grupo_id}", response_model=list[RegraAcessoOut])
 def listar_grupo(grupo_id: int, db: Session = Depends(get_db)):
     return crud_regras_acesso.listar_por_grupo(db, grupo_id)

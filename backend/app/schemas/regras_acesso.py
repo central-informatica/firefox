@@ -5,7 +5,6 @@ from backend.app.enums.tipo_dia import TipoDiaEnum
 
 
 class RegraAcessoBase(BaseModel):
-    empresa_id: int
     grupo_id: int
     tipo_dia: TipoDiaEnum
     dias_especificos: Optional[List[int]] = None
