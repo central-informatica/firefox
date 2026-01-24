@@ -14,7 +14,7 @@ class CRUDRegrasAcesso:
         """Lista todas as regras de acesso."""
         return db.query(RegrasAcesso).all()
 
-    def listar_por_grupo(self, db: Session, grupo_id: int):
+    def listar_por_grupo(self, db: Session, grupo_id: str):
         """Lista regras aplicadas a um grupo específico."""
         return (
             db.query(RegrasAcesso)
@@ -22,7 +22,7 @@ class CRUDRegrasAcesso:
             .all()
         )
 
-    def get(self, db: Session, regra_id: int):
+    def get(self, db: Session, regra_id: str):
         """Busca uma regra pelo ID."""
         regra = (
             db.query(RegrasAcesso)
@@ -51,7 +51,7 @@ class CRUDRegrasAcesso:
         db.refresh(nova)
         return nova
 
-    def atualizar(self, db: Session, regra_id: int, data: RegraAcessoUpdate):
+    def atualizar(self, db: Session, regra_id: str, data: RegraAcessoUpdate):
         """Atualiza uma regra de forma parcial."""
         regra = self.get(db, regra_id)
 
@@ -81,7 +81,7 @@ class CRUDRegrasAcesso:
         db.refresh(regra)
         return regra
 
-    def deletar(self, db: Session, regra_id: int):
+    def deletar(self, db: Session, regra_id: str):
         """Remove uma regra do banco."""
         regra = self.get(db, regra_id)
         db.delete(regra)

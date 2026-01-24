@@ -9,7 +9,7 @@ class CRUDFeriados:
     def listar(self, db: Session):
         return db.query(Feriados).all()
 
-    def get(self, db: Session, feriado_id: int):
+    def get(self, db: Session, feriado_id: str):
         feriado = db.query(Feriados).filter(Feriados.feriado_id == feriado_id).first()
         if not feriado:
             raise HTTPException(404, "Feriado não encontrado")
@@ -36,7 +36,7 @@ class CRUDFeriados:
         db.refresh(novo)
         return novo
 
-    def atualizar(self, db: Session, feriado_id: int, data: FeriadoUpdate):
+    def atualizar(self, db: Session, feriado_id: str, data: FeriadoUpdate):
         feriado = self.get(db, feriado_id)
 
         updates = data.dict(exclude_unset=True)
@@ -58,7 +58,7 @@ class CRUDFeriados:
         db.refresh(feriado)
         return feriado
 
-    def deletar(self, db: Session, feriado_id: int):
+    def deletar(self, db: Session, feriado_id: str):
         feriado = self.get(db, feriado_id)
         db.delete(feriado)
         db.commit()

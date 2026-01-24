@@ -13,14 +13,14 @@ class CRUDRegrasAcessoHosts:
     def listar(self, db: Session):
         return db.query(RegrasAcessoHosts).all()
 
-    def listar_por_grupo(self, db: Session, grupo_id: int):
+    def listar_por_grupo(self, db: Session, grupo_id: str):
         return (
             db.query(RegrasAcessoHosts)
             .filter(RegrasAcessoHosts.grupo_id == grupo_id)
             .all()
         )
 
-    def get(self, db: Session, regra_id: int):
+    def get(self, db: Session, regra_id: str):
         regra = (
             db.query(RegrasAcessoHosts)
             .filter(RegrasAcessoHosts.regra_id == regra_id)
@@ -45,7 +45,7 @@ class CRUDRegrasAcessoHosts:
         db.refresh(nova)
         return nova
 
-    def atualizar(self, db: Session, regra_id: int, data: RegraAcessoHostUpdate):
+    def atualizar(self, db: Session, regra_id: str, data: RegraAcessoHostUpdate):
         regra = self.get(db, regra_id)
 
         updates = data.dict(exclude_unset=True)
@@ -70,7 +70,7 @@ class CRUDRegrasAcessoHosts:
         db.refresh(regra)
         return regra
 
-    def deletar(self, db: Session, regra_id: int):
+    def deletar(self, db: Session, regra_id: str):
         regra = self.get(db, regra_id)
         db.delete(regra)
         db.commit()

@@ -1,3 +1,10 @@
+"""
+CRUD operations for GruposUsuarios.
+
+Note: User validation is now handled by the Auth microservice.
+The usuario_id is trusted because it comes from the Auth service's validated session.
+"""
+
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from backend.app.db.models import GruposUsuarios
@@ -12,12 +19,12 @@ class CRUDGruposUsuarios:
     def listar(self, db: Session):
         return db.query(GruposUsuarios).all()
 
-    def listar_por_grupo(self, db: Session, grupo_id: int):
+    def listar_por_grupo(self, db: Session, grupo_id: str):
         return db.query(GruposUsuarios).filter(
             GruposUsuarios.grupo_id == grupo_id
         ).all()
 
-    def get(self, db: Session, grupo_usuario_id: int):
+    def get(self, db: Session, grupo_usuario_id: str):
         registro = db.query(GruposUsuarios).filter(
             GruposUsuarios.grupo_usuario_id == grupo_usuario_id
         ).first()
@@ -30,6 +37,8 @@ class CRUDGruposUsuarios:
     def criar(self, db: Session, data: GrupoUsuarioCreate):
         novo = GruposUsuarios(
             grupo_id=data.grupo_id,
+            usuario_id=data.usuario_id,
+            empresa_id=data.empresa_id,
         )
 
         db.add(novo)
@@ -37,7 +46,7 @@ class CRUDGruposUsuarios:
         db.refresh(novo)
         return novo
 
-    def atualizar(self, db: Session, grupo_usuario_id: int, data: GrupoUsuarioUpdate):
+    def atualizar(self, db: Session, grupo_usuario_id: str, data: GrupoUsuarioUpdate):
         registro = self.get(db, grupo_usuario_id)
 
         updates = data.dict(exclude_unset=True)
@@ -49,27 +58,27 @@ class CRUDGruposUsuarios:
         db.refresh(registro)
         return registro
 
-    def deletar(self, db: Session, grupo_usuario_id: int):
+    def deletar(self, db: Session, grupo_usuario_id: str):
         registro = self.get(db, grupo_usuario_id)
         db.delete(registro)
         db.commit()
         return {"status": "deleted"}
 
-    def criar_bulk(self, db: Session, grupo_id: int, usuario_ids: list[int], empresa_id: int | None = None):
-        """Cria vínculos entre um grupo e múltiplos usuários. Retorna resumo com criados e pulados."""
-        from backend.app.db.models import Usuarios, GruposUsuarios
+    def criar_bulk(self, db: Session, grupo_id: str, usuario_ids: list[str], empresa_id: str | None = None):
+        """
+        Create links between a grupo and multiple usuarios.
 
+        Note: User validation is now handled by Auth service.
+        The usuario_ids are trusted because they come from the Auth service.
+
+        Returns:
+            Dict with 'created' (list of created usuario_ids) and 'skipped' (list of dicts with reason)
+        """
         created = []
         skipped = []
 
-        # Validar existência do grupo (opcional: assumimos que grupo existe em outro CRUD)
-        # Validar cada usuário e criar vínculo se não existir
         for uid in usuario_ids:
-            usuario = db.query(Usuarios).filter(Usuarios.usuario_id == uid).first()
-            if not usuario:
-                skipped.append({"usuario_id": uid, "reason": "user_not_found"})
-                continue
-
+            # Check if link already exists
             existente = db.query(GruposUsuarios).filter(
                 GruposUsuarios.grupo_id == grupo_id,
                 GruposUsuarios.usuario_id == uid
@@ -80,7 +89,7 @@ class CRUDGruposUsuarios:
                 continue
 
             novo = GruposUsuarios(
-                empresa_id=empresa_id if empresa_id is not None else (usuario.empresa_id if hasattr(usuario, 'empresa_id') else None),
+                empresa_id=empresa_id,
                 grupo_id=grupo_id,
                 usuario_id=uid,
             )

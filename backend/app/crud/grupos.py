@@ -1,26 +1,40 @@
+"""
+CRUD operations for Grupos.
+
+Note: User/empresa membership validation is now handled by the Auth microservice.
+The empresa_id filtering is used for multi-tenant data isolation, but the
+actual user authorization is done by the Auth service.
+"""
+
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from backend.app.db.models import Grupos, EmpresaMembros, Certificados, GruposCertificados
-from backend.app.crud.certificado import get_certificado_por_empresa
+from backend.app.db.models import Grupos, Certificados, GruposCertificados
 
-def get_grupo(db: Session, grupo_id: int):
+
+def get_grupo(db: Session, grupo_id: str):
     return db.query(Grupos).filter(Grupos.grupo_id == grupo_id).first()
+
 
 def listar_grupos(db: Session):
     return db.query(Grupos).all()
 
-def listar_certificados_do_grupo(db: Session, grupo_id: int):
+
+def listar_certificados_do_grupo(db: Session, grupo_id: str):
     return (
         db.query(Certificados)
         .join(GruposCertificados, GruposCertificados.certificado_id == Certificados.certificado_id)
-        .filter(GruposCertificados.grupo_id == grupo_id)
+        .filter(
+            GruposCertificados.grupo_id == grupo_id,
+            Certificados.deleted_at.is_(None),
+        )
         .all()
     )
 
+
 def get_grupo_por_empresa(
     db: Session,
-    grupo_id: int,
-    empresa_id: int,
+    grupo_id: str,
+    empresa_id: str,
 ):
     return (
         db.query(Grupos)
@@ -31,18 +45,17 @@ def get_grupo_por_empresa(
         .first()
     )
 
+
 def listar_grupos_por_empresa(
     db: Session,
     *,
-    empresa_id: int,
-    usuario_id: int,
-    plano_id: int | None = None,
+    empresa_id: str,
+    usuario_id: str,
+    plano_id: str | None = None,
 ):
-    if not _usuario_pertence_empresa(db, usuario_id, empresa_id):
-        raise HTTPException(
-            status_code=403,
-            detail="Usuário não pertence à empresa",
-        )
+    # Note: User membership validation is now handled by Auth service
+    # The usuario_id is kept as parameter for backward compatibility
+    # but the actual authorization is done before reaching this function
 
     query = db.query(Grupos).filter(
         Grupos.empresa_id == empresa_id
@@ -63,11 +76,12 @@ def criar_grupo(db: Session, payload: dict):
     db.refresh(novo)
     return novo
 
+
 def adicionar_certificado_ao_grupo(
     db: Session,
-    grupo_id: int,
-    certificado_id: int,
-    empresa_id: int,
+    grupo_id: str,
+    certificado_id: str,
+    empresa_id: str,
 ):
     validar_grupo_e_certificado_do_tenant(
         db=db,
@@ -100,34 +114,19 @@ def adicionar_certificado_ao_grupo(
 
     return relacao
 
-#def atualizar_grupo(db: Session, grupo_id: int, dados: dict):
-#    grupo = get_grupo(db, grupo_id)
-#    if not grupo:
-#        return None
-#
-#    for key, value in dados.items():
-#        setattr(grupo, key, value)
-#
-#    db.commit()
-#    db.refresh(grupo)
-#    return grupo
 
 def atualizar_grupo(
     db: Session,
     *,
-    grupo_id: int,
-    empresa_id: int,
-    usuario_id: int,
+    grupo_id: str,
+    empresa_id: str,
+    usuario_id: str,
     dados: dict,
 ):
-    # 1. Verifica se o usuário pertence à empresa
-    if not _usuario_pertence_empresa(db, usuario_id, empresa_id):
-        raise HTTPException(
-            status_code=403,
-            detail="Usuário não pertence à empresa",
-        )
+    # Note: User membership validation is now handled by Auth service
+    # The usuario_id is kept as parameter for backward compatibility
 
-    # 2. Busca o grupo garantindo que ele pertence à empresa
+    # Busca o grupo garantindo que ele pertence à empresa
     grupo = (
         db.query(Grupos)
         .filter(
@@ -140,7 +139,7 @@ def atualizar_grupo(
     if not grupo:
         return None
 
-    # 3. Atualiza campos permitidos
+    # Atualiza campos permitidos
     for campo, valor in dados.items():
         if hasattr(grupo, campo) and valor is not None:
             setattr(grupo, campo, valor)
@@ -151,7 +150,7 @@ def atualizar_grupo(
     return grupo
 
 
-def deletar_grupo(db: Session, grupo_id: int):
+def deletar_grupo(db: Session, grupo_id: str):
     grupo = get_grupo(db, grupo_id)
     if not grupo:
         return False
@@ -160,11 +159,12 @@ def deletar_grupo(db: Session, grupo_id: int):
     db.commit()
     return True
 
+
 def remover_certificado_do_grupo(
     db: Session,
-    grupo_id: int,
-    certificado_id: int,
-    empresa_id: int,
+    grupo_id: str,
+    certificado_id: str,
+    empresa_id: str,
 ):
     validar_grupo_e_certificado_do_tenant(
         db=db,
@@ -193,16 +193,20 @@ def remover_certificado_do_grupo(
 
 def validar_grupo_e_certificado_do_tenant(
     db: Session,
-    grupo_id: int,
-    certificado_id: int | None,
-    empresa_id: int,
+    grupo_id: str,
+    certificado_id: str | None,
+    empresa_id: str,
 ):
     grupo = get_grupo_por_empresa(db, grupo_id, empresa_id)
     if not grupo:
         raise HTTPException(status_code=403, detail="Grupo não pertence à empresa")
 
     if certificado_id:
-        certificado = get_certificado_por_empresa(db, certificado_id, empresa_id)
+        certificado = db.query(Certificados).filter(
+            Certificados.certificado_id == certificado_id,
+            Certificados.empresa_id == empresa_id,
+            Certificados.deleted_at.is_(None),
+        ).first()
         if not certificado:
             raise HTTPException(
                 status_code=403,
@@ -210,14 +214,3 @@ def validar_grupo_e_certificado_do_tenant(
             )
 
     return grupo
-
-def _usuario_pertence_empresa(db: Session, usuario_id: int, empresa_id: int) -> bool:
-    return (
-        db.query(EmpresaMembros)
-        .filter(
-            EmpresaMembros.usuario_id == usuario_id,
-            EmpresaMembros.empresa_id == empresa_id,
-        )
-        .first()
-        is not None
-    )

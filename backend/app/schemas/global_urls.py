@@ -6,7 +6,7 @@ from typing import Optional
 class GlobalUrlBase(BaseModel):
     url: Optional[str] = None
     inativo: Optional[bool] = False
-    empresa_id: int
+    empresa_id: str
 
 
 class GlobalUrlCreate(GlobalUrlBase):
@@ -19,7 +19,7 @@ class GlobalUrlUpdate(BaseModel):
 
 
 class GlobalUrlOut(GlobalUrlBase):
-    global_urls_id: int
+    global_urls_id: str
     criado_em: Optional[datetime] = None
 
     class Config:

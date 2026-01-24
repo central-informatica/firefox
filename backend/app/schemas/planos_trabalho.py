@@ -18,8 +18,8 @@ class PlanoTrabalhoUpdate(BaseModel):
 
 
 class PlanoTrabalhoOut(PlanoTrabalhoBase):
-    plano_id: int
-    empresa_id: int
+    plano_id: str
+    empresa_id: str
     criado_em: datetime
 
     class Config:

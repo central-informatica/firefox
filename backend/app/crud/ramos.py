@@ -57,7 +57,7 @@ class CRUDRamos:
 
         return items, total
 
-    def get(self, db: Session, ramos_id: int):
+    def get(self, db: Session, ramos_id: str):
         ramo = db.query(Ramos).filter(Ramos.ramos_id == ramos_id).first()
         if not ramo:
             raise HTTPException(404, "Ramo não encontrado")
@@ -70,7 +70,7 @@ class CRUDRamos:
         db.refresh(novo)
         return novo
 
-    def atualizar(self, db: Session, ramos_id: int, data: RamoUpdate):
+    def atualizar(self, db: Session, ramos_id: str, data: RamoUpdate):
         ramo = self.get(db, ramos_id)
 
         if data.ramo is not None:
@@ -80,7 +80,7 @@ class CRUDRamos:
         db.refresh(ramo)
         return ramo
 
-    def deletar(self, db: Session, ramos_id: int):
+    def deletar(self, db: Session, ramos_id: str):
         ramo = self.get(db, ramos_id)
         db.delete(ramo)
         db.commit()

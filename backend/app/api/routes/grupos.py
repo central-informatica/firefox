@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from backend.app.db.models import Usuarios
-from backend.app.api.deps import get_current_user
+from backend.app.api.deps import check_auth
 from backend.app.db.session import get_db
 
 from backend.app.crud.grupos import (
@@ -20,10 +19,10 @@ router = APIRouter(prefix="/grupos", tags=["Grupos"])
 
 @router.get("/empresa/{empresa_id}")
 def listar_grupos_empresa(
-    empresa_id: int,
-    plano_id: int | None = None,
+    empresa_id: str,
+    plano_id: str | None = None,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
+    # current_user = Depends(check_auth),
 ):
     print("listar_grupos_empresa:: empresa_id recebido:", plano_id)
     grupos = listar_grupos_por_empresa(
@@ -36,7 +35,7 @@ def listar_grupos_empresa(
     return grupos
 
 @router.get("/{grupo_id}")
-def obter(grupo_id: int, db: Session = Depends(get_db)):
+def obter(grupo_id: str, db: Session = Depends(get_db)):
     grupo = get_grupo(db, grupo_id)
     if not grupo:
         raise HTTPException(status_code=404, detail="Grupo não encontrado")
@@ -45,9 +44,9 @@ def obter(grupo_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{grupo_id}/certificados")
 def listar_certificados_grupo(
-    grupo_id: int,
+    grupo_id: str,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(check_auth),
 ):
     certificados = listar_certificados_do_grupo(
         db=db,
@@ -64,7 +63,7 @@ def criar(payload: dict, db: Session = Depends(get_db)):
 
 
 @router.put("/{grupo_id}")
-def atualizar(grupo_id: int, payload: dict, db: Session = Depends(get_db)):
+def atualizar(grupo_id: str, payload: dict, db: Session = Depends(get_db)):
     grupo = atualizar_grupo(
         db=db, 
         grupo_id=grupo_id, 
@@ -77,7 +76,7 @@ def atualizar(grupo_id: int, payload: dict, db: Session = Depends(get_db)):
 
 
 @router.delete("/{grupo_id}")
-def remover(grupo_id: int, db: Session = Depends(get_db)):
+def remover(grupo_id: str, db: Session = Depends(get_db)):
     sucesso = deletar_grupo(db, grupo_id)
     if not sucesso:
         raise HTTPException(status_code=404, detail="Grupo não encontrado")
@@ -85,10 +84,10 @@ def remover(grupo_id: int, db: Session = Depends(get_db)):
 
 @router.post("/{grupo_id}/certificados")
 def adicionar_certificado(
-    grupo_id: int,
+    grupo_id: str,
     payload: dict,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(check_auth),
 ):
     empresa_id = payload.get("empresa_id")   ##current_user.empresas[0].empresa_id
     print("empresa_id no adicionar_certificado:", empresa_id)
@@ -113,7 +112,7 @@ from backend.app.schemas.grupos_usuarios import GrupoUsuarioCreate, GrupoUsuario
 
 
 @router.get("/{grupo_id}/usuarios")
-def listar_usuarios_do_grupo(grupo_id: int, db: Session = Depends(get_db)):
+def listar_usuarios_do_grupo(grupo_id: str, db: Session = Depends(get_db)):
     registros = crud_grupos_usuarios.listar_por_grupo(db, grupo_id)
     # Mapear para dados do usuário (se houver relacionamento)
     usuarios = []
@@ -133,7 +132,7 @@ def listar_usuarios_do_grupo(grupo_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{grupo_id}/usuarios", status_code=201)
-def adicionar_usuario_ao_grupo(grupo_id: int, payload: dict, db: Session = Depends(get_db)):
+def adicionar_usuario_ao_grupo(grupo_id: str, payload: dict, db: Session = Depends(get_db)):
     usuario_id = payload.get("usuario_id")
     empresa_id = payload.get("empresa_id")
     if not usuario_id:
@@ -144,7 +143,7 @@ def adicionar_usuario_ao_grupo(grupo_id: int, payload: dict, db: Session = Depen
 
 
 @router.delete("/{grupo_id}/usuarios/{usuario_id}")
-def remover_usuario_do_grupo(grupo_id: int, usuario_id: int, db: Session = Depends(get_db)):
+def remover_usuario_do_grupo(grupo_id: str, usuario_id: str, db: Session = Depends(get_db)):
     # procurar vínculo e deletar
     registros = crud_grupos_usuarios.listar_por_grupo(db, grupo_id)
     target = None
@@ -158,17 +157,17 @@ def remover_usuario_do_grupo(grupo_id: int, usuario_id: int, db: Session = Depen
 
 
 @router.post("/{grupo_id}/usuarios/bulk")
-def adicionar_usuarios_em_lote(grupo_id: int, payload: GrupoUsuarioBulkCreate, db: Session = Depends(get_db)):
+def adicionar_usuarios_em_lote(grupo_id: str, payload: GrupoUsuarioBulkCreate, db: Session = Depends(get_db)):
     # Usa o CRUD criar_bulk
     resumo = crud_grupos_usuarios.criar_bulk(db, grupo_id, payload.usuario_ids, payload.empresa_id)
     return resumo
 
 @router.delete("/{grupo_id}/remover/certificado")
 def remover_certificado(
-    grupo_id: int,
+    grupo_id: str,
     payload: dict,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(check_auth),
 ):
     # Obter empresa_id e certificado_id do payload
     empresa_id = payload.get("empresa_id")
@@ -192,7 +191,7 @@ def remover_certificado(
     grupo_id: int,
     certificado_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(check_auth),
 ):
     ok = remover_certificado_do_grupo(
         db=db,

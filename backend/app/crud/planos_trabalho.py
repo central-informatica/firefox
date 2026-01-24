@@ -24,7 +24,7 @@ class CRUDPlanosTrabalho:
         )
         return items, total
 
-    def getPlanoTrabalho(self, db: Session, usuario_id: int, plano_id: int):
+    def getPlanoTrabalho(self, db: Session, usuario_id: str, plano_id: str):
         plano = db.query(PlanosTrabalho).filter(PlanosTrabalho.plano_id == plano_id).first()
         if not plano:
             raise HTTPException(status_code=404, detail="Plano não encontrado.")
@@ -36,8 +36,8 @@ class CRUDPlanosTrabalho:
         self,
         db: Session,
         data: PlanoTrabalhoCreate,
-        empresa_id: int,
-        usuario_id: int,
+        empresa_id: str,
+        usuario_id: str,
     ):
         plano = PlanosTrabalho(
             nome=data.nome,
@@ -52,7 +52,7 @@ class CRUDPlanosTrabalho:
         return plano
 
 
-    def atualizar(self, db: Session, usuario_id: int, plano_id: int, data: PlanoTrabalhoUpdate):
+    def atualizar(self, db: Session, usuario_id: str, plano_id: str, data: PlanoTrabalhoUpdate):
         plano = self.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
         from sqlalchemy import inspect
         print("ANTES DO UPDATE:")
@@ -78,7 +78,7 @@ class CRUDPlanosTrabalho:
             db.rollback()
             raise HTTPException(status_code=400, detail="Já existe um plano com este nome nesta empresa.")
 
-    def deletar(self, db: Session, usuario_id: int, plano_id: int):
+    def deletar(self, db: Session, usuario_id: str, plano_id: str):
         plano = self.obter(db, usuario_id=usuario_id, plano_id=plano_id)
 
         db.delete(plano)

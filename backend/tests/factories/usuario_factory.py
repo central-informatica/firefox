@@ -1,18 +1,34 @@
-from backend.app.db.models import Usuarios
-from backend.app.core.security import hash_password
-from tests.factories.base import commit_and_refresh
+"""
+Usuario factory for tests.
 
-def criar_usuario(
-    db,
+DEPRECATED: Usuarios are now managed by the Auth microservice.
+This factory now creates mock usuario data for testing purposes.
+The usuario_id is a UUID that would be provided by the Auth service.
+"""
+
+import uuid
+
+
+def criar_usuario_mock(
     nome="Admin",
     email="admin@test.com",
-    senha="123456",
-    verificado=True,
+    nivel="COMUM",
 ):
-    usuario = Usuarios(
-        nome=nome,
-        email=email,
-        senha_hash=hash_password(senha),
-        email_verificado=verificado,
-    )
-    return commit_and_refresh(db, usuario)
+    """
+    Create mock usuario data for testing.
+
+    This returns a dict representing user data as it would be received
+    from the Auth service's /me endpoint.
+    """
+    return {
+        "usuario_id": str(uuid.uuid4()),
+        "nome": nome,
+        "email": email,
+        "nivel": nivel,
+        "email_verificado": True,
+    }
+
+
+def get_mock_usuario_id():
+    """Generate a mock usuario UUID for testing."""
+    return str(uuid.uuid4())

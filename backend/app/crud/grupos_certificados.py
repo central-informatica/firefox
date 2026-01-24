@@ -12,12 +12,12 @@ class CRUDGruposCertificados:
     def listar(self, db: Session):
         return db.query(GruposCertificados).all()
 
-    def listar_por_grupo(self, db: Session, grupo_id: int):
+    def listar_por_grupo(self, db: Session, grupo_id: str):
         return db.query(GruposCertificados).filter(
             GruposCertificados.grupo_id == grupo_id
         ).all()
 
-    def get(self, db: Session, grupo_cert_id: int):
+    def get(self, db: Session, grupo_cert_id: str):
         registro = db.query(GruposCertificados).filter(
             GruposCertificados.grupo_cert_id == grupo_cert_id
         ).first()
@@ -37,7 +37,7 @@ class CRUDGruposCertificados:
         db.refresh(novo)
         return novo
 
-    def atualizar(self, db: Session, grupo_cert_id: int, data: GrupoCertUpdate):
+    def atualizar(self, db: Session, grupo_cert_id: str, data: GrupoCertUpdate):
         registro = self.get(db, grupo_cert_id)
 
         updates = data.dict(exclude_unset=True)
@@ -49,7 +49,7 @@ class CRUDGruposCertificados:
         db.refresh(registro)
         return registro
 
-    def deletar(self, db: Session, grupo_cert_id: int):
+    def deletar(self, db: Session, grupo_cert_id: str):
         registro = self.get(db, grupo_cert_id)
         db.delete(registro)
         db.commit()

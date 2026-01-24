@@ -5,7 +5,7 @@ from backend.app.enums.tipo_dia import TipoDiaEnum
 
 
 class RegraAcessoBase(BaseModel):
-    grupo_id: int
+    grupo_id: str
     tipo_dia: TipoDiaEnum
     dias_especificos: Optional[List[int]] = None
     horarios: List[Dict]   # ex: [{"inicio": "08:00", "fim": "18:00"}]
@@ -54,7 +54,7 @@ class RegraAcessoUpdate(BaseModel):
 
 
 class RegraAcessoOut(RegraAcessoBase):
-    regra_id: int
+    regra_id: str
     criado_em: datetime
 
     class Config:

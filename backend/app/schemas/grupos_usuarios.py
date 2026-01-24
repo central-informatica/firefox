@@ -3,7 +3,7 @@ from typing import Optional
 
 
 class GrupoUsuarioBase(BaseModel):
-    grupo_id: int
+    grupo_id: str
 
 
 class GrupoUsuarioCreate(GrupoUsuarioBase):
@@ -11,27 +11,27 @@ class GrupoUsuarioCreate(GrupoUsuarioBase):
 
 
 class GrupoUsuarioUpdate(BaseModel):
-    grupo_id: Optional[int] = None
+    grupo_id: Optional[str] = None
 
 
 class GrupoUsuarioOut(GrupoUsuarioBase):
-    grupo_usuario_id: int
+    grupo_usuario_id: str
 
     class Config:
         orm_mode = True
 
 
 class GrupoUsuarioBulkCreate(BaseModel):
-    grupo_id: int
-    usuario_ids: list[int]
-    empresa_id: Optional[int] = None
+    grupo_id: str
+    usuario_ids: list[str]
+    empresa_id: Optional[str] = None
 
 
 class GrupoUsuarioBulkSkipped(BaseModel):
-    usuario_id: int
+    usuario_id: str
     reason: str
 
 
 class GrupoUsuarioBulkResult(BaseModel):
-    created: list[int]
+    created: list[str]
     skipped: list[GrupoUsuarioBulkSkipped]

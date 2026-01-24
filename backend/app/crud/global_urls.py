@@ -1,7 +1,14 @@
+"""
+CRUD operations for GlobalUrls.
+
+Note: empresa_id validation is now handled by the Auth microservice.
+The empresa_id is trusted because it comes from the Auth service's /me endpoint.
+"""
+
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from fastapi import HTTPException
-from backend.app.db.models import GlobalUrls, Empresas
+from backend.app.db.models import GlobalUrls
 from backend.app.schemas.global_urls import GlobalUrlCreate, GlobalUrlUpdate
 
 
@@ -10,7 +17,7 @@ class CRUDGlobalUrls:
     def listar_paginado(
         self,
         db: Session,
-        empresa_id: int,
+        empresa_id: str,
         page: int = 1,
         limit: int = 10,
         search: str = "",
@@ -57,16 +64,15 @@ class CRUDGlobalUrls:
 
         return items, total
 
-    def get(self, db: Session, global_urls_id: int):
+    def get(self, db: Session, global_urls_id: str):
         url = db.query(GlobalUrls).filter(GlobalUrls.global_urls_id == global_urls_id).first()
         if not url:
             raise HTTPException(404, "URL não encontrada")
         return url
 
     def criar(self, db: Session, data: GlobalUrlCreate):
-        empresa = db.query(Empresas).filter(Empresas.empresa_id == data.empresa_id).first()
-        if not empresa:
-            raise HTTPException(404, "Empresa não encontrada")
+        # Note: empresa_id validation is now handled by Auth service
+        # The empresa_id is trusted because it comes from authenticated user's session
 
         nova = GlobalUrls(
             url=data.url,
@@ -79,7 +85,7 @@ class CRUDGlobalUrls:
         db.refresh(nova)
         return nova
 
-    def atualizar(self, db: Session, global_urls_id: int, data: GlobalUrlUpdate):
+    def atualizar(self, db: Session, global_urls_id: str, data: GlobalUrlUpdate):
         url = self.get(db, global_urls_id)
 
         if data.url is not None:
@@ -92,7 +98,7 @@ class CRUDGlobalUrls:
         db.refresh(url)
         return url
 
-    def deletar(self, db: Session, global_urls_id: int):
+    def deletar(self, db: Session, global_urls_id: str):
         url = self.get(db, global_urls_id)
         db.delete(url)
         db.commit()

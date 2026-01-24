@@ -20,7 +20,7 @@ class FeriadoUpdate(BaseModel):
 
 
 class FeriadoOut(FeriadoBase):
-    feriado_id: int
+    feriado_id: str
     criado_em: datetime
 
     class Config:
