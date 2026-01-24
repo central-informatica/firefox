@@ -1,42 +1,118 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   FiPlus, FiEdit2, FiTrash2, FiUsers, FiUserCheck, FiShield, FiAlertCircle, FiMail
 } from "react-icons/fi";
-import { getUsuarios, deleteUsuario } from "../../services/usuariosService";
+import { deletarUsuario, listarUsuariosPaginado } from "../../services/usuariosService";
+
+import SelectEmpresa from "../../components/Select/SelectEmpresa";
+import DataTable from "../../components/Tables/DataTable";
 
 const UsuariosList = () => {
   const navigate = useNavigate();
-  const [usuarios, setUsuarios] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [empresaId, setEmpresaSelecionada] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [totalUsuariosAtivos, setTotalUserAtivos] = useState(0);
+  const [totalUsuarios, setTotalUsuarios] = useState(0);
+  const [totalUsuariosAdmin, setTotalUsuariosAdmin] = useState(0);
 
-  const load = async () => {
-    setIsLoading(true);
-    try {
-      const data = await getUsuarios();
-      setUsuarios(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
+
+  const fetchUsuarios = async ({ page, limit, search, sort }) => {
+    if (!empresaId) return { rows: [], total: 0 , total_adm: 0};
+    const res = await listarUsuariosPaginado({empresa_id: empresaId,page,limit,search,sort,});
+    setTotalUsuarios(res.total);
+    setTotalUserAtivos(res.total);
+    setTotalUsuariosAdmin(res.total_adm);
+    return res;
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  const handleOnClickEdit = (usuario_id)=>{
+    console.log(usuario_id)
+    navigate(`/usuarios/editar/${usuario_id}`, {
+        state: {
+          empresa_id: empresaId, // empresa selecionada na lista
+        },
+    });
+  }
 
-  const handleDelete = async (id, nome) => {
+  const handleDelete = async (usuario_id, nome) => {
     if (!confirm(`Deseja realmente excluir o usuário "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
 
     try {
-      await deleteUsuario(id);
-      load();
+      await deletarUsuario(empresaId, usuario_id);
     } catch (error) {
       console.error(error);
       alert("Erro ao excluir usuário");
     }
   };
+
+  const columns = [
+  {
+      header: "Usuário",
+      accessorKey: "nome",
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+              {u.nome?.charAt(0).toUpperCase() || "U"}
+            </div>
+            <div>
+              <div className="font-semibold text-gray-800">{u.nome}</div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      header: "Email",
+      accessorKey: "email",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <FiMail size={14} className="text-gray-400" />
+          {row.original.email}
+        </div>
+      ),
+    },
+    {
+      header: "Nível",
+      accessorKey: "nivel",
+      cell: ({ row }) => getNivelBadge(row.original.nivel),
+    },
+    {
+      header: "Status",
+      cell: () => (
+        <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
+          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+          Ativo
+        </span>
+      ),
+    },
+    {
+      header: "Ações",
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={()=> handleOnClickEdit(u.usuario_id)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium"
+            >
+              <FiEdit2 size={14} />
+              Editar
+            </button>
+            <button
+              onClick={() => handleDelete(u.id, u.nome)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium"
+            >
+              <FiTrash2 size={14} />
+              Excluir
+            </button>
+          </div>
+        );
+      },
+    },
+  ];
 
   const getNivelBadge = (nivel) => {
     const badges = {
@@ -84,7 +160,7 @@ const UsuariosList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Total de Usuários</p>
-              <p className="text-2xl font-bold text-gray-800">{usuarios.length}</p>
+              <p className="text-2xl font-bold text-gray-800">{totalUsuarios}</p>
             </div>
           </div>
         </div>
@@ -96,7 +172,7 @@ const UsuariosList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Usuários Ativos</p>
-              <p className="text-2xl font-bold text-gray-800">{usuarios.length}</p>
+              <p className="text-2xl font-bold text-gray-800">{totalUsuariosAtivos}</p>
             </div>
           </div>
         </div>
@@ -109,117 +185,36 @@ const UsuariosList = () => {
             <div>
               <p className="text-sm text-gray-600 font-medium">Administradores</p>
               <p className="text-2xl font-bold text-gray-800">
-                {usuarios.filter(u => String(u.nivel || '').toUpperCase() === 'ADMINISTRADOR').length}
+                {totalUsuariosAdmin}
               </p>
             </div>
           </div>
         </div>
       </div>
+      <SelectEmpresa
+        value={empresaId}
+        onChange={(empresa) => {
+          setEmpresaSelecionada(empresa);
+          setRefreshKey((k) => k + 1);
+        }}
+      />
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Usuário</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nível</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Ações</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-gray-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <svg className="animate-spin h-8 w-8 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="text-gray-500">Carregando usuários...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : usuarios.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="p-4 bg-gray-100 rounded-full">
-                        <FiUsers size={32} className="text-gray-400" />
-                      </div>
-                      <div>
-                        <p className="text-gray-700 font-medium mb-1">Nenhum usuário cadastrado</p>
-                        <p className="text-sm text-gray-500">Comece adicionando o primeiro usuário</p>
-                      </div>
-                      <button
-                        onClick={() => navigate("/usuarios/novo")}
-                        className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer"
-                      >
-                        <FiPlus size={16} />
-                        Adicionar Usuário
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                usuarios.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                          {u.nome?.charAt(0).toUpperCase() || "U"}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-800">{u.nome}</div>
-                          <div className="text-xs text-gray-500">ID: {u.id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FiMail size={14} className="text-gray-400" />
-                        {u.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getNivelBadge(u.nivel)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                        Ativo
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => navigate(`/usuarios/editar/${u.id}`)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
-                          title="Editar usuário"
-                        >
-                          <FiEdit2 size={14} />
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDelete(u.id, u.nome)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
-                          title="Excluir usuário"
-                        >
-                          <FiTrash2 size={14} />
-                          Excluir
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        {empresaId ? (
+          <DataTable
+            key={`${empresaId}-${refreshKey}`}
+            columns={columns}
+            fetchData={fetchUsuarios}
+            limit={10}
+          />
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center text-gray-500">
+            Selecione uma empresa para visualizar os usuários
+          </div>
+        )}
       </div>
+
 
       {/* Info Banner */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-xl p-5 flex items-start gap-4">

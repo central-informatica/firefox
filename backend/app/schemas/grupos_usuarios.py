@@ -19,3 +19,19 @@ class GrupoUsuarioOut(GrupoUsuarioBase):
 
     class Config:
         orm_mode = True
+
+
+class GrupoUsuarioBulkCreate(BaseModel):
+    grupo_id: int
+    usuario_ids: list[int]
+    empresa_id: Optional[int] = None
+
+
+class GrupoUsuarioBulkSkipped(BaseModel):
+    usuario_id: int
+    reason: str
+
+
+class GrupoUsuarioBulkResult(BaseModel):
+    created: list[int]
+    skipped: list[GrupoUsuarioBulkSkipped]

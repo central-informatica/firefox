@@ -9,6 +9,10 @@ import CertificadosForm from "./pages/Certificados/CertificadosForm"
 import PlanosList from "./pages/PlanosTrabalho/PlanosTrabalhoList"
 import PlanosForm from "./pages/PlanosTrabalho/PlanosTrabalhoForm"
 import GerenciarAssociacoes from "./pages/PlanosTrabalho/GerenciarAssociacoes"
+import GruposList from "./pages/Grupos/GruposList";
+import GruposForm from "./pages/Grupos/GruposForm";
+import AssociarUsuarios from "./pages/Grupos/AssociarUsuarios";
+import GlobalURLs from "./pages/Seguranca/GlobalURLs";
 
 
 export default function AppRoutes() {
@@ -36,6 +40,13 @@ export default function AppRoutes() {
       <Route path="/planos/novo" element={<PlanosForm />} />
       <Route path="/planos/editar/:id" element={<PlanosForm />} />
       <Route path="/planos/associacoes" element={<GerenciarAssociacoes />} />
+
+      <Route path="/grupos" element={<GruposList />} />
+      <Route path="/grupos/novo" element={<GruposForm />} />
+      <Route path="/grupos/editar/:id" element={<GruposForm />} />
+      <Route path="/grupos/associar-usuarios" element={<AssociarUsuarios />} />
+
+      <Route path="/seguranca/enderecos-permitidos" element={<GlobalURLs />} />
 
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>

@@ -6,6 +6,8 @@ from backend.app.schemas.grupos_usuarios import (
     GrupoUsuarioCreate,
     GrupoUsuarioUpdate,
     GrupoUsuarioOut,
+    GrupoUsuarioBulkCreate,
+    GrupoUsuarioBulkResult,
 )
 from backend.app.crud.grupos_usuarios import crud_grupos_usuarios
 
@@ -31,6 +33,13 @@ def obter(grupo_usuario_id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=GrupoUsuarioOut, status_code=201)
 def criar(data: GrupoUsuarioCreate, db: Session = Depends(get_db)):
     return crud_grupos_usuarios.criar(db, data)
+
+
+@router.post("/bulk", response_model=GrupoUsuarioBulkResult)
+def criar_bulk(payload: GrupoUsuarioBulkCreate, db: Session = Depends(get_db)):
+    """Cria vínculos em lote entre um grupo e múltiplos usuários. Retorna os ids criados e os pulados com razão."""
+    resumo = crud_grupos_usuarios.criar_bulk(db, payload.grupo_id, payload.usuario_ids, payload.empresa_id)
+    return resumo
 
 
 @router.put("/{grupo_usuario_id}", response_model=GrupoUsuarioOut)

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { getEmpresasDoUsuario } from "../../services/empresasService";
+// REMOVIDO: getEmpresasDoUsuario (SelectEmpresa é autônomo)
+// import { getEmpresasDoUsuario } from "../../services/empresasService";
+
 import {
   listarCertificadosPaginado,
   excluir_certificado,
@@ -19,37 +21,29 @@ import {
   FiAlertCircle,
   FiCheckCircle,
   FiBriefcase,
-  FiFilter
+  FiFilter,
+  FiUsers,
 } from "react-icons/fi";
 
-import SelectCustom from "../../components/Select/Select";
+//import SelectCustom from "../../components/Select/SelectEmpresa";
 import DataTable from "../../components/Tables/DataTable";
+import SelectEmpresa from "../../components/Select/SelectEmpresa";
+import SelectGrupo from "../../components/Select/SelectGrupo";
+import ConfirmModal from "../../components/ConfirmModal";
 
 export default function CertificadosList() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [empresasDoUsuario, setEmpresasDoUsuario] = useState([]);
-  const [empresaFiltro, setEmpresaFiltro] = useState(null);
+  const [empresaId, setEmpresaId] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [stats, setStats] = useState({ total: 0, ativos: 0, expirados: 0 });
+  const [stats, setStats] = useState({ total: 0, ativos: 0, expirando: 0, expirados: 0, });
+  const [selectedGroup, setSelectedGroup] = useState(null);
 
-  useEffect(() => {
-    if (!user) return;
-
-    getEmpresasDoUsuario(user.id).then((empresas) => {
-      const opcoes = empresas.map((e) => ({
-        value: e.empresa_id,
-        label: e.razao_social,
-      }));
-
-      setEmpresasDoUsuario(opcoes);
-
-      if (opcoes.length > 0) {
-        setEmpresaFiltro(opcoes[0]);
-      }
-    });
-  }, [user]);
+  // Confirmation modal state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState(null); // { id, nome }
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const getCertificateStatus = (validoAte) => {
     const hoje = new Date();
@@ -64,6 +58,59 @@ export default function CertificadosList() {
       return { status: "ativo", label: "Ativo", color: "green", dias: diasRestantes };
     }
   };
+
+  useEffect(() => {
+  if (!empresaId) {
+    setStats({ total: 0, ativos: 0, expirando: 0, expirados: 0});
+    return;
+  }
+
+  async function carregarStats() {
+    try {
+      const params = {
+        empresa_id: empresaId,
+        page: 1,
+        limit: 1000, // suficiente para stats
+        search: "",
+        sort: "",
+      };
+
+      if (selectedGroup && selectedGroup.grupo_id) params.grupo_id = selectedGroup.grupo_id;
+
+      const res = await listarCertificadosPaginado(params);
+
+      const certificados = res.data || [];
+
+      let _ativos = 0;
+      let _expirando = 0;
+      let _expirados = 0;
+
+      certificados.forEach((c) => {
+        const statusInfo = getCertificateStatus(c.valido_ate);
+
+        if (statusInfo.status === "ativo") _ativos++;
+        else if (statusInfo.status === "expirando") _expirando++;
+        else if (statusInfo.status === "expirado") _expirados++;
+      });
+
+      setStats({
+        total: certificados.length,
+        ativos: _ativos,
+        expirando: _expirando,
+        expirados: _expirados,
+      });
+
+      console.log("Contadores:", { _ativos, _expirando, _expirados });
+
+    } catch (err) {
+      console.error("Erro ao carregar estatísticas:", err);
+      setStats({ total: 0, ativos: 0, expirando: 0, expirados: 0 });
+    }
+  }
+
+  carregarStats();
+}, [empresaId, reloadKey, selectedGroup]);
+
 
   const columns = [
     {
@@ -152,17 +199,9 @@ export default function CertificadosList() {
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <button
-            onClick={async () => {
-              if (!confirm(`Deseja realmente excluir o certificado "${row.original.nome_arquivo}"?\n\nEsta ação não pode ser desfeita.`)) return;
-
-              try {
-                await excluir_certificado(row.original.id);
-                toast.success("Certificado excluído com sucesso!");
-                setReloadKey((old) => old + 1);
-              } catch (err) {
-                console.error(err);
-                toast.error("Erro ao excluir certificado.");
-              }
+            onClick={() => {
+              setConfirmData({ id: row.original.certificado_id, nome: row.original.nome_arquivo });
+              setConfirmOpen(true);
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group"
             title="Excluir certificado"
@@ -176,13 +215,36 @@ export default function CertificadosList() {
   ];
 
   const fetchCertificados = ({ page, limit, search, sort }) => {
-    return listarCertificadosPaginado({
-      empresa_id: empresaFiltro?.value,
+    // 🔧 Correção: usar empresaId e não empresaFiltro
+    const params = {
+      empresa_id: empresaId,
       page,
       limit,
       search,
       sort,
-    });
+    };
+
+    if (selectedGroup && selectedGroup.grupo_id) params.grupo_id = selectedGroup.grupo_id;
+
+    return listarCertificadosPaginado(params);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmData) return;
+    setIsDeleting(true);
+
+    try {
+      await excluir_certificado(confirmData.id);
+      toast.success("Certificado excluído com sucesso!");
+      setReloadKey((old) => old + 1);
+      setConfirmOpen(false);
+      setConfirmData(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao excluir certificado.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -221,21 +283,42 @@ export default function CertificadosList() {
               <FiBriefcase className="text-gray-400" size={14} />
               Empresa
             </label>
-            <SelectCustom
-              placeholder="Selecione uma empresa"
-              value={empresaFiltro}
-              onChange={(value) => {
-                setEmpresaFiltro(value);
-                setReloadKey((old) => old + 1);
+            <SelectEmpresa
+              value={empresaId}
+              onChange={(id) => {
+                setEmpresaId(id);
+                setSelectedGroup(null);
+                setReloadKey((k) => k + 1);
               }}
-              options={empresasDoUsuario}
+            />
+          </div>
+
+          <div className="flex-1 max-w-sm">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FiUsers className="text-gray-400" size={14} />
+              Grupo
+            </label>
+            <SelectGrupo
+              empresaId={empresaId}
+              value={selectedGroup?.grupo_id || null}
+              onChange={(val) => {
+                // value is grupo_id
+                if (!val) {
+                  setSelectedGroup(null);
+                } else {
+                  const g = { grupo_id: val };
+                  setSelectedGroup(g);
+                }
+                setReloadKey((k) => k + 1);
+              }}
+              isDisabled={!empresaId}
             />
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slideUp">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-slideUp">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-50 rounded-xl">
@@ -267,6 +350,17 @@ export default function CertificadosList() {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Expirando em breve</p>
+              <p className="text-2xl font-bold text-gray-800">{stats.expirando || 0}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-50 rounded-xl">
+              <FiAlertCircle className="text-red-600" size={24} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-medium">Certificados Expirados</p>
               <p className="text-2xl font-bold text-gray-800">{stats.expirados || 0}</p>
             </div>
           </div>
@@ -288,9 +382,10 @@ export default function CertificadosList() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-slideUp">
-        {empresaFiltro ? (
+        {/* 🔧 Correção: condição e key baseadas em empresaId */}
+        {empresaId ? (
           <DataTable
-            key={empresaFiltro.value + "-" + reloadKey}
+            key={empresaId + "-" + reloadKey}
             columns={columns}
             fetchData={fetchCertificados}
             limit={10}
@@ -308,6 +403,17 @@ export default function CertificadosList() {
             </div>
           </div>
         )}
+
+        <ConfirmModal
+          open={confirmOpen}
+          title={`Excluir certificado?`}
+          description={confirmData ? `Deseja realmente excluir o certificado "${confirmData.nome}"? Esta ação não pode ser desfeita.` : ''}
+          confirmText="Excluir"
+          cancelText="Cancelar"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setConfirmOpen(false)}
+          loading={isDeleting}
+        />
       </div>
     </div>
   );

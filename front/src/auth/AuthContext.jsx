@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "../api/api";
+import { apiFetch, apiFetchWithToken } from "../api/api";
 import { loginWeb, getMe, logout as logoutApi } from "../api/auth/auth";
 
 export const AuthContext = createContext();
@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
   }
 
   async function register({ nome, email, senha, telefone }) {
-    const response = await apiFetch("/auth/register", {
+    const response = await apiFetchWithToken("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nome, email, senha, telefone }),

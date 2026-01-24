@@ -1,38 +1,96 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from backend.app.db.session import get_db
+from backend.app.api.deps import get_current_user
 from backend.app.schemas.planos_trabalho import (
-    PlanoTrabalhoCreate,
-    PlanoTrabalhoUpdate,
-    PlanoTrabalhoOut,
+    PlanoTrabalhoCreate, PlanoTrabalhoUpdate, PlanoTrabalhoOut, PlanoTrabalhoPage
 )
 from backend.app.crud.planos_trabalho import crud_planos_trabalho
-
 
 router = APIRouter(prefix="/planos-trabalho", tags=["Planos de Trabalho"])
 
 
-@router.get("/", response_model=list[PlanoTrabalhoOut])
-def listar(db: Session = Depends(get_db)):
-    return crud_planos_trabalho.listar(db)
+@router.get("/")
+def listar_planos_trabalho(
+    page: int = 1,
+    limit: int = 10,
+    search: str | None = None,
+    sort: str | None = None,
+    empresa_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+    current_session = Depends(get_current_user),
+):
+    if empresa_id is None:
+        empresa_id = current_session.empresas[0].empresa_id
+    
+    print("DEBUG empresa_id usado:", empresa_id)
 
+    items, total = crud_planos_trabalho.listar(
+        db=db,
+        empresa_id=empresa_id,
+        page=page,
+        limit=limit,
+        search=search,
+        sort=sort,
+    )
+
+    return {
+        "items": items,
+        "total": total,
+    }
 
 @router.get("/{plano_id}", response_model=PlanoTrabalhoOut)
-def obter(plano_id: int, db: Session = Depends(get_db)):
-    return crud_planos_trabalho.get(db, plano_id)
+def getPlanoTrabalho(
+    plano_id: int,
+    db: Session = Depends(get_db),
+    current_session = Depends(get_current_user),
+):
+    usuario_id = current_session.usuario_id
+    return crud_planos_trabalho.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
 
 
-@router.post("/", response_model=PlanoTrabalhoOut, status_code=201)
-def criar(data: PlanoTrabalhoCreate, db: Session = Depends(get_db)):
-    return crud_planos_trabalho.criar(db, data)
+@router.post("/")
+def criar_plano_trabalho(
+    data: PlanoTrabalhoCreate,
+    db: Session = Depends(get_db),
+    current_session = Depends(get_current_user),
+):
+    usuario = current_session.usuarios
+
+    if not usuario.empresas:
+        raise HTTPException(
+            status_code=403,
+            detail="Usuário não possui empresa vinculada"
+        )
+
+    empresa = usuario.empresas[0] 
+
+    return crud_planos_trabalho.criar(
+        db=db,
+        data=data,
+        empresa_id=empresa.empresa_id,
+        usuario_id=usuario.usuario_id,
+    )
 
 
 @router.put("/{plano_id}", response_model=PlanoTrabalhoOut)
-def atualizar(plano_id: int, data: PlanoTrabalhoUpdate, db: Session = Depends(get_db)):
-    return crud_planos_trabalho.atualizar(db, plano_id, data)
+def atualizar_plano_trabalho(
+    plano_id: int,
+    data: PlanoTrabalhoUpdate,
+    db: Session = Depends(get_db),
+    current_session = Depends(get_current_user),
+):
+    usuario_id = current_session.usuario_id
+    return crud_planos_trabalho.atualizar(db, usuario_id=usuario_id, plano_id=plano_id, data=data)
 
 
 @router.delete("/{plano_id}")
-def deletar(plano_id: int, db: Session = Depends(get_db)):
-    return crud_planos_trabalho.deletar(db, plano_id)
+def deletar_plano_trabalho(
+    plano_id: int,
+    db: Session = Depends(get_db),
+    current_session = Depends(get_current_user),
+):
+    usuario_id = current_session.usuario_id
+    crud_planos_trabalho.deletar(db, usuario_id=usuario_id, plano_id=plano_id)
+    return {"ok": True}

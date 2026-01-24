@@ -55,5 +55,40 @@ class CRUDGruposUsuarios:
         db.commit()
         return {"status": "deleted"}
 
+    def criar_bulk(self, db: Session, grupo_id: int, usuario_ids: list[int], empresa_id: int | None = None):
+        """Cria vínculos entre um grupo e múltiplos usuários. Retorna resumo com criados e pulados."""
+        from backend.app.db.models import Usuarios, GruposUsuarios
+
+        created = []
+        skipped = []
+
+        # Validar existência do grupo (opcional: assumimos que grupo existe em outro CRUD)
+        # Validar cada usuário e criar vínculo se não existir
+        for uid in usuario_ids:
+            usuario = db.query(Usuarios).filter(Usuarios.usuario_id == uid).first()
+            if not usuario:
+                skipped.append({"usuario_id": uid, "reason": "user_not_found"})
+                continue
+
+            existente = db.query(GruposUsuarios).filter(
+                GruposUsuarios.grupo_id == grupo_id,
+                GruposUsuarios.usuario_id == uid
+            ).first()
+
+            if existente:
+                skipped.append({"usuario_id": uid, "reason": "already_exists"})
+                continue
+
+            novo = GruposUsuarios(
+                empresa_id=empresa_id if empresa_id is not None else (usuario.empresa_id if hasattr(usuario, 'empresa_id') else None),
+                grupo_id=grupo_id,
+                usuario_id=uid,
+            )
+            db.add(novo)
+            created.append(uid)
+
+        db.commit()
+        return {"created": created, "skipped": skipped}
+
 
 crud_grupos_usuarios = CRUDGruposUsuarios()

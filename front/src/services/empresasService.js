@@ -1,49 +1,95 @@
-// services/empresasService.js
-// Lista
-export function getEmpresas() {
-  return Promise.resolve(empresas);
+//import { ReplaceAll } from "lucide-react";
+import { apiFetch, apiFetchWithToken } from "../api/api";
+
+export async function listarMinhasEmpresas() {
+  const response = await apiFetchWithToken("/empresas/minhas");
+  const json = await response.json();
+  return json;
+}
+
+export async function listarEmpresasPaginado({
+  page = 1,
+  limit = 10,
+  search = "",
+  sort = "",
+}) {
+  const params = new URLSearchParams({
+    page,
+    limit,
+    search,
+    sort,
+  });
+
+  const res = await apiFetchWithToken(`/empresas/?${params.toString()}`);
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json(); // { data, total }
 }
 
 export async function getEmpresasDoUsuario(userId) {
-  console.log("Id do usuário logado: ", userId);
   const res = await fetch(`http://127.0.0.1:8000/usuarios/${userId}/empresas`, {
     credentials: "include",
   });
   return await res.json();
 }
 
-export function getEmpresa(id) {
-  const empresa = empresas.find((e) => e.id === Number(id));
-  return Promise.resolve(empresa);
+export async function getEmpresa(id) {
+  const res = await apiFetchWithToken(`/empresas/id/${id}`);
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json();
 }
 
-// Empresas paginado
-export async function listarEmpresasPaginado({ page = 1, limit = 10, search = "", sort = "" }) {
-  const params = new URLSearchParams();
-
-  params.append("page", page);
-  params.append("limit", limit);
-  params.append("search", search);
-  params.append("sort", sort);
-
-  const res = await fetch(`http://127.0.0.1:8000/empresas?${params.toString()}`, {
-    credentials: "include",
+/**
+ * CREATE
+ */
+export async function createEmpresa(data) {
+  data.cnpj = data.cnpj.replace(/\D/g, ""); // Remove formatação
+  const res = await apiFetchWithToken(`/empresas/`, {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 
-  if (!res.ok) throw new Error("Erro ao carregar empresas");
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
 
-  return await res.json(); // deve retornar { data: [...], total: X }
+  return await res.json();
 }
 
-export function createEmpresa(data) {
-  const nova = { id: Date.now(), ...data };
-  empresas.push(nova);
-  return Promise.resolve(nova);
+/**
+ * UPDATE
+ */
+export async function updateEmpresa(id, data) {
+  const res = await apiFetchWithToken(`/empresas/id/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json();
 }
 
-export function updateEmpresa(id, data) {
-  empresas = empresas.map((e) =>
-    e.id === Number(id) ? { ...e, ...data } : e
-  );
-  return Promise.resolve(true);
+/**
+ * DELETE
+ */
+export async function deleteEmpresa(id) {
+  const res = await apiFetchWithToken(`/empresas/id/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return true;
 }

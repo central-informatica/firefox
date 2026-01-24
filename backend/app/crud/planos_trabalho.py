@@ -1,77 +1,86 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
+from sqlalchemy import asc, desc
+from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
+
 from backend.app.db.models import PlanosTrabalho
-from backend.app.schemas.planos_trabalho import (
-    PlanoTrabalhoCreate,
-    PlanoTrabalhoUpdate,
-)
+from backend.app.schemas.planos_trabalho import PlanoTrabalhoCreate, PlanoTrabalhoUpdate
+from backend.app.crud.guards import exigir_acesso_empresa
 
 
 class CRUDPlanosTrabalho:
-
-    def listar(self, db: Session):
-        return db.query(PlanosTrabalho).all()
-
-    def get(self, db: Session, plano_id: int):
-        plano = db.query(PlanosTrabalho).filter(
-            PlanosTrabalho.plano_id == plano_id
-        ).first()
-
-        if not plano:
-            raise HTTPException(404, "Plano de trabalho não encontrado")
-
-        return plano
-
-    def criar(self, db: Session, data: PlanoTrabalhoCreate):
-
-        # Evitar duplicidade: UNIQUE nome
-        existente = db.query(PlanosTrabalho).filter(
-            PlanosTrabalho.nome == data.nome
-        ).first()
-
-        if existente:
-            raise HTTPException(
-                400,
-                "Já existe um plano de trabalho com este nome."
-            )
-
-        novo = PlanosTrabalho(
-            nome=data.nome,
-            descricao=data.descricao
+    def listar(self, db, empresa_id, page, limit, search=None, sort=None):
+        query = db.query(PlanosTrabalho).filter(
+            PlanosTrabalho.empresa_id == empresa_id
         )
 
-        db.add(novo)
-        db.commit()
-        db.refresh(novo)
-        return novo
+        total = query.count()
 
-    def atualizar(self, db: Session, plano_id: int, data: PlanoTrabalhoUpdate):
-        plano = self.get(db, plano_id)
+        items = (
+            query
+            .offset((page - 1) * limit)
+            .limit(limit)
+            .all()
+        )
+        return items, total
 
-        updates = data.dict(exclude_unset=True)
+    def getPlanoTrabalho(self, db: Session, usuario_id: int, plano_id: int):
+        plano = db.query(PlanosTrabalho).filter(PlanosTrabalho.plano_id == plano_id).first()
+        if not plano:
+            raise HTTPException(status_code=404, detail="Plano não encontrado.")
 
-        # Verificar duplicidade se o nome for alterado
-        if "nome" in updates:
-            existe = db.query(PlanosTrabalho).filter(
-                PlanosTrabalho.nome == updates["nome"],
-                PlanosTrabalho.plano_id != plano_id
-            ).first()
-
-            if existe:
-                raise HTTPException(
-                    400,
-                    "Já existe outro plano de trabalho com este nome."
-                )
-
-        for campo, valor in updates.items():
-            setattr(plano, campo, valor)
-
-        db.commit()
-        db.refresh(plano)
+        exigir_acesso_empresa(db, empresa_id=plano.empresa_id, usuario_id=usuario_id)
         return plano
 
-    def deletar(self, db: Session, plano_id: int):
-        plano = self.get(db, plano_id)
+    def criar(
+        self,
+        db: Session,
+        data: PlanoTrabalhoCreate,
+        empresa_id: int,
+        usuario_id: int,
+    ):
+        plano = PlanosTrabalho(
+            nome=data.nome,
+            descricao=data.descricao,
+            empresa_id=empresa_id,
+        )
+
+        db.add(plano)
+        db.commit()
+        db.refresh(plano)
+
+        return plano
+
+
+    def atualizar(self, db: Session, usuario_id: int, plano_id: int, data: PlanoTrabalhoUpdate):
+        plano = self.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
+        from sqlalchemy import inspect
+        print("ANTES DO UPDATE:")
+        print("plano:", plano)
+        print("persistent:", inspect(plano).persistent)
+        print("detached:", inspect(plano).detached)
+        print("pending:", inspect(plano).pending)
+        print("dirty:", inspect(plano).modified)
+
+        if data.nome is not None:
+            plano.nome = data.nome
+        if data.descricao is not None:
+            plano.descricao = data.descricao
+        
+        print("DEPOIS DO UPDATE:")
+        print("dirty:", inspect(plano).modified)
+
+        try:
+            db.commit()
+            db.refresh(plano)
+            return plano
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=400, detail="Já existe um plano com este nome nesta empresa.")
+
+    def deletar(self, db: Session, usuario_id: int, plano_id: int):
+        plano = self.obter(db, usuario_id=usuario_id, plano_id=plano_id)
+
         db.delete(plano)
         db.commit()
         return {"status": "deleted"}

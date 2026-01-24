@@ -1,26 +1,35 @@
+import {useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { listarEmpresasPaginado } from "../../services/empresasService";
+import { useAuth } from "../../auth/useAuth";
 import {
   FiPlus, FiEdit2, FiClock, FiBriefcase, FiTrendingUp, FiMapPin
 } from "react-icons/fi";
 import DataTable from "../../components/Tables/DataTable";
+import formatCNPJ from "../../utils/formatCNPJ"
 
 const EmpresasList = () => {
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [totalEmpresas, setTotalEmpresas] = useState(0);
+
+  if (loading || !user) {
+    return null;
+  }
 
   const columns = [
     {
       header: "Nome",
-      accessorKey: "nome",
+      accessorKey: "razao_social",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0">
-            {row.original.nome?.charAt(0).toUpperCase() || "E"}
+            {row.original.razao_social?.charAt(0).toUpperCase() || "E"}
           </div>
           <div>
-            <div className="font-semibold text-gray-800">{row.original.nome}</div>
+            <div className="font-semibold text-gray-800">{row.original.razao_social}</div>
             <div className="text-xs text-gray-500">
-              {row.original.cnpj || "CNPJ não informado"}
+              {formatCNPJ(row.original.cnpj) || "CNPJ não informado"}
             </div>
           </div>
         </div>
@@ -31,7 +40,7 @@ const EmpresasList = () => {
       accessorKey: "cnpj",
       cell: ({ row }) => (
         <span className="text-sm text-gray-600 font-mono">
-          {row.original.cnpj || "-"}
+          {formatCNPJ(row.original.cnpj) || "-"}
         </span>
       ),
     },
@@ -58,7 +67,7 @@ const EmpresasList = () => {
       header: "Ações",
       cell: ({ row }) => (
         <button
-          onClick={() => navigate(`/empresas/editar/${row.original.id}`)}
+          onClick={() => navigate(`/empresas/editar/${row.original.empresa_id}`)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium transition-all duration-200"
         >
           <FiEdit2 size={16} />
@@ -68,8 +77,10 @@ const EmpresasList = () => {
     },
   ];
 
-  const fetchEmpresas = ({ page, limit, search, sort }) => {
-    return listarEmpresasPaginado({ page, limit, search, sort });
+  const fetchEmpresas = async ({ page, limit, search, sort }) => {
+    const res = await listarEmpresasPaginado({ page, limit, search, sort });
+    setTotalEmpresas(res.total); 
+    return res;
   };
 
   return (
@@ -99,7 +110,7 @@ const EmpresasList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Total de Empresas</p>
-              <p className="text-2xl font-bold text-gray-800">12</p>
+              <p className="text-2xl font-bold text-gray-800">{totalEmpresas}</p>
             </div>
           </div>
         </div>
@@ -111,7 +122,7 @@ const EmpresasList = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Empresas Ativas</p>
-              <p className="text-2xl font-bold text-gray-800">11</p>
+              <p className="text-2xl font-bold text-gray-800">{totalEmpresas}</p>
             </div>
           </div>
         </div>
@@ -133,6 +144,7 @@ const EmpresasList = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <DataTable
           columns={columns}
+          total={totalEmpresas}
           fetchData={fetchEmpresas}
           limit={10}
         />

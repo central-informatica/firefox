@@ -1,7 +1,8 @@
-import { apiFetch } from "../api/api";
+import { apiFetch, apiFetchWithToken } from "../api/api";
 
 export async function listarCertificadosPaginado({
   empresa_id,
+  grupo_id = undefined,
   page = 1,
   limit = 10,
   search = "",
@@ -15,7 +16,9 @@ export async function listarCertificadosPaginado({
     sort,
   });
 
-  const res = await apiFetch(`/certificados?${params.toString()}`, {
+  if (grupo_id !== undefined && grupo_id !== null) params.append('grupo_id', String(grupo_id));
+
+  const res = await apiFetchWithToken(`/certificados?${params.toString()}`, {
     method: "GET",
   });
 
@@ -27,7 +30,7 @@ export async function listarCertificadosPaginado({
 }
 
 export async function getCertificado(id) {
-  const res = await apiFetch(`/certificados/${id}`, {
+  const res = await apiFetchWithToken(`/certificados/${id}`, {
     method: "GET",
   });
 
@@ -39,20 +42,38 @@ export async function getCertificado(id) {
 }
 
 export async function createCertificado(formData) {
-  const res = await apiFetch(`/certificados`, {
+  const res = await apiFetchWithToken("/certificados/", {
     method: "POST",
     body: formData,
   });
-  console.log("Form data: ", res)
+
   if (!res.ok) {
-    throw new Error("Erro ao criar certificado");
+    let message = "Erro ao criar certificado";
+
+    try {
+      const errorBody = await res.json();
+
+      if (typeof errorBody.detail === "string") {
+        message = errorBody.detail;
+      } else if (Array.isArray(errorBody.detail)) {
+        message = errorBody.detail
+          .map((e) => e.msg)
+          .join(", ");
+      }
+    } catch {
+      // fallback se não for JSON
+      message = await res.text();
+    }
+
+    throw new Error(message);
   }
 
-  return res.json();
+  return await res.json();
 }
 
+
 export async function excluir_certificado(id) {
-  const res = await apiFetch(`/certificados/${id}`, {
+  const res = await apiFetchWithToken(`/certificados/${id}`, {
     method: "DELETE",
   });
 
@@ -64,6 +85,7 @@ export async function excluir_certificado(id) {
 
   return res.json();
 }
+
 
 // Mock data para testes de associação
 const certificadosMock = [
@@ -92,3 +114,72 @@ export function getCertificadosSimples() {
   return Promise.resolve(certificadosMock);
 }
 
+export async function listarCertificadosPermitidos() {
+  const res = await apiFetchWithToken(
+    `/certificados/listar_certificados_permitidos/`
+  );
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return res.json();
+}
+
+export async function listarCertificadosDaEmpresa(empresaId) {
+  if (!empresaId) return [];
+  const res = await apiFetchWithToken(`/certificados/?empresa_id=${empresaId}`);
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const json = await res.json();
+  return Array.isArray(json?.items) ? json.items : [];
+}
+
+
+/* Lista certificados já vinculados a um grupo */
+export async function listarCertificadosDoGrupo(grupoId) {
+  if (!grupoId) return [];
+  const res = await apiFetchWithToken(`/grupos/${grupoId}/certificados`);
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const json = await res.json();
+  return Array.isArray(json) ? json : [];
+}
+
+/* Adiciona certificado a um grupo */
+export async function adicionarCertificadoAoGrupo(grupoId, certificadoId, empresaId) {
+  const res = await apiFetchWithToken(
+    `/grupos/${grupoId}/certificados`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        certificado_id: certificadoId,
+        empresa_id: empresaId,
+      }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return await res.json();
+}
+
+/* Remove vínculo de um certificado com o grupo*/
+export async function removerCertificadoDoGrupo(grupo_id, certificadoId, empresa_id) {
+  const res = await apiFetchWithToken(
+    `/grupos/${grupo_id}/remover/certificado`,
+    {
+      method: "DELETE",
+      body: JSON.stringify({
+        certificado_id: certificadoId,
+        empresa_id: empresa_id,
+      }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return true;
+}

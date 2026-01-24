@@ -7,6 +7,7 @@ import Input from "./components/Input/Input";
 import Button from "./components/Button/Button";
 import { apiFetch } from "../../api/api";
 import { useAuth } from "../../auth/useAuth";
+import { apiFetchWithToken } from "./api/api";
 
 const Dashboard = () => {
   const { logout } = useAuth();
@@ -34,7 +35,7 @@ const Dashboard = () => {
     try {
       const formData = new FormData(document.getElementById("formulario"));
 
-      const response = await apiFetch("/upload/certificado", {
+      const response = await apiFetchWithToken("/upload/certificado", {
         method: "POST",
         body: formData,
       });

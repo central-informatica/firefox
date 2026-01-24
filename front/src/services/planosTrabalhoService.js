@@ -1,56 +1,67 @@
-let planos = [
-  { id: 1, nome: "Plano Suporte 24h", descricao: "Atendimento contínuo" },
-  { id: 2, nome: "Plano Comercial", descricao: "Horário comercial" },
-];
+// src/services/planosTrabalhoService.js
+import { apiFetch, apiFetchWithToken } from "../api/api"; // ajuste o caminho conforme seu projeto
 
-export function listarPlanosTrabalhoPaginado({
-  page = 1,
-  limit = 10,
-  search = "",
-  sort = "",
-}) {
-  let lista = [...planos];
+export async function listarPlanosTrabalho(params = {}) {
+  const {
+    page = 1,
+    limit = 10,
+    search = "",
+    sort = "",
+    empresa_id,
+  } = params;
 
-  if (search && search.trim() !== "") {
-    const termo = search.toLowerCase();
-    lista = lista.filter(
-      (p) =>
-        p.nome.toLowerCase().includes(termo) ||
-        (p.descricao || "").toLowerCase().includes(termo)
-    );
+  const query = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+    search: search || "",
+    sort: sort || "",
+    ...(empresa_id ? { empresa_id: String(empresa_id) } : {})
+  }).toString();
+
+  console.log("DEBUG empresa_id enviado:", empresa_id);
+  const res = await apiFetchWithToken(`/planos-trabalho/?${query}`);
+  
+  // apiFetch retorna Response (fetch). Então precisa parsear JSON.
+  if (!res.ok) {
+    throw new Error(await res.text());
   }
+  
+  const json = await res.json(); // <- aqui está o { items: [...], total: ... }
+  
+  return {
+    data: Array.isArray(json?.items) ? json.items : [],
+    total: Number(json?.total) || 0,
+  };
+}
 
-  if (sort) {
-    const [campo, direcao] = sort.split(".");
-    lista.sort((a, b) => {
-      if (a[campo] < b[campo]) return direcao === "asc" ? -1 : 1;
-      if (a[campo] > b[campo]) return direcao === "asc" ? 1 : -1;
-      return 0;
-    });
+export async function getPlanoTrabalho(id) {
+  const response = await apiFetchWithToken(`/planos-trabalho/${id}`);
+  if (response instanceof Response) {
+    return await response.json();
   }
-
-  const total = lista.length;
-  const inicio = (page - 1) * limit;
-  const fim = inicio + limit;
-  const paginados = lista.slice(inicio, fim);
-
-  return Promise.resolve({ data: paginados, total });
+  return response;
 }
 
-export function getPlanoTrabalho(id) {
-  const plano = planos.find((p) => p.id === Number(id));
-  return Promise.resolve(plano);
+
+export async function criarPlanoTrabalho(payload) {
+  // payload só: { nome, descricao } (empresa_id vem do usuário logado no backend)
+  return apiFetchWithToken("/planos-trabalho/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
-export function createPlanoTrabalho(data) {
-  const novo = { ...data, id: Date.now() };
-  planos.push(novo);
-  return Promise.resolve(novo);
+export async function atualizarPlanoTrabalho(planoId, payload) {
+  console.log("Updating PlanoTrabalho ID:", planoId, "with payload:", payload);
+  return apiFetchWithToken(`/planos-trabalho/${planoId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
-export function updatePlanoTrabalho(id, data) {
-  planos = planos.map((p) =>
-    p.id === Number(id) ? { ...p, ...data } : p
-  );
-  return Promise.resolve(true);
+
+export async function deletarPlanoTrabalho(planoId) {
+  return apiFetch(`/planos-trabalho/${planoId}`, {
+    method: "DELETE",
+  });
 }
