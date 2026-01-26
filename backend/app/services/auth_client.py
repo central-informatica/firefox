@@ -88,7 +88,6 @@ class AuthClient(BaseServiceClient):
         self,
         email: str,
         password: str,
-        organization_id: str,
         client_type: str = "web",
     ) -> dict[str, Any]:
         """
@@ -109,7 +108,7 @@ class AuthClient(BaseServiceClient):
         endpoint = f"/api/v1/auth/login/{client_type}"
         response = await self._post(
             endpoint,
-            json={"email": email, "password": password, "organization_id": organization_id},
+            json={"email": email, "password": password},
         )
 
         if response.status_code == 401:
@@ -236,7 +235,7 @@ class AuthClient(BaseServiceClient):
             logger.error(f"Error getting current user: {e}")
             raise
 
-    async def forgot_password(self, email: str, organization_id: str) -> bool:
+    async def forgot_password(self, email: str) -> bool:
         """
         Request password reset email.
 
@@ -246,10 +245,9 @@ class AuthClient(BaseServiceClient):
         Returns:
             True if request sent (always returns true for security)
         """
-        print('passou por aqui')
         response = await self._post(
             "/api/v1/auth/forgot-password",
-            json={"email": email, "organization_id": organization_id},
+            json={"email": email},
         )
         return response.status_code == 200
 
@@ -534,11 +532,25 @@ class AuthClient(BaseServiceClient):
 
         Args:
             data: Registration data including:
-                - organization_name, slug, domain (optional)
-                - admin_email, admin_password, admin_first_name, admin_last_name
+                - organization_name (required) - Company name
+                - slug (optional) - URL-friendly organization identifier
+                - domain (optional) - Organization domain
+                - cnpj (required) - Brazilian company registration number (14 digits)
+                - address_street (required) - Street address
+                - address_city (required) - City name
+                - address_state (required) - Two-letter state code (e.g., SP, RJ)
+                - address_country (required) - Country name
+                - address_postal_code (required) - Brazilian CEP (XXXXX-XXX format)
+                - admin_email (required) - Admin user email
+                - admin_password (required) - Admin user password
+                - admin_first_name (required) - Admin user first name
+                - admin_last_name (required) - Admin user last name
 
         Returns:
             dict with created organization and admin user
+
+        Raises:
+            AuthServiceError: If organization creation fails
         """
         response = await self._post(
             "/api/v1/organizations/register-with-admin",

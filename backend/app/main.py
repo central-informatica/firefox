@@ -35,6 +35,7 @@ from backend.app.services.cofre_client import cofre_client
 from backend.app.api.routes.auth import router as auth_router
 from backend.app.api.routes.usuarios import router as usuarios_router
 from backend.app.api.routes.convites import router as convites_router
+from backend.app.api.routes.companies import router as companies_router
 from backend.app.api.routes.certificados import router as certificados_router
 
 # Routers - Business logic (local)
@@ -42,9 +43,10 @@ from backend.app.api.routes.grupos import router as grupos_router
 from backend.app.api.routes.planos_trabalho import router as planos_trabalho_router
 from backend.app.api.routes.feriados import router as feriados_router
 from backend.app.api.routes.grupos_certificados import router as grupos_certificados_router
+from backend.app.api.routes.grupos_certificados_urls import router as grupos_certificados_urls_router
 from backend.app.api.routes.grupos_usuarios import router as grupos_usuarios_router
 from backend.app.api.routes.regras_acesso import router as regras_acesso_router
-from backend.app.api.routes.regras_acesso_hosts import router as regras_acesso_hosts_router
+from backend.app.api.routes.usuarios_ip_whitelist import router as usuarios_ip_whitelist_router
 from backend.app.api.routes.global_urls import router as global_urls_router
 from backend.app.api.routes.ramos import router as ramos_router
 
@@ -206,16 +208,18 @@ async def service_error_handler(
 app.include_router(auth_router)
 app.include_router(usuarios_router)
 app.include_router(convites_router)
+app.include_router(companies_router)
 app.include_router(certificados_router)
 
 # Business logic (local)
 app.include_router(grupos_router)
 app.include_router(grupos_certificados_router)
+app.include_router(grupos_certificados_urls_router)
 app.include_router(grupos_usuarios_router)
 app.include_router(planos_trabalho_router)
 app.include_router(feriados_router)
 app.include_router(regras_acesso_router)
-app.include_router(regras_acesso_hosts_router)
+app.include_router(usuarios_ip_whitelist_router)
 app.include_router(global_urls_router)
 app.include_router(ramos_router)
 

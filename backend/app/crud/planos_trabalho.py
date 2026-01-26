@@ -39,6 +39,18 @@ class CRUDPlanosTrabalho:
         empresa_id: str,
         usuario_id: str,
     ):
+        # Check for duplicate name within empresa
+        existing = db.query(PlanosTrabalho).filter(
+            PlanosTrabalho.empresa_id == empresa_id,
+            PlanosTrabalho.nome == data.nome
+        ).first()
+
+        if existing:
+            raise HTTPException(
+                status_code=409,  # Conflict
+                detail="Já existe um plano com este nome nesta empresa."
+            )
+
         plano = PlanosTrabalho(
             nome=data.nome,
             descricao=data.descricao,
@@ -46,29 +58,6 @@ class CRUDPlanosTrabalho:
         )
 
         db.add(plano)
-        db.commit()
-        db.refresh(plano)
-
-        return plano
-
-
-    def atualizar(self, db: Session, usuario_id: str, plano_id: str, data: PlanoTrabalhoUpdate):
-        plano = self.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
-        from sqlalchemy import inspect
-        print("ANTES DO UPDATE:")
-        print("plano:", plano)
-        print("persistent:", inspect(plano).persistent)
-        print("detached:", inspect(plano).detached)
-        print("pending:", inspect(plano).pending)
-        print("dirty:", inspect(plano).modified)
-
-        if data.nome is not None:
-            plano.nome = data.nome
-        if data.descricao is not None:
-            plano.descricao = data.descricao
-        
-        print("DEPOIS DO UPDATE:")
-        print("dirty:", inspect(plano).modified)
 
         try:
             db.commit()
@@ -76,10 +65,38 @@ class CRUDPlanosTrabalho:
             return plano
         except IntegrityError:
             db.rollback()
-            raise HTTPException(status_code=400, detail="Já existe um plano com este nome nesta empresa.")
+            raise HTTPException(status_code=409, detail="Já existe um plano com este nome nesta empresa.")
+
+
+    def atualizar(self, db: Session, usuario_id: str, plano_id: str, data: PlanoTrabalhoUpdate):
+        plano = self.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
+
+        if data.nome is not None:
+            # Check for duplicate name within empresa (excluding current plano)
+            existing = db.query(PlanosTrabalho).filter(
+                PlanosTrabalho.empresa_id == plano.empresa_id,
+                PlanosTrabalho.nome == data.nome,
+                PlanosTrabalho.plano_id != plano_id
+            ).first()
+
+            if existing:
+                raise HTTPException(status_code=409, detail="Já existe um plano com este nome nesta empresa.")
+
+            plano.nome = data.nome
+
+        if data.descricao is not None:
+            plano.descricao = data.descricao
+
+        try:
+            db.commit()
+            db.refresh(plano)
+            return plano
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=409, detail="Já existe um plano com este nome nesta empresa.")
 
     def deletar(self, db: Session, usuario_id: str, plano_id: str):
-        plano = self.obter(db, usuario_id=usuario_id, plano_id=plano_id)
+        plano = self.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
 
         db.delete(plano)
         db.commit()

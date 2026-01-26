@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.app.main import app
 from backend.app.db.session import get_db
-from backend.app.db.database import Base 
+from backend.app.db.models import Base 
 
 # -------------------------------------------------
 # Carregar env de teste

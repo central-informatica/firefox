@@ -7,7 +7,8 @@ class GrupoUsuarioBase(BaseModel):
 
 
 class GrupoUsuarioCreate(GrupoUsuarioBase):
-    pass
+    usuario_id: str
+    empresa_id: Optional[str] = None
 
 
 class GrupoUsuarioUpdate(BaseModel):

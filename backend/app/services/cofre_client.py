@@ -325,6 +325,39 @@ class CofreClient(BaseServiceClient):
 
         return response.status_code in (200, 204)
 
+    async def get_certificates_der(
+        self,
+        certificate_ids: list[str],
+    ) -> list[dict[str, Any]]:
+        """
+        Get DER-encoded certificate data for multiple certificates.
+
+        Args:
+            certificate_ids: List of Cofre certificate IDs
+
+        Returns:
+            List of dicts with id, label, cert_der_b64
+        """
+        headers = await self._auth_headers()
+
+        response = await self._post(
+            "/api/v1/certificates/der",
+            json={"ids": certificate_ids},
+            headers=headers,
+        )
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            raise CertificateNotFoundError(
+                message="One or more certificates not found"
+            )
+        else:
+            raise CofreServiceError(
+                message=f"Failed to get certificate DER data: {response.text}",
+                status_code=response.status_code,
+            )
+
     # -------------------------------------------------------------------------
     # Audit Logs
     # -------------------------------------------------------------------------

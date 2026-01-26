@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, constr
+from uuid import UUID
+from pydantic import BaseModel, ConfigDict, constr, field_serializer
 
 
 class PlanoTrabalhoBase(BaseModel):
@@ -10,7 +11,8 @@ class PlanoTrabalhoBase(BaseModel):
 
 class PlanoTrabalhoCreate(BaseModel):
     nome: str
-    descricao: str | None = None 
+    descricao: str | None = None
+
 
 class PlanoTrabalhoUpdate(BaseModel):
     nome: Optional[constr(min_length=2, max_length=100)] = None
@@ -18,12 +20,15 @@ class PlanoTrabalhoUpdate(BaseModel):
 
 
 class PlanoTrabalhoOut(PlanoTrabalhoBase):
-    plano_id: str
-    empresa_id: str
+    model_config = ConfigDict(from_attributes=True)
+
+    plano_id: UUID
+    empresa_id: UUID
     criado_em: datetime
 
-    class Config:
-        from_attributes = True  # pydantic v2
+    @field_serializer("plano_id", "empresa_id")
+    def serialize_uuid(self, value: UUID) -> str:
+        return str(value)
 
 
 class PlanoTrabalhoPage(BaseModel):

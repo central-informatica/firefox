@@ -2,13 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from backend.app.db.session import get_db
-from backend.app.api.deps import check_auth
+from backend.app.api.deps import check_auth_with_ip
 from backend.app.schemas.planos_trabalho import (
     PlanoTrabalhoCreate, PlanoTrabalhoUpdate, PlanoTrabalhoOut, PlanoTrabalhoPage
 )
 from backend.app.crud.planos_trabalho import crud_planos_trabalho
 
 router = APIRouter(prefix="/planos-trabalho", tags=["Planos de Trabalho"])
+
+
+def _verificar_admin(current_user: dict):
+    """Verify user is admin, raise 403 if not."""
+    if not current_user.get("is_admin"):
+        raise HTTPException(403, "Apenas administradores podem gerenciar planos de trabalho")
 
 
 @router.get("/")
@@ -19,12 +25,11 @@ def listar_planos_trabalho(
     sort: str | None = None,
     empresa_id: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    current_session = Depends(check_auth),
+    current_user = Depends(check_auth_with_ip),
 ):
+    _verificar_admin(current_user)
     if empresa_id is None:
-        empresa_id = current_session.empresas[0].empresa_id
-    
-    print("DEBUG empresa_id usado:", empresa_id)
+        empresa_id = current_user["organization_id"]
 
     items, total = crud_planos_trabalho.listar(
         db=db,
@@ -44,33 +49,32 @@ def listar_planos_trabalho(
 def getPlanoTrabalho(
     plano_id: str,
     db: Session = Depends(get_db),
-    current_session = Depends(check_auth),
+    current_user = Depends(check_auth_with_ip),
 ):
-    usuario_id = current_session.usuario_id
+    _verificar_admin(current_user)
+    usuario_id = current_user["id"]
     return crud_planos_trabalho.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
 
 
-@router.post("/")
+@router.post("/", status_code=201)
 def criar_plano_trabalho(
     data: PlanoTrabalhoCreate,
     db: Session = Depends(get_db),
-    current_session = Depends(check_auth),
+    current_user = Depends(check_auth_with_ip),
 ):
-    usuario = current_session.usuarios
-
-    if not usuario.empresas:
+    _verificar_admin(current_user)
+    empresa_id = current_user.get("organization_id")
+    if not empresa_id:
         raise HTTPException(
             status_code=403,
             detail="Usuário não possui empresa vinculada"
         )
 
-    empresa = usuario.empresas[0] 
-
     return crud_planos_trabalho.criar(
         db=db,
         data=data,
-        empresa_id=empresa.empresa_id,
-        usuario_id=usuario.usuario_id,
+        empresa_id=empresa_id,
+        usuario_id=current_user["id"],
     )
 
 
@@ -79,9 +83,10 @@ def atualizar_plano_trabalho(
     plano_id: str,
     data: PlanoTrabalhoUpdate,
     db: Session = Depends(get_db),
-    current_session = Depends(check_auth),
+    current_user = Depends(check_auth_with_ip),
 ):
-    usuario_id = current_session.usuario_id
+    _verificar_admin(current_user)
+    usuario_id = current_user["id"]
     return crud_planos_trabalho.atualizar(db, usuario_id=usuario_id, plano_id=plano_id, data=data)
 
 
@@ -89,8 +94,9 @@ def atualizar_plano_trabalho(
 def deletar_plano_trabalho(
     plano_id: str,
     db: Session = Depends(get_db),
-    current_session = Depends(check_auth),
+    current_user = Depends(check_auth_with_ip),
 ):
-    usuario_id = current_session.usuario_id
+    _verificar_admin(current_user)
+    usuario_id = current_user["id"]
     crud_planos_trabalho.deletar(db, usuario_id=usuario_id, plano_id=plano_id)
     return {"ok": True}

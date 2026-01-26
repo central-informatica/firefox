@@ -15,7 +15,7 @@ CLAUDE.md
 venv/
 env/
 ENV/
-
+prompt
 # Distribution / packaging
 build/
 dist/

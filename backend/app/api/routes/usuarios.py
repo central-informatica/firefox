@@ -2,13 +2,15 @@
 User management routes - proxies to Auth microservice.
 
 All user CRUD operations are delegated to the Auth service (port 8001).
+Admin-only access with IP whitelist validation.
 """
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
+from backend.app.api.deps import check_auth_with_ip
 from backend.app.core.exceptions import AuthServiceError
 from backend.app.services.auth_client import auth_client
 
@@ -52,12 +54,20 @@ async def list_users(
     include_deleted: bool = False,
     limit: int = 100,
     offset: int = 0,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
     """
     List users in organization.
 
-    Forwards request to Auth service /api/v1/users/.
+    Admin only - Forwards request to Auth service /api/v1/users/.
     """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem listar usuários",
+        )
+
     headers = get_forwarded_headers(request)
 
     params = {
@@ -87,12 +97,20 @@ async def list_users(
 async def get_user(
     request: Request,
     user_id: str,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
     """
     Get specific user by ID.
 
-    Forwards request to Auth service /api/v1/users/{user_id}.
+    Admin only - Forwards request to Auth service /api/v1/users/{user_id}.
     """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem visualizar usuários",
+        )
+
     headers = get_forwarded_headers(request)
 
     try:
@@ -114,12 +132,20 @@ async def update_user(
     request: Request,
     user_id: str,
     data: UserUpdate,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
     """
     Update user.
 
-    Forwards request to Auth service /api/v1/users/{user_id}.
+    Admin only - Forwards request to Auth service /api/v1/users/{user_id}.
     """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem atualizar usuários",
+        )
+
     headers = get_forwarded_headers(request)
     update_data = data.model_dump(exclude_none=True)
 
@@ -142,12 +168,20 @@ async def update_user(
 async def delete_user(
     request: Request,
     user_id: str,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
     """
     Soft delete user.
 
-    Forwards request to Auth service /api/v1/users/{user_id}.
+    Admin only - Forwards request to Auth service /api/v1/users/{user_id}.
     """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem remover usuários",
+        )
+
     headers = get_forwarded_headers(request)
 
     try:

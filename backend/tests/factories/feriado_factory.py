@@ -1,14 +1,14 @@
-from backend.app.db.models import Feriado
+from backend.app.db.models import Feriados
 from tests.factories.base import commit_and_refresh
 
 def criar_feriado(
     db,
-    empresa_id: int,
+    empresa_id,
     data,  # datetime.date
     nome: str = "Feriado de teste",
     recorrente: bool = False,
 ):
-    feriado = Feriado(
+    feriado = Feriados(
         empresa_id=empresa_id,
         data=data,
         nome=nome,

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import check_auth
+from backend.app.api.deps import check_auth_with_ip
 from backend.app.db.session import get_db
 from backend.app.schemas.global_urls import (
     GlobalUrlCreate, GlobalUrlUpdate, GlobalUrlOut
@@ -16,12 +16,14 @@ router = APIRouter(prefix="/global-urls", tags=["Global URLs"])
 def listar_global_urls(
     empresa_id: str,
     db: Session = Depends(get_db),
-    current_user=Depends(check_auth),
+    current_user=Depends(check_auth_with_ip),
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     search: str = "",
     sort: str = "",
 ):
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar URLs globais")
     items, total = crud_global_urls.listar_paginado(
         db=db,
         empresa_id=empresa_id,
@@ -40,8 +42,10 @@ def listar_global_urls(
 def criar_global_url(
     data: GlobalUrlCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(check_auth),
+    current_user=Depends(check_auth_with_ip),
 ):
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem criar URLs globais")
     return crud_global_urls.criar(db, data)
 
 
@@ -49,8 +53,10 @@ def criar_global_url(
 def get_global_url(
     global_urls_id: str,
     db: Session = Depends(get_db),
-    current_user=Depends(check_auth),
+    current_user=Depends(check_auth_with_ip),
 ):
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem visualizar URLs globais")
     return crud_global_urls.get(db, global_urls_id)
 
 
@@ -59,8 +65,10 @@ def atualizar_global_url(
     global_urls_id: str,
     data: GlobalUrlUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(check_auth),
+    current_user=Depends(check_auth_with_ip),
 ):
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem atualizar URLs globais")
     return crud_global_urls.atualizar(db, global_urls_id, data)
 
 
@@ -68,6 +76,8 @@ def atualizar_global_url(
 def deletar_global_url(
     global_urls_id: str,
     db: Session = Depends(get_db),
-    current_user=Depends(check_auth),
+    current_user=Depends(check_auth_with_ip),
 ):
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem deletar URLs globais")
     return crud_global_urls.deletar(db, global_urls_id)

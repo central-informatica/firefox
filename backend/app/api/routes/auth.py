@@ -9,10 +9,15 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 # from backend.app.api.deps import get_current_user
 from backend.app.core.exceptions import AuthenticationError, AuthServiceError
+from backend.app.utils.validators import (
+    validate_cnpj,
+    validate_postal_code,
+    validate_state_code,
+)
 from backend.app.services.auth_client import auth_client
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -32,7 +37,6 @@ bearer_scheme = HTTPBearer(
 
 class LoginRequest(BaseModel):
     """Login request body."""
-    organization_id: str 
     email: EmailStr
     password: str
 
@@ -54,7 +58,6 @@ class Verify2FARequest(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     """Forgot password request."""
-    organization_id: str
     email: EmailStr
 
 
@@ -80,11 +83,69 @@ class RegisterRequest(BaseModel):
     slug: str | None = None
     domain: str | None = None
 
+    # Company identification
+    cnpj: str
+
+    # Company address
+    address_street: str
+    address_city: str
+    address_state: str
+    address_country: str
+    address_postal_code: str
+
     # Admin user
     admin_email: EmailStr
     admin_password: str
     admin_first_name: str
     admin_last_name: str
+
+    @field_validator('cnpj')
+    @classmethod
+    def validate_cnpj_format(cls, v: str) -> str:
+        """Validate CNPJ format (14 digits)."""
+        return validate_cnpj(v)
+
+    @field_validator('address_postal_code')
+    @classmethod
+    def validate_postal_code_format(cls, v: str) -> str:
+        """Validate CEP format (XXXXX-XXX)."""
+        return validate_postal_code(v)
+
+    @field_validator('address_state')
+    @classmethod
+    def validate_state_format(cls, v: str) -> str:
+        """Validate Brazilian state code."""
+        return validate_state_code(v)
+
+    @field_validator('address_street')
+    @classmethod
+    def validate_street(cls, v: str) -> str:
+        """Validate street address."""
+        if len(v.strip()) < 3:
+            raise ValueError("Street address must be at least 3 characters")
+        if len(v) > 255:
+            raise ValueError("Street address must be less than 255 characters")
+        return v.strip()
+
+    @field_validator('address_city')
+    @classmethod
+    def validate_city(cls, v: str) -> str:
+        """Validate city name."""
+        if len(v.strip()) < 2:
+            raise ValueError("City name must be at least 2 characters")
+        if len(v) > 100:
+            raise ValueError("City name must be less than 100 characters")
+        return v.strip()
+
+    @field_validator('address_country')
+    @classmethod
+    def validate_country(cls, v: str) -> str:
+        """Validate country name."""
+        if len(v.strip()) < 2:
+            raise ValueError("Country name must be at least 2 characters")
+        if len(v) > 100:
+            raise ValueError("Country name must be less than 100 characters")
+        return v.strip()
 
 
 class VerifyEmailRequest(BaseModel):
@@ -111,7 +172,6 @@ async def login(
         result = await auth_client.login(
             email=credentials.email,
             password=credentials.password,
-            organization_id=credentials.organization_id,
             client_type="web",
         )
 
@@ -234,7 +294,7 @@ async def forgot_password(
     Always returns success to prevent email enumeration.
     """
     try:
-        await auth_client.forgot_password(email=data.email, organization_id=data.organization_id)
+        await auth_client.forgot_password(email=data.email)
     except Exception:
         # Always return success to prevent email enumeration
         pass
@@ -336,15 +396,7 @@ async def register(
     """
     try:
         result = await auth_client.create_organization_with_admin(
-            data={
-                "organization_name": data.organization_name,
-                "slug": data.slug,
-                "domain": data.domain,
-                "admin_email": data.admin_email,
-                "admin_password": data.admin_password,
-                "admin_first_name": data.admin_first_name,
-                "admin_last_name": data.admin_last_name,
-            }
+            data=data.model_dump(exclude_none=True)
         )
 
         return result

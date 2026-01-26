@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 
 class GlobalUrlBase(BaseModel):
     url: Optional[str] = None
     inativo: Optional[bool] = False
-    empresa_id: str
+    empresa_id: UUID
 
 
 class GlobalUrlCreate(GlobalUrlBase):
@@ -19,7 +20,7 @@ class GlobalUrlUpdate(BaseModel):
 
 
 class GlobalUrlOut(GlobalUrlBase):
-    global_urls_id: str
+    global_urls_id: UUID
     criado_em: Optional[datetime] = None
 
     class Config:

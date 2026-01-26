@@ -40,10 +40,12 @@ class CRUDRegrasAcesso:
 
         # Criação direta, tipos JSONB e ARRAY são aceitos naturalmente
         nova = RegrasAcesso(
+            empresa_id=data.empresa_id,
             grupo_id=data.grupo_id,
             tipo_dia=data.tipo_dia,  # Enum Python → Enum PG automaticamente
             dias_especificos=data.dias_especificos,
             horarios=data.horarios,
+            bloquear_em_feriado=data.bloquear_em_feriado or False,
         )
 
         db.add(nova)

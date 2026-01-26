@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, validator
 from typing import Optional, List, Dict
 from datetime import datetime
@@ -5,10 +7,12 @@ from backend.app.enums.tipo_dia import TipoDiaEnum
 
 
 class RegraAcessoBase(BaseModel):
-    grupo_id: str
+    empresa_id: UUID
+    grupo_id: UUID
     tipo_dia: TipoDiaEnum
     dias_especificos: Optional[List[int]] = None
     horarios: List[Dict]   # ex: [{"inicio": "08:00", "fim": "18:00"}]
+    bloquear_em_feriado: Optional[bool] = False
 
     @validator("dias_especificos", always=True)
     def validar_dias(cls, v, values):
@@ -40,6 +44,7 @@ class RegraAcessoUpdate(BaseModel):
     tipo_dia: Optional[TipoDiaEnum] = None
     dias_especificos: Optional[List[int]] = None
     horarios: Optional[List[Dict]] = None
+    bloquear_em_feriado: Optional[bool] = None
 
     @validator("horarios")
     def validar_horarios_update(cls, v):
@@ -54,7 +59,7 @@ class RegraAcessoUpdate(BaseModel):
 
 
 class RegraAcessoOut(RegraAcessoBase):
-    regra_id: str
+    regra_id: UUID
     criado_em: datetime
 
     class Config:

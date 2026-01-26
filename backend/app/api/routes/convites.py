@@ -2,13 +2,15 @@
 Invitation management routes - proxies to Auth microservice.
 
 All invitation operations are delegated to the Auth service (port 8001).
+Admin-only access with IP whitelist validation (except accept endpoint).
 """
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 
+from backend.app.api.deps import check_auth_with_ip
 from backend.app.core.exceptions import AuthServiceError
 from backend.app.services.auth_client import auth_client
 
@@ -58,12 +60,20 @@ class AcceptInvitationRequest(BaseModel):
 async def create_invitation(
     request: Request,
     data: InviteUserRequest,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
     """
     Create invitation to join organization.
 
-    Forwards request to Auth service /api/v1/invitations/.
+    Admin only - Forwards request to Auth service /api/v1/invitations/.
     """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem criar convites",
+        )
+
     headers = get_forwarded_headers(request)
 
     try:
@@ -87,12 +97,20 @@ async def list_invitations(
     include_accepted: bool = False,
     limit: int = 100,
     offset: int = 0,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
     """
     List invitations for current organization.
 
-    Forwards request to Auth service /api/v1/invitations/.
+    Admin only - Forwards request to Auth service /api/v1/invitations/.
     """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem listar convites",
+        )
+
     headers = get_forwarded_headers(request)
 
     params = {
@@ -120,12 +138,20 @@ async def list_invitations(
 async def revoke_invitation(
     request: Request,
     invitation_id: str,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
     """
     Revoke a pending invitation.
 
-    Forwards request to Auth service /api/v1/invitations/{invitation_id}.
+    Admin only - Forwards request to Auth service /api/v1/invitations/{invitation_id}.
     """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem revogar convites",
+        )
+
     headers = get_forwarded_headers(request)
 
     try:
