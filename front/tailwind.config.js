@@ -7,14 +7,52 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#1976d2',
-        secondary: '#2c4695',
-        success: '#4CAF50',
-        danger: '#e74c3c',
+        // Brand Colors
+        'xfire-red': '#D32F2F',
+        'xfire-orange': '#F57C00',
+
+        // Dark Backgrounds
+        'dark-primary': '#0F0F0F',
+        'dark-secondary': '#1A1A1A',
+        'dark-tertiary': '#222222',
+
+        // Neutrals
+        'neutral-100': '#F5F5F5',
+        'neutral-200': '#E0E0E0',
+        'neutral-300': '#BDBDBD',
+        'neutral-400': '#9E9E9E',
+        'neutral-500': '#757575',
+        'neutral-600': '#616161',
+        'neutral-700': '#424242',
+        'neutral-800': '#303030',
+        'neutral-900': '#2B2B2B',
+
+        // Status Colors
+        'status-permitido': '#2E7D32',
+        'status-monitorado': '#1565C0',
+        'status-alerta': '#FB8C00',
+        'status-bloqueado': '#C62828',
+        'status-expirando': '#F9A825',
+
+        // Legacy (keeping for backward compatibility)
+        primary: '#F57C00',
+        secondary: '#D32F2F',
+        success: '#2E7D32',
+        danger: '#C62828',
         purple: '#642d61',
       },
+      fontFamily: {
+        'montserrat': ['Montserrat', 'system-ui', 'sans-serif'],
+        'inter': ['Inter', 'system-ui', 'sans-serif'],
+        'mono': ['JetBrains Mono', 'monospace'],
+      },
+      borderRadius: {
+        'card': '12px',
+        'button': '8px',
+        'modal': '16px',
+      },
       spacing: {
-        '260': '260px', // Sidebar width
+        '260': '260px',
       },
       animation: {
         fadeIn: 'fadeIn 0.5s ease-in-out',

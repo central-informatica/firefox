@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 from typing import Optional
+from uuid import UUID
 
 
 class GrupoUsuarioBase(BaseModel):
-    grupo_id: str
+    grupo_id: UUID
 
 
 class GrupoUsuarioCreate(GrupoUsuarioBase):
@@ -12,11 +13,11 @@ class GrupoUsuarioCreate(GrupoUsuarioBase):
 
 
 class GrupoUsuarioUpdate(BaseModel):
-    grupo_id: Optional[str] = None
+    grupo_id: Optional[UUID] = None
 
 
 class GrupoUsuarioOut(GrupoUsuarioBase):
-    grupo_usuario_id: str
+    grupo_usuario_id: UUID
 
     class Config:
         orm_mode = True

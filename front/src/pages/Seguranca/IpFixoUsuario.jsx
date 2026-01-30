@@ -151,33 +151,33 @@ export default function IpFixoUsuario() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
+          <h1 className="text-3xl font-bold font-montserrat text-neutral-100 mb-2 flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-xfire-orange to-xfire-red rounded-xl shadow-lg">
               <FiWifi className="text-white" size={28} />
             </div>
             IP Fixo por Usuário
           </h1>
-          <p className="text-gray-600">Restrinja o acesso aos certificados por endereço IP</p>
+          <p className="text-neutral-400">Restrinja o acesso aos certificados por endereço IP</p>
         </div>
 
         <button
           onClick={() => handleOpenModal()}
           disabled={!empresaSelecionada}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white font-semibold rounded-xl shadow-lg shadow-xfire-orange/30 hover:shadow-xl hover:shadow-xfire-orange/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           <FiPlus size={20} />
           Nova Restrição
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <FiShield className="text-orange-600" size={18} />
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 p-5">
+        <h3 className="font-semibold text-neutral-100 mb-4 flex items-center gap-2">
+          <FiShield className="text-xfire-orange" size={18} />
           Filtros
         </h3>
 
         <div className="max-w-md">
-          <Label className="text-sm font-medium text-gray-700 mb-2">Empresa</Label>
+          <Label className="text-sm font-medium text-neutral-400 mb-2">Empresa</Label>
           <SelectCustom
             placeholder="Selecione uma empresa"
             value={empresaSelecionada}
@@ -187,67 +187,67 @@ export default function IpFixoUsuario() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-xfire-orange/10 to-amber-900/10 border border-xfire-orange/30 rounded-card p-4">
         <div className="flex gap-3">
-          <FiAlertCircle className="text-orange-600 flex-shrink-0 mt-0.5" size={20} />
+          <FiAlertCircle className="text-xfire-orange flex-shrink-0 mt-0.5" size={20} />
           <div>
-            <p className="text-sm font-medium text-orange-900 mb-1">Como funciona a restrição por IP</p>
-            <p className="text-sm text-orange-800">
+            <p className="text-sm font-medium text-xfire-orange mb-1">Como funciona a restrição por IP</p>
+            <p className="text-sm text-orange-300/80">
               Quando um usuário possui IP fixo configurado, ele só poderá acessar certificados a partir desse endereço IP. Tentativas de outros IPs serão bloqueadas.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 overflow-hidden">
         {empresaSelecionada ? (
           restricoes.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <thead className="bg-gradient-to-r from-dark-tertiary to-neutral-800 border-b border-neutral-800">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       Usuário
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       IP Fixo
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       Descrição
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-neutral-800">
                   {restricoes.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    <tr key={item.id} className="hover:bg-dark-tertiary transition-colors duration-150">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          <div className="w-10 h-10 bg-gradient-to-br from-xfire-orange to-xfire-red rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                             {item.usuario_nome.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-800">{item.usuario_nome}</div>
-                            <div className="text-xs text-gray-500">{item.usuario_email}</div>
+                            <div className="text-sm font-medium text-neutral-100">{item.usuario_nome}</div>
+                            <div className="text-xs text-neutral-500">{item.usuario_email}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <FiWifi className="text-orange-500" size={16} />
-                          <span className="text-sm font-mono font-medium text-gray-800">{item.ip_fixo}</span>
+                          <FiWifi className="text-xfire-orange" size={16} />
+                          <span className="text-sm font-mono font-medium text-neutral-100">{item.ip_fixo}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-gray-600">{item.descricao || "-"}</span>
+                        <span className="text-sm text-neutral-400">{item.descricao || "-"}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-900/30 text-orange-400 rounded-full text-xs font-medium">
                           <FiLock size={12} />
                           Restrito
                         </span>
@@ -256,14 +256,14 @@ export default function IpFixoUsuario() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleOpenModal(item)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-xfire-orange/20 hover:bg-xfire-orange/30 text-xfire-orange rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
                           >
                             <FiEdit2 size={14} />
                             Editar
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
                           >
                             <FiTrash2 size={14} />
                             Remover
@@ -278,12 +278,12 @@ export default function IpFixoUsuario() {
           ) : (
             <div className="p-12 text-center">
               <div className="flex flex-col items-center gap-3">
-                <div className="p-4 bg-gray-100 rounded-full">
-                  <FiWifi size={32} className="text-gray-400" />
+                <div className="p-4 bg-dark-tertiary rounded-full">
+                  <FiWifi size={32} className="text-neutral-500" />
                 </div>
                 <div>
-                  <p className="text-gray-700 font-medium mb-1">Nenhuma restrição cadastrada</p>
-                  <p className="text-sm text-gray-500">Configure IPs fixos para aumentar a segurança</p>
+                  <p className="text-neutral-100 font-medium mb-1">Nenhuma restrição cadastrada</p>
+                  <p className="text-sm text-neutral-500">Configure IPs fixos para aumentar a segurança</p>
                 </div>
               </div>
             </div>
@@ -291,12 +291,12 @@ export default function IpFixoUsuario() {
         ) : (
           <div className="p-12 text-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="p-4 bg-gray-100 rounded-full">
-                <FiShield size={32} className="text-gray-400" />
+              <div className="p-4 bg-dark-tertiary rounded-full">
+                <FiShield size={32} className="text-neutral-500" />
               </div>
               <div>
-                <p className="text-gray-700 font-medium mb-1">Selecione uma empresa</p>
-                <p className="text-sm text-gray-500">Escolha uma empresa acima para gerenciar restrições de IP</p>
+                <p className="text-neutral-100 font-medium mb-1">Selecione uma empresa</p>
+                <p className="text-sm text-neutral-500">Escolha uma empresa acima para gerenciar restrições de IP</p>
               </div>
             </div>
           </div>
@@ -305,25 +305,25 @@ export default function IpFixoUsuario() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-[slideUp_0.3s_ease-out]">
-            <div className="p-6 border-b border-gray-100">
+          <div className="bg-dark-secondary rounded-card shadow-2xl max-w-md w-full animate-[slideUp_0.3s_ease-out] border border-neutral-800">
+            <div className="p-6 border-b border-neutral-800">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <FiWifi className="text-orange-600" />
+                <h3 className="text-xl font-bold text-neutral-100 flex items-center gap-2">
+                  <FiWifi className="text-xfire-orange" />
                   {editingId ? "Editar Restrição" : "Nova Restrição"}
                 </h3>
                 <button
                   onClick={handleCloseModal}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  className="p-2 hover:bg-dark-tertiary rounded-lg transition-colors duration-200"
                 >
-                  <FiX size={20} className="text-gray-500" />
+                  <FiX size={20} className="text-neutral-500" />
                 </button>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2">Usuário *</Label>
+                <Label className="text-sm font-medium text-neutral-400 mb-2">Usuário *</Label>
                 <SelectCustom
                   placeholder="Selecione um usuário"
                   value={usuariosOptions.find(opt => opt.value === formData.usuario_id)}
@@ -332,12 +332,12 @@ export default function IpFixoUsuario() {
                   isDisabled={!!editingId}
                 />
                 {editingId && (
-                  <p className="text-xs text-gray-500 mt-1">Não é possível alterar o usuário após criar a restrição</p>
+                  <p className="text-xs text-neutral-500 mt-1">Não é possível alterar o usuário após criar a restrição</p>
                 )}
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2">Endereço IP *</Label>
+                <Label className="text-sm font-medium text-neutral-400 mb-2">Endereço IP *</Label>
                 <InputMask
                   name="ip_fixo"
                   mask="000.000.000.000"
@@ -347,11 +347,11 @@ export default function IpFixoUsuario() {
                   required
                   className="w-full font-mono"
                 />
-                <p className="text-xs text-gray-500 mt-1">Digite o endereço IP v4 (ex: 192.168.1.100)</p>
+                <p className="text-xs text-neutral-500 mt-1">Digite o endereço IP v4 (ex: 192.168.1.100)</p>
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2">Descrição</Label>
+                <Label className="text-sm font-medium text-neutral-400 mb-2">Descrição</Label>
                 <Input
                   type="text"
                   placeholder="Ex: Computador do escritório, Notebook..."
@@ -365,13 +365,13 @@ export default function IpFixoUsuario() {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-all duration-200"
+                  className="flex-1 px-4 py-2.5 bg-dark-tertiary hover:bg-neutral-800 text-neutral-100 font-medium rounded-xl transition-all duration-200"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium rounded-xl shadow-lg shadow-orange-500/30 transition-all duration-200 cursor-pointer"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white font-medium rounded-xl shadow-lg shadow-xfire-orange/30 transition-all duration-200 cursor-pointer"
                 >
                   <FiSave size={18} />
                   {editingId ? "Atualizar" : "Criar"}

@@ -32,7 +32,7 @@ const GruposForm = () => {
 
   const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
   const [planoSelecionado, setPlanoSelecionado] = useState(null);
-  
+
   useEffect(() => {
     if (!isEdit) return;
 
@@ -92,24 +92,24 @@ const GruposForm = () => {
         <button
           type="button"
           onClick={() => navigate("/grupos")}
-          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-gray-800"
+          className="p-2 hover:bg-dark-tertiary rounded-lg text-neutral-400 hover:text-neutral-100"
         >
           <FiArrowLeft size={20} />
         </button>
-        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <FiUsers className="text-blue-600" />
+        <h1 className="text-3xl font-bold font-montserrat text-neutral-100 flex items-center gap-3">
+          <FiUsers className="text-blue-400" />
           {isEdit ? "Editar Grupo" : "Novo Grupo"}
         </h1>
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <div className="flex flex-col md:flex-row gap-4">
             {/* Empresa */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-neutral-400 mb-2">
                 Empresa
               </label>
 
@@ -121,7 +121,7 @@ const GruposForm = () => {
 
             {/* Plano de Trabalho */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-neutral-400 mb-2">
                 Plano de trabalho
               </label>
 
@@ -154,7 +154,7 @@ const GruposForm = () => {
           </div>
 
           {form.descricao && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs text-neutral-500">
               <FiInfo size={14} />
               <span>{form.descricao.length} caracteres</span>
             </div>
@@ -164,14 +164,14 @@ const GruposForm = () => {
             <button
               type="button"
               onClick={() => navigate("/grupos")}
-              className="px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl"
+              className="px-6 py-3 bg-dark-tertiary hover:bg-neutral-800 text-neutral-100 rounded-xl"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white font-semibold rounded-xl"
             >
               <FiSave size={20} />
               {isEdit ? "Atualizar" : "Salvar"}

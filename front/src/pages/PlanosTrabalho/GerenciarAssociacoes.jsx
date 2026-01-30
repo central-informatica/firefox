@@ -14,7 +14,7 @@ import {
   FiAlertCircle,
 } from "react-icons/fi";
 
-// ✅ Ajuste o caminho/nome do service conforme seu projeto
+// Ajuste o caminho/nome do service conforme seu projeto
 import {
   listarCertificadosDaEmpresa,
   listarCertificadosDoGrupo,
@@ -30,7 +30,7 @@ export default function GerenciarAssociacoes() {
   // Estados principais (UI)
   const [empresaId, setEmpresaId] = useState(null);
 
-  // ✅ Como seus selects retornam ID, guarde como ID
+  // Como seus selects retornam ID, guarde como ID
   const [planoId, setPlanoId] = useState(null);
   const [grupoId, setGrupoId] = useState(null);
 
@@ -58,16 +58,16 @@ export default function GerenciarAssociacoes() {
     setCertificadosDoGrupo([]);*/
   };
 
-  // ✅ recebe ID do select
+  // recebe ID do select
   const handlePlanoChange = (id) => {
-    
+
     setPlanoId(id);
     setGrupoId(null);
     setCertificadosDisponiveis([]);
     setCertificadosDoGrupo([]);
   };
 
-  // ✅ recebe ID do select
+  // recebe ID do select
   const handleGrupoChange = (id) => {
     setGrupoId(id);
     setCertificadosDoGrupo([]);
@@ -75,7 +75,7 @@ export default function GerenciarAssociacoes() {
   };
 
   const carregarCertificadosDisponiveis = async () => {
-    
+
     if (!empresaId) return;
       try {
         const response = await listarCertificadosPaginado({
@@ -87,12 +87,12 @@ export default function GerenciarAssociacoes() {
         });
 
         const todosPermitidos = Array.isArray(response?.data)? response.data: [];
-        // ✅ IDs dos certificados já vinculados AO GRUPO
+        // IDs dos certificados já vinculados AO GRUPO
         const certificadosNoGrupoIds = new Set(
           certificadosDoGrupo.map((c) => c.certificado_id)
         );
 
-        // ✅ Disponíveis = permitidos - já vinculados
+        // Disponíveis = permitidos - já vinculados
         const disponiveis = todosPermitidos.filter(
           (c) => !certificadosNoGrupoIds.has(c.certificado_id)
         );
@@ -109,9 +109,9 @@ export default function GerenciarAssociacoes() {
 
     setLoadingCertificados(true);
     try {
-      // ✅ BUSCA SOMENTE certificados vinculados ao grupo
+      // BUSCA SOMENTE certificados vinculados ao grupo
       const vinculados = await listarCertificadosDoGrupo(grupoId);
-      // ✅ ATUALIZA APENAS certificadosDoGrupo
+      // ATUALIZA APENAS certificadosDoGrupo
       setCertificadosDoGrupo(Array.isArray(vinculados) ? vinculados : []);
     } catch (err) {
       console.error("Erro ao carregar certificados:", err);
@@ -126,7 +126,7 @@ export default function GerenciarAssociacoes() {
     carregarCertificadosDisponiveis();
   }, [empresaId, certificadosDoGrupo]);
 
-  // ✅ Esse effect é quem chama a carga (agora com ids corretos)
+  // Esse effect é quem chama a carga (agora com ids corretos)
   useEffect(() => {
     if (!empresaId || !grupoId) return;
     carregarCertificadosDoGrupo();
@@ -162,7 +162,7 @@ export default function GerenciarAssociacoes() {
         <div
           className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg ${
             notification.type === "success"
-              ? "bg-emerald-500 text-white"
+              ? "bg-xfire-orange text-white"
               : "bg-red-500 text-white"
           }`}
         >
@@ -180,28 +180,28 @@ export default function GerenciarAssociacoes() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-gray-800 transition"
+          className="p-2 hover:bg-dark-tertiary rounded-lg text-neutral-400 hover:text-neutral-100 transition"
         >
           <FiArrowLeft size={20} />
         </button>
 
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <FiUsers className="text-purple-600" />
+          <h1 className="text-3xl font-bold font-montserrat text-neutral-100 flex items-center gap-3">
+            <FiUsers className="text-purple-400" />
             Gerenciar Associações
           </h1>
-          <p className="text-gray-600 text-sm mt-1">
+          <p className="text-neutral-400 text-sm mt-1">
             Organize grupos dentro dos planos de trabalho da empresa
           </p>
         </div>
       </div>
 
       {/* Seletores */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Empresa */}
           <div>
-            <Label className="text-sm font-semibold text-gray-700 mb-2">
+            <Label className="text-sm font-semibold text-neutral-400 mb-2">
               Empresa
             </Label>
             <SelectEmpresa value={empresaId} onChange={handleEmpresaChange} />
@@ -209,7 +209,7 @@ export default function GerenciarAssociacoes() {
 
           {/* Plano */}
           <div>
-            <Label className="text-sm font-semibold text-gray-700 mb-2">
+            <Label className="text-sm font-semibold text-neutral-400 mb-2">
               Plano de Trabalho
             </Label>
             <SelectPlanoTrabalho
@@ -222,7 +222,7 @@ export default function GerenciarAssociacoes() {
 
           {/* Grupo */}
           <div>
-            <Label className="text-sm font-semibold text-gray-700 mb-2">
+            <Label className="text-sm font-semibold text-neutral-400 mb-2">
               Grupo do Plano
             </Label>
             <SelectGrupo
@@ -238,15 +238,15 @@ export default function GerenciarAssociacoes() {
 
       {/* Empty State */}
       {!grupoId && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+        <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 p-12 text-center">
           <div className="max-w-md mx-auto">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FiUsers className="text-gray-400" size={32} />
+            <div className="w-20 h-20 bg-dark-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
+              <FiUsers className="text-neutral-500" size={32} />
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">
+            <h3 className="text-xl font-bold text-neutral-100 mb-2">
               Nenhum grupo selecionado
             </h3>
-            <p className="text-gray-600">
+            <p className="text-neutral-400">
               Selecione uma empresa e um plano de trabalho. Em seguida, escolha
               um grupo para gerenciar os certificados vinculados.
             </p>
@@ -254,27 +254,27 @@ export default function GerenciarAssociacoes() {
         </div>
       )}
 
-      {/* ✅ Listas de certificados (só aparece com grupo selecionado) */}
+      {/* Listas de certificados (só aparece com grupo selecionado) */}
       {grupoId && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-800">
+            <h2 className="text-lg font-bold text-neutral-100">
               Certificados do Grupo
             </h2>
             {loadingCertificados && (
-              <span className="text-sm text-gray-500">Carregando...</span>
+              <span className="text-sm text-neutral-500">Carregando...</span>
             )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Disponíveis */}
-            <div className="border border-gray-100 rounded-xl p-4">
-              <h3 className="font-semibold text-gray-800 mb-3">
+            <div className="border border-neutral-800 rounded-xl p-4">
+              <h3 className="font-semibold text-neutral-100 mb-3">
                 Disponíveis na empresa {certificadosDisponiveis.length}
               </h3>
 
               {certificadosDisponiveis.length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-neutral-500">
                   Nenhum certificado disponível.
                 </p>
               ) : (
@@ -282,7 +282,7 @@ export default function GerenciarAssociacoes() {
                   {certificadosDisponiveis.map((c) => (
                     <li
                       key={c.certificado_id}
-                      className="p-3 rounded-lg border border-gray-100"
+                      className="p-3 rounded-lg border border-neutral-800"
                     >
                       <CertificadoCard
                         certificado={{
@@ -311,13 +311,13 @@ export default function GerenciarAssociacoes() {
             </div>
 
             {/* Vinculados */}
-            <div className="border border-gray-100 rounded-xl p-4">
-              <h3 className="font-semibold text-gray-800 mb-3">
+            <div className="border border-neutral-800 rounded-xl p-4">
+              <h3 className="font-semibold text-neutral-100 mb-3">
                 Já vinculados ao grupo
               </h3>
 
               {certificadosDoGrupo.length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-neutral-500">
                   Nenhum certificado vinculado.
                 </p>
               ) : (
@@ -325,7 +325,7 @@ export default function GerenciarAssociacoes() {
                   {certificadosDoGrupo.map((c) => (
                     <li
                       key={c.certificado_id}
-                      className="p-3 rounded-lg border border-gray-100"
+                      className="p-3 rounded-lg border border-neutral-800"
                     >
                       <CertificadoCard
                         certificado={{
@@ -341,7 +341,7 @@ export default function GerenciarAssociacoes() {
                         <button
                           type="button"
                           onClick={() => handleDesvincular(c.certificado_id)}
-                          className="px-3 py-2 rounded-lg bg-gray-200 text-gray-800 text-sm hover:bg-gray-300 transition"
+                          className="px-3 py-2 rounded-lg bg-dark-tertiary text-neutral-100 text-sm hover:bg-neutral-700 transition"
                         >
                           Remover
                         </button>

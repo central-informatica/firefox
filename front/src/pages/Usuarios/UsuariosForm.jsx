@@ -84,15 +84,15 @@ const UsuarioForm = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate("/usuarios")}
-            className="p-2 hover:bg-white rounded-lg transition-all duration-200 text-gray-600 hover:text-emerald-600 hover:shadow-md group"
+            className="p-2 hover:bg-dark-secondary rounded-lg transition-all duration-200 text-neutral-400 hover:text-xfire-orange hover:shadow-md group"
           >
             <FiArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform duration-200" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <h1 className="text-3xl font-bold font-montserrat text-neutral-100 mb-2">
               {isEdit ? "Editar Usuário" : "Novo Usuário"}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-neutral-400">
               {isEdit ? "Atualize as informações do usuário" : "Adicione um novo usuário ao sistema"}
             </p>
           </div>
@@ -100,18 +100,18 @@ const UsuarioForm = () => {
       </div>
 
       {/* Form Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-slideUp">
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 overflow-hidden animate-slideUp">
         <form onSubmit={handleSubmit} className="p-8">
           <div className="space-y-6">
             {/* Nome Input */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                <FiUser className="text-emerald-600" size={18} />
+              <label className="flex items-center gap-2 text-sm font-semibold text-neutral-400">
+                <FiUser className="text-xfire-orange" size={18} />
                 Nome Completo
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FiUser className="text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                  <FiUser className="text-neutral-500 group-focus-within:text-xfire-orange transition-colors duration-300" />
                 </div>
                 <Input
                   name="nome"
@@ -126,13 +126,13 @@ const UsuarioForm = () => {
 
             {/* Email Input */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                <FiMail className="text-emerald-600" size={18} />
+              <label className="flex items-center gap-2 text-sm font-semibold text-neutral-400">
+                <FiMail className="text-xfire-orange" size={18} />
                 Email
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FiMail className="text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                  <FiMail className="text-neutral-500 group-focus-within:text-xfire-orange transition-colors duration-300" />
                 </div>
                 <Input
                   name="email"
@@ -148,8 +148,8 @@ const UsuarioForm = () => {
 
             {/* Nível Select */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                <FiShield className="text-emerald-600" size={18} />
+              <label className="flex items-center gap-2 text-sm font-semibold text-neutral-400">
+                <FiShield className="text-xfire-orange" size={18} />
                 Nível de Acesso
               </label>
 
@@ -159,8 +159,8 @@ const UsuarioForm = () => {
                 <label className={`
                   relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
                   ${form.nivel === 'COMUM'
-                    ? 'border-emerald-500 bg-emerald-50 shadow-md shadow-emerald-500/20'
-                    : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'
+                    ? 'border-xfire-orange bg-xfire-orange/10 shadow-md shadow-xfire-orange/20'
+                    : 'border-neutral-700 hover:border-xfire-orange/50 hover:bg-dark-tertiary'
                   }
                 `}>
                   <input
@@ -173,18 +173,18 @@ const UsuarioForm = () => {
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className={`p-1.5 rounded-lg ${form.nivel === 'COMUM' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                        <FiUser className={form.nivel === 'COMUM' ? 'text-blue-600' : 'text-gray-500'} size={16} />
+                      <div className={`p-1.5 rounded-lg ${form.nivel === 'COMUM' ? 'bg-blue-900/30' : 'bg-dark-tertiary'}`}>
+                        <FiUser className={form.nivel === 'COMUM' ? 'text-blue-400' : 'text-neutral-500'} size={16} />
                       </div>
-                      <span className={`font-semibold text-sm ${form.nivel === 'COMUM' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                      <span className={`font-semibold text-sm ${form.nivel === 'COMUM' ? 'text-xfire-orange' : 'text-neutral-100'}`}>
                         Comum
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600">Acesso básico ao sistema</p>
+                    <p className="text-xs text-neutral-400">Acesso básico ao sistema</p>
                   </div>
                   {form.nivel === 'COMUM' && (
                     <div className="absolute top-2 right-2">
-                      <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                      <div className="w-5 h-5 bg-xfire-orange rounded-full flex items-center justify-center">
                         <FiCheck className="text-white" size={12} />
                       </div>
                     </div>
@@ -195,8 +195,8 @@ const UsuarioForm = () => {
                 <label className={`
                   relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
                   ${form.nivel === 'ADMINISTRADOR'
-                    ? 'border-emerald-500 bg-emerald-50 shadow-md shadow-emerald-500/20'
-                    : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'
+                    ? 'border-xfire-orange bg-xfire-orange/10 shadow-md shadow-xfire-orange/20'
+                    : 'border-neutral-700 hover:border-xfire-orange/50 hover:bg-dark-tertiary'
                   }
                 `}>
                   <input
@@ -209,18 +209,18 @@ const UsuarioForm = () => {
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className={`p-1.5 rounded-lg ${form.nivel === 'ADMINISTRADOR' ? 'bg-purple-100' : 'bg-gray-100'}`}>
-                        <FiShield className={form.nivel === 'ADMINISTRADOR' ? 'text-purple-600' : 'text-gray-500'} size={16} />
+                      <div className={`p-1.5 rounded-lg ${form.nivel === 'ADMINISTRADOR' ? 'bg-purple-900/30' : 'bg-dark-tertiary'}`}>
+                        <FiShield className={form.nivel === 'ADMINISTRADOR' ? 'text-purple-400' : 'text-neutral-500'} size={16} />
                       </div>
-                      <span className={`font-semibold text-sm ${form.nivel === 'ADMINISTRADOR' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                      <span className={`font-semibold text-sm ${form.nivel === 'ADMINISTRADOR' ? 'text-xfire-orange' : 'text-neutral-100'}`}>
                         Admin
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600">Acesso total</p>
+                    <p className="text-xs text-neutral-400">Acesso total</p>
                   </div>
                   {form.nivel === 'ADMINISTRADOR' && (
                     <div className="absolute top-2 right-2">
-                      <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                      <div className="w-5 h-5 bg-xfire-orange rounded-full flex items-center justify-center">
                         <FiCheck className="text-white" size={12} />
                       </div>
                     </div>
@@ -230,12 +230,12 @@ const UsuarioForm = () => {
             </div>
 
             {/* Info Banner */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 animate-fadeIn">
+            <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border border-blue-800/50 rounded-card p-4 animate-fadeIn">
               <div className="flex gap-3">
-                <FiAlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+                <FiAlertCircle className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
                 <div>
-                  <p className="text-sm font-medium text-blue-900 mb-1">Informações importantes</p>
-                  <ul className="text-sm text-blue-800 space-y-1">
+                  <p className="text-sm font-medium text-blue-300 mb-1">Informações importantes</p>
+                  <ul className="text-sm text-blue-400 space-y-1">
                     <li>• O email será usado para login no sistema</li>
                     <li>• Administradores têm acesso total ao sistema</li>
                     <li>• Você pode alterar o nível de acesso posteriormente</li>
@@ -246,11 +246,11 @@ const UsuarioForm = () => {
           </div>
 
           {/* Botões */}
-          <div className="flex gap-3 mt-8 pt-6 border-t border-gray-100">
+          <div className="flex gap-3 mt-8 pt-6 border-t border-neutral-800">
             <button
               type="button"
               onClick={() => navigate("/usuarios")}
-              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200 hover:shadow-md cursor-pointer"
+              className="flex-1 px-6 py-3 bg-dark-tertiary hover:bg-neutral-800 text-neutral-100 font-semibold rounded-xl transition-all duration-200 hover:shadow-md cursor-pointer"
               disabled={isLoading}
             >
               Cancelar
@@ -263,8 +263,8 @@ const UsuarioForm = () => {
                 flex-1 px-6 py-3 font-semibold rounded-xl transition-all duration-300 transform
                 flex items-center justify-center gap-2
                 ${isLoading
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
+                  ? 'bg-neutral-700 text-neutral-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white shadow-lg shadow-xfire-orange/30 hover:shadow-xl hover:shadow-xfire-orange/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
                 }
               `}
             >

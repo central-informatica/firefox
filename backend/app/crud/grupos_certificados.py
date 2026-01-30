@@ -30,6 +30,8 @@ class CRUDGruposCertificados:
     def criar(self, db: Session, data: GrupoCertCreate):
         novo = GruposCertificados(
             grupo_id=data.grupo_id,
+            certificado_id=data.certificado_id,
+            empresa_id=data.empresa_id,
         )
 
         db.add(novo)

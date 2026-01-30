@@ -162,34 +162,34 @@ export default function DisponibilidadeCertificado() {
     <div className="space-y-6 w-full animate-fadeIn">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+          <h1 className="text-3xl font-bold font-montserrat text-neutral-100 mb-2 flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl shadow-lg">
               <FiClock className="text-white" size={28} />
             </div>
             Horários de Acesso
           </h1>
-          <p className="text-gray-600">Defina quando os certificados podem ser utilizados</p>
+          <p className="text-neutral-400">Defina quando os certificados podem ser utilizados</p>
         </div>
 
         <button
           onClick={() => handleOpenModal()}
           disabled={!grupoSelecionado}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           <FiPlus size={20} />
           Nova Regra
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <FiShield className="text-purple-600" size={18} />
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 p-5">
+        <h3 className="font-semibold text-neutral-100 mb-4 flex items-center gap-2">
+          <FiShield className="text-purple-400" size={18} />
           Filtros
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2">Empresa</Label>
+            <Label className="text-sm font-medium text-neutral-400 mb-2">Empresa</Label>
             <SelectCustom
               placeholder="Selecione uma empresa"
               value={empresaSelecionada}
@@ -199,7 +199,7 @@ export default function DisponibilidadeCertificado() {
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2">Grupo de Usuários</Label>
+            <Label className="text-sm font-medium text-neutral-400 mb-2">Grupo de Usuários</Label>
             <SelectCustom
               placeholder="Selecione um grupo"
               value={grupoSelecionado}
@@ -211,64 +211,64 @@ export default function DisponibilidadeCertificado() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-800/50 rounded-card p-4">
         <div className="flex gap-3">
-          <FiAlertCircle className="text-purple-600 flex-shrink-0 mt-0.5" size={20} />
+          <FiAlertCircle className="text-purple-400 flex-shrink-0 mt-0.5" size={20} />
           <div>
-            <p className="text-sm font-medium text-purple-900 mb-1">Como funcionam as regras de horário</p>
-            <p className="text-sm text-purple-800">
+            <p className="text-sm font-medium text-purple-300 mb-1">Como funcionam as regras de horário</p>
+            <p className="text-sm text-purple-400">
               Os certificados só poderão ser usados nos dias e horários definidos. Tentativas fora do horário serão automaticamente bloqueadas.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 overflow-hidden">
         {grupoSelecionado ? (
           regras.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <thead className="bg-gradient-to-r from-dark-tertiary to-neutral-800 border-b border-neutral-800">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       Nome da Regra
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       Dias Permitidos
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       Horário
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-neutral-800">
                   {regras.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    <tr key={item.id} className="hover:bg-dark-tertiary transition-colors duration-150">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <FiCalendar className="text-purple-500" size={16} />
-                          <span className="text-sm font-medium text-gray-800">{item.nome}</span>
+                          <FiCalendar className="text-purple-400" size={16} />
+                          <span className="text-sm font-medium text-neutral-100">{item.nome}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-gray-600">{getDiasLabel(item.dias_permitidos)}</span>
+                        <span className="text-sm text-neutral-400">{getDiasLabel(item.dias_permitidos)}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <FiClock className="text-gray-400" size={14} />
-                          <span className="text-sm text-gray-600">
+                          <FiClock className="text-neutral-500" size={14} />
+                          <span className="text-sm text-neutral-400">
                             {item.hora_inicio} às {item.hora_fim}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+                        <span className="badge-permitido">
                           <FiCheck size={12} />
                           Ativa
                         </span>
@@ -277,14 +277,14 @@ export default function DisponibilidadeCertificado() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleOpenModal(item)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-900/30 hover:bg-purple-900/50 text-purple-400 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
                           >
                             <FiEdit2 size={14} />
                             Editar
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer"
                           >
                             <FiTrash2 size={14} />
                             Excluir
@@ -299,12 +299,12 @@ export default function DisponibilidadeCertificado() {
           ) : (
             <div className="p-12 text-center">
               <div className="flex flex-col items-center gap-3">
-                <div className="p-4 bg-gray-100 rounded-full">
-                  <FiClock size={32} className="text-gray-400" />
+                <div className="p-4 bg-dark-tertiary rounded-full">
+                  <FiClock size={32} className="text-neutral-500" />
                 </div>
                 <div>
-                  <p className="text-gray-700 font-medium mb-1">Nenhuma regra cadastrada</p>
-                  <p className="text-sm text-gray-500">Crie regras de horário para restringir o uso dos certificados</p>
+                  <p className="text-neutral-100 font-medium mb-1">Nenhuma regra cadastrada</p>
+                  <p className="text-sm text-neutral-500">Crie regras de horário para restringir o uso dos certificados</p>
                 </div>
               </div>
             </div>
@@ -312,12 +312,12 @@ export default function DisponibilidadeCertificado() {
         ) : (
           <div className="p-12 text-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="p-4 bg-gray-100 rounded-full">
-                <FiShield size={32} className="text-gray-400" />
+              <div className="p-4 bg-dark-tertiary rounded-full">
+                <FiShield size={32} className="text-neutral-500" />
               </div>
               <div>
-                <p className="text-gray-700 font-medium mb-1">Selecione um grupo</p>
-                <p className="text-sm text-gray-500">Escolha um grupo acima para gerenciar horários de acesso</p>
+                <p className="text-neutral-100 font-medium mb-1">Selecione um grupo</p>
+                <p className="text-sm text-neutral-500">Escolha um grupo acima para gerenciar horários de acesso</p>
               </div>
             </div>
           </div>
@@ -326,25 +326,25 @@ export default function DisponibilidadeCertificado() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-[slideUp_0.3s_ease-out]">
-            <div className="p-6 border-b border-gray-100">
+          <div className="bg-dark-secondary rounded-card shadow-2xl max-w-lg w-full animate-[slideUp_0.3s_ease-out] border border-neutral-800">
+            <div className="p-6 border-b border-neutral-800">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <FiClock className="text-purple-600" />
+                <h3 className="text-xl font-bold text-neutral-100 flex items-center gap-2">
+                  <FiClock className="text-purple-400" />
                   {editingId ? "Editar Regra" : "Nova Regra"}
                 </h3>
                 <button
                   onClick={handleCloseModal}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  className="p-2 hover:bg-dark-tertiary rounded-lg transition-colors duration-200"
                 >
-                  <FiX size={20} className="text-gray-500" />
+                  <FiX size={20} className="text-neutral-500" />
                 </button>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2">Nome da Regra *</Label>
+                <Label className="text-sm font-medium text-neutral-400 mb-2">Nome da Regra *</Label>
                 <Input
                   type="text"
                   placeholder="Ex: Horário Comercial"
@@ -356,7 +356,7 @@ export default function DisponibilidadeCertificado() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-gray-700 mb-3">Dias Permitidos *</Label>
+                <Label className="text-sm font-medium text-neutral-400 mb-3">Dias Permitidos *</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {diasSemana.map((dia) => (
                     <button
@@ -365,8 +365,8 @@ export default function DisponibilidadeCertificado() {
                       onClick={() => toggleDia(dia.value)}
                       className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
                         formData.dias_permitidos.includes(dia.value)
-                          ? "bg-purple-500 text-white shadow-md shadow-purple-500/30"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          ? "bg-purple-600 text-white shadow-md shadow-purple-500/30"
+                          : "bg-dark-tertiary text-neutral-400 hover:bg-neutral-700"
                       }`}
                     >
                       {dia.label}
@@ -377,7 +377,7 @@ export default function DisponibilidadeCertificado() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2">Hora Início *</Label>
+                  <Label className="text-sm font-medium text-neutral-400 mb-2">Hora Início *</Label>
                   <Input
                     type="time"
                     value={formData.hora_inicio}
@@ -388,7 +388,7 @@ export default function DisponibilidadeCertificado() {
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2">Hora Fim *</Label>
+                  <Label className="text-sm font-medium text-neutral-400 mb-2">Hora Fim *</Label>
                   <Input
                     type="time"
                     value={formData.hora_fim}
@@ -403,13 +403,13 @@ export default function DisponibilidadeCertificado() {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-all duration-200"
+                  className="flex-1 px-4 py-2.5 bg-dark-tertiary hover:bg-neutral-800 text-neutral-100 font-medium rounded-xl transition-all duration-200"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg shadow-purple-500/30 transition-all duration-200 cursor-pointer"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-medium rounded-xl shadow-lg shadow-purple-500/30 transition-all duration-200 cursor-pointer"
                 >
                   <FiSave size={18} />
                   {editingId ? "Atualizar" : "Criar"}

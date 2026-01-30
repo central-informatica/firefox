@@ -29,6 +29,7 @@ class CRUDFeriados:
             data=data.data,
             nome=data.nome,
             recorrente=data.recorrente,
+            empresa_id=data.empresa_id,
         )
 
         db.add(novo)

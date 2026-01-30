@@ -6,8 +6,14 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
+ARG VITE_URL_BACKEND=http://localhost/api/vault
+ENV VITE_URL_BACKEND=$VITE_URL_BACKEND
+
 # Install dependencies
 RUN npm ci
+
+# Copy package files
+COPY package*.json ./
 
 # Copy source code
 COPY . .

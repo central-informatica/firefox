@@ -49,7 +49,7 @@ export default function Sidebar() {
         { id: "planos-novo", label: "Novo plano", path: "/planos/novo" }
       ]
     },
-    { id: "usuarios", label: "Usuários", icon: <FiUsers />, path: "/usuarios" },
+    { id: "usuarios", label: "Usuarios", icon: <FiUsers />, path: "/usuarios" },
     {
       id: "grupos",
       label: "Grupos",
@@ -70,13 +70,13 @@ export default function Sidebar() {
     },
     {
       id: "seguranca",
-      label: "Segurança",
+      label: "Seguranca",
       icon: <FiShield />,
       children: [
-        { id: "seg-whitelist", label: "Endereços permitidos", path: "/seguranca/enderecos-permitidos" }
+        { id: "seg-whitelist", label: "Enderecos permitidos", path: "/seguranca/enderecos-permitidos" }
       ]
     },
-    { id: "config", label: "Configurações", icon: <FiSettings />, path: "/config" },
+    { id: "config", label: "Configuracoes", icon: <FiSettings />, path: "/config" },
   ];
 
   const toggleMobileSidebar = () => setMobileOpen(!mobileOpen);
@@ -106,7 +106,7 @@ export default function Sidebar() {
     <>
       {/* MOBILE MENU BUTTON */}
       <button
-        className="md:hidden fixed top-4 left-4 bg-emerald-600 hover:bg-emerald-700 text-white border-none p-3 rounded-xl cursor-pointer z-[2001] shadow-lg transition-all duration-300"
+        className="md:hidden fixed top-4 left-4 bg-xfire-orange hover:bg-xfire-orange/90 text-white border-none p-3 rounded-xl cursor-pointer z-[2001] shadow-lg transition-all duration-300"
         onClick={toggleMobileSidebar}
       >
         {mobileOpen ? <FiX size={24} /> : <FiMenu size={24} />}
@@ -115,7 +115,7 @@ export default function Sidebar() {
       {/* MOBILE OVERLAY */}
       {mobileOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[1500] transition-opacity duration-300"
+          className="md:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[1500] transition-opacity duration-300"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -123,10 +123,9 @@ export default function Sidebar() {
       {/* SIDEBAR */}
       <aside
         className={`
-          h-screen bg-white/95 backdrop-blur-sm border-r border-gray-200
+          h-screen bg-dark-primary border-r border-neutral-900
           fixed left-0 top-0 flex flex-col z-[2000]
           transition-all duration-300 ease-in-out
-          shadow-[4px_0_24px_rgba(0,0,0,0.06)]
 
           ${expanded ? 'w-64' : 'w-20'}
 
@@ -136,17 +135,17 @@ export default function Sidebar() {
         `}
       >
         {/* HEADER */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <div className={`font-bold text-emerald-600 transition-all duration-300 overflow-hidden ${
+        <div className="flex items-center justify-between p-5 border-b border-neutral-900">
+          <div className={`font-bold text-xfire-orange transition-all duration-300 overflow-hidden font-montserrat ${
             expanded ? 'text-xl opacity-100' : 'text-sm opacity-0 w-0'
           }`}>
-            XSecurity
+            XFireSecurity
           </div>
 
           {/* DESKTOP TOGGLE BUTTON */}
           <button
             onClick={toggleExpanded}
-            className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-emerald-50 text-gray-600 hover:text-emerald-600 transition-all duration-300 group"
+            className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-dark-secondary text-neutral-400 hover:text-xfire-orange transition-all duration-300 group"
             title={expanded ? "Contrair" : "Expandir"}
           >
             {expanded ? (
@@ -169,8 +168,8 @@ export default function Sidebar() {
                   ${expanded ? 'justify-start' : 'justify-center'}
                   ${
                     isActive(item) || isParentActive(item)
-                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30"
-                      : "text-gray-700 hover:bg-emerald-50 hover:text-emerald-600"
+                      ? "bg-dark-secondary text-white border-l-4 border-xfire-orange"
+                      : "text-neutral-400 hover:bg-dark-secondary hover:text-white"
                   }
                 `}
                 onClick={() => handleMainClick(item)}
@@ -178,7 +177,7 @@ export default function Sidebar() {
                 {/* ICON */}
                 <span className={`text-xl transition-all duration-300 flex-shrink-0 ${
                   expanded ? 'mr-3' : 'mr-0'
-                }`}>
+                } ${isActive(item) || isParentActive(item) ? 'text-xfire-orange' : ''}`}>
                   {item.icon}
                 </span>
 
@@ -198,9 +197,9 @@ export default function Sidebar() {
 
                 {/* TOOLTIP (only when collapsed) */}
                 {!expanded && (
-                  <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-50 shadow-xl">
+                  <div className="absolute left-full ml-2 px-3 py-2 bg-dark-tertiary text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-50 shadow-xl border border-neutral-900">
                     {item.label}
-                    <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-dark-tertiary"></div>
                   </div>
                 )}
               </div>
@@ -216,8 +215,8 @@ export default function Sidebar() {
                         transition-all duration-200
                         ${
                           isActive(sub)
-                            ? "bg-emerald-50 text-emerald-700 font-medium"
-                            : "text-gray-600 hover:bg-emerald-50/50 hover:text-emerald-600"
+                            ? "bg-dark-tertiary text-xfire-orange font-medium"
+                            : "text-neutral-400 hover:bg-dark-secondary hover:text-white"
                         }
                       `}
                       onClick={() => {
@@ -233,7 +232,7 @@ export default function Sidebar() {
             </div>
           ))}
         </nav>
-        
+
         {/* LOGOUT BUTTON */}
         <div className="p-3">
           <div
@@ -242,7 +241,7 @@ export default function Sidebar() {
               group relative flex items-center px-3 py-3 rounded-xl cursor-pointer
               transition-all duration-300
               ${expanded ? 'justify-start' : 'justify-center'}
-              text-gray-700 hover:bg-red-50 hover:text-red-600
+              text-neutral-400 hover:bg-xfire-red/10 hover:text-xfire-red
             `}
           >
             {/* ICON */}
@@ -261,9 +260,9 @@ export default function Sidebar() {
 
             {/* TOOLTIP (collapsed) */}
             {!expanded && (
-              <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-50 shadow-xl">
+              <div className="absolute left-full ml-2 px-3 py-2 bg-dark-tertiary text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-50 shadow-xl border border-neutral-900">
                 Sair
-                <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-dark-tertiary"></div>
               </div>
             )}
           </div>
@@ -271,22 +270,22 @@ export default function Sidebar() {
 
         {/* USER PROFILE */}
         <div className={`
-          mt-auto border-t border-gray-100 bg-white/80
+          mt-auto border-t border-neutral-900 bg-dark-primary
           transition-all duration-300
         `}>
           <div className="p-4">
             <div className={`flex items-center gap-3 ${expanded ? '' : 'justify-center'}`}>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex justify-center items-center text-white font-bold text-base flex-shrink-0 shadow-lg shadow-emerald-500/30">
+              <div className="w-10 h-10 bg-gradient-to-br from-xfire-orange to-xfire-red rounded-xl flex justify-center items-center text-white font-bold text-base flex-shrink-0 shadow-lg shadow-xfire-orange/30">
                 {(user?.nome || "U").charAt(0).toUpperCase()}
               </div>
 
               <div className={`flex flex-col leading-tight transition-all duration-300 overflow-hidden ${
                 expanded ? 'opacity-100 max-w-[180px]' : 'opacity-0 max-w-0'
               }`}>
-                <div className="font-semibold text-sm text-gray-800 truncate">
-                  {user?.nome || "Usuário"}
+                <div className="font-semibold text-sm text-neutral-100 truncate">
+                  {user?.nome || "Usuario"}
                 </div>
-                <div className="text-xs text-gray-500 truncate">
+                <div className="text-xs text-neutral-500 truncate">
                   {user?.email || "email@example.com"}
                 </div>
               </div>

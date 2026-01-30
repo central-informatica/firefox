@@ -2,7 +2,7 @@
 
 @layer base {
   :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -10,7 +10,12 @@
   }
 
   body {
-    @apply m-0 min-w-[320px] min-h-screen;
+    @apply m-0 min-w-[320px] min-h-screen bg-dark-primary text-neutral-100 font-inter;
+  }
+
+  /* Headings use Montserrat */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-montserrat;
   }
 
   /* Custom animations */
@@ -86,5 +91,69 @@
     100% {
       transform: translateX(0);
     }
+  }
+}
+
+@layer components {
+  /* Dark card component */
+  .card-dark {
+    @apply bg-dark-secondary rounded-card border border-neutral-900 p-5;
+  }
+
+  /* Status badges */
+  .badge-permitido {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-status-permitido/20 text-status-permitido border border-status-permitido/30;
+  }
+
+  .badge-bloqueado {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-status-bloqueado/20 text-status-bloqueado border border-status-bloqueado/30;
+  }
+
+  .badge-alerta {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-status-alerta/20 text-status-alerta border border-status-alerta/30;
+  }
+
+  .badge-monitorado {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-status-monitorado/20 text-status-monitorado border border-status-monitorado/30;
+  }
+
+  .badge-expirando {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-status-expirando/20 text-status-expirando border border-status-expirando/30;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply bg-xfire-orange text-white px-4 py-2.5 rounded-button cursor-pointer text-base font-medium
+           hover:bg-xfire-orange/90 transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed border-none
+           shadow-lg shadow-xfire-orange/20 hover:shadow-xl hover:shadow-xfire-orange/30;
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply bg-transparent text-neutral-200 px-4 py-2.5 rounded-button cursor-pointer text-base font-medium
+           border border-neutral-700 hover:bg-neutral-800 hover:border-neutral-600
+           transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Danger button */
+  .btn-danger {
+    @apply bg-xfire-red text-white px-4 py-2.5 rounded-button cursor-pointer text-base font-medium
+           hover:bg-xfire-red/90 transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed border-none;
+  }
+
+  /* Dark input */
+  .input-dark {
+    @apply p-3 border border-neutral-800 rounded-lg text-[15px] text-neutral-100 bg-dark-tertiary w-full box-border
+           focus:border-xfire-orange focus:outline-none focus:ring-2 focus:ring-xfire-orange/20
+           placeholder:text-neutral-500 transition-all duration-200;
+  }
+
+  /* Dark select */
+  .select-dark {
+    @apply p-3 border border-neutral-800 rounded-lg text-[15px] text-neutral-100 bg-dark-tertiary w-full box-border
+           focus:border-xfire-orange focus:outline-none focus:ring-2 focus:ring-xfire-orange/20
+           transition-all duration-200;
   }
 }

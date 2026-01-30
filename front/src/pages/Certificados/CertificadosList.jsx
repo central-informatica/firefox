@@ -123,17 +123,17 @@ export default function CertificadosList() {
         return (
           <div className="flex items-center gap-3 py-2">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl flex items-center justify-center shadow-sm">
-                <FiFile className="text-emerald-600" size={20} />
+              <div className="w-12 h-12 bg-gradient-to-br from-xfire-orange to-xfire-red rounded-xl flex items-center justify-center shadow-sm">
+                <FiFile className="text-white" size={20} />
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-gray-800 truncate">{cert.nome_arquivo || "Certificado.pfx"}</div>
+              <div className="font-semibold text-neutral-100 truncate">{cert.nome_arquivo || "Certificado.pfx"}</div>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
-                  ${statusInfo.status === 'ativo' ? 'bg-green-50 text-green-700' : ''}
-                  ${statusInfo.status === 'expirando' ? 'bg-orange-50 text-orange-700' : ''}
-                  ${statusInfo.status === 'expirado' ? 'bg-red-50 text-red-700' : ''}
+                  ${statusInfo.status === 'ativo' ? 'badge-permitido' : ''}
+                  ${statusInfo.status === 'expirando' ? 'bg-orange-900/30 text-orange-400' : ''}
+                  ${statusInfo.status === 'expirado' ? 'badge-bloqueado' : ''}
                 `}>
                   {statusInfo.status === 'ativo' && <FiCheckCircle size={10} />}
                   {statusInfo.status !== 'ativo' && <FiAlertCircle size={10} />}
@@ -149,8 +149,8 @@ export default function CertificadosList() {
       header: "Criado por",
       accessorKey: "criado_por_nome",
       cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <FiUser className="text-gray-400" size={14} />
+        <div className="flex items-center gap-2 text-sm text-neutral-400">
+          <FiUser className="text-neutral-500" size={14} />
           <span>{row.original.criado_por_nome || "Desconhecido"}</span>
         </div>
       ),
@@ -159,8 +159,8 @@ export default function CertificadosList() {
       accessorKey: "validade_inicio",
       header: "Início",
       cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <FiCalendar className="text-gray-400" size={14} />
+        <div className="flex items-center gap-2 text-sm text-neutral-400">
+          <FiCalendar className="text-neutral-500" size={14} />
           {new Date(row.original.validade_inicio).toLocaleDateString("pt-BR")}
         </div>
       ),
@@ -172,12 +172,12 @@ export default function CertificadosList() {
         const statusInfo = getCertificateStatus(row.original.valido_ate);
         return (
           <div>
-            <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
-              <FiClock className="text-gray-400" size={14} />
+            <div className="flex items-center gap-2 text-sm text-neutral-100 font-medium">
+              <FiClock className="text-neutral-500" size={14} />
               {new Date(row.original.valido_ate).toLocaleDateString("pt-BR")}
             </div>
             {statusInfo.dias > 0 && statusInfo.dias <= 30 && (
-              <div className="text-xs text-orange-600 mt-1">
+              <div className="text-xs text-orange-400 mt-1">
                 {statusInfo.dias} {statusInfo.dias === 1 ? 'dia' : 'dias'} restantes
               </div>
             )}
@@ -189,7 +189,7 @@ export default function CertificadosList() {
       accessorKey: "criado_em",
       header: "Cadastrado em",
       cell: ({ row }) => (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-neutral-400">
           {new Date(row.original.criado_em).toLocaleDateString("pt-BR")}
         </div>
       ),
@@ -203,7 +203,7 @@ export default function CertificadosList() {
               setConfirmData({ id: row.original.certificado_id, nome: row.original.nome_arquivo });
               setConfirmOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group"
             title="Excluir certificado"
           >
             <FiTrash2 size={14} className="group-hover:scale-110 transition-transform" />
@@ -252,18 +252,18 @@ export default function CertificadosList() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+          <h1 className="text-3xl font-bold font-montserrat text-neutral-100 mb-2 flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-xfire-orange to-xfire-red rounded-xl shadow-lg">
               <FiShield className="text-white" size={28} />
             </div>
             Certificados Digitais
           </h1>
-          <p className="text-gray-600">Gerencie seus certificados digitais de forma segura</p>
+          <p className="text-neutral-400">Gerencie seus certificados digitais de forma segura</p>
         </div>
 
         <button
           onClick={() => navigate("/certificados/novo")}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white font-semibold rounded-xl shadow-lg shadow-xfire-orange/30 hover:shadow-xl hover:shadow-xfire-orange/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
         >
           <FiPlus size={20} />
           Novo Certificado
@@ -271,16 +271,16 @@ export default function CertificadosList() {
       </div>
 
       {/* Filter Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 animate-slideUp">
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 p-5 animate-slideUp">
         <div className="flex items-center gap-3 mb-3">
-          <FiFilter className="text-emerald-600" size={18} />
-          <h3 className="font-semibold text-gray-800">Filtros</h3>
+          <FiFilter className="text-xfire-orange" size={18} />
+          <h3 className="font-semibold text-neutral-100">Filtros</h3>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 max-w-sm">
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <FiBriefcase className="text-gray-400" size={14} />
+            <label className="block text-sm font-medium text-neutral-400 mb-2 flex items-center gap-2">
+              <FiBriefcase className="text-neutral-500" size={14} />
               Empresa
             </label>
             <SelectEmpresa
@@ -294,8 +294,8 @@ export default function CertificadosList() {
           </div>
 
           <div className="flex-1 max-w-sm">
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <FiUsers className="text-gray-400" size={14} />
+            <label className="block text-sm font-medium text-neutral-400 mb-2 flex items-center gap-2">
+              <FiUsers className="text-neutral-500" size={14} />
               Grupo
             </label>
             <SelectGrupo
@@ -319,61 +319,61 @@ export default function CertificadosList() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-slideUp">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+        <div className="bg-dark-secondary rounded-card p-5 shadow-sm border border-neutral-900 hover:shadow-md transition-all duration-200">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <FiShield className="text-blue-600" size={24} />
+            <div className="p-3 bg-blue-900/30 rounded-xl">
+              <FiShield className="text-blue-400" size={24} />
             </div>
             <div>
-              <p className="text-sm text-gray-600 font-medium">Total de Certificados</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.total || 0}</p>
+              <p className="text-sm text-neutral-400 font-medium">Total de Certificados</p>
+              <p className="text-2xl font-bold text-neutral-100">{stats.total || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+        <div className="bg-dark-secondary rounded-card p-5 shadow-sm border border-neutral-900 hover:shadow-md transition-all duration-200">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-50 rounded-xl">
-              <FiCheckCircle className="text-green-600" size={24} />
+            <div className="p-3 bg-green-900/30 rounded-xl">
+              <FiCheckCircle className="text-green-400" size={24} />
             </div>
             <div>
-              <p className="text-sm text-gray-600 font-medium">Certificados Ativos</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.ativos || 0}</p>
+              <p className="text-sm text-neutral-400 font-medium">Certificados Ativos</p>
+              <p className="text-2xl font-bold text-neutral-100">{stats.ativos || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+        <div className="bg-dark-secondary rounded-card p-5 shadow-sm border border-neutral-900 hover:shadow-md transition-all duration-200">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-orange-50 rounded-xl">
-              <FiAlertCircle className="text-orange-600" size={24} />
+            <div className="p-3 bg-orange-900/30 rounded-xl">
+              <FiAlertCircle className="text-orange-400" size={24} />
             </div>
             <div>
-              <p className="text-sm text-gray-600 font-medium">Expirando em breve</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.expirando || 0}</p>
+              <p className="text-sm text-neutral-400 font-medium">Expirando em breve</p>
+              <p className="text-2xl font-bold text-neutral-100">{stats.expirando || 0}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+        <div className="bg-dark-secondary rounded-card p-5 shadow-sm border border-neutral-900 hover:shadow-md transition-all duration-200">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-red-50 rounded-xl">
-              <FiAlertCircle className="text-red-600" size={24} />
+            <div className="p-3 bg-red-900/30 rounded-xl">
+              <FiAlertCircle className="text-red-400" size={24} />
             </div>
             <div>
-              <p className="text-sm text-gray-600 font-medium">Certificados Expirados</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.expirados || 0}</p>
+              <p className="text-sm text-neutral-400 font-medium">Certificados Expirados</p>
+              <p className="text-2xl font-bold text-neutral-100">{stats.expirados || 0}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Info Banner */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 animate-slideUp">
+      <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border border-blue-800/50 rounded-card p-4 animate-slideUp">
         <div className="flex gap-3">
-          <FiAlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+          <FiAlertCircle className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
           <div>
-            <p className="text-sm font-medium text-blue-900 mb-1">Sobre os certificados</p>
-            <p className="text-sm text-blue-800">
+            <p className="text-sm font-medium text-blue-300 mb-1">Sobre os certificados</p>
+            <p className="text-sm text-blue-400">
               Todos os certificados são criptografados com AES-256-GCM. Certificados que expirarem em menos de 30 dias serão destacados com alerta laranja.
             </p>
           </div>
@@ -381,7 +381,7 @@ export default function CertificadosList() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-slideUp">
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 overflow-hidden animate-slideUp">
         {/* 🔧 Correção: condição e key baseadas em empresaId */}
         {empresaId ? (
           <DataTable
@@ -393,12 +393,12 @@ export default function CertificadosList() {
         ) : (
           <div className="p-12 text-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="p-4 bg-gray-100 rounded-full">
-                <FiBriefcase size={32} className="text-gray-400" />
+              <div className="p-4 bg-dark-tertiary rounded-full">
+                <FiBriefcase size={32} className="text-neutral-500" />
               </div>
               <div>
-                <p className="text-gray-700 font-medium mb-1">Selecione uma empresa</p>
-                <p className="text-sm text-gray-500">Escolha uma empresa acima para visualizar os certificados</p>
+                <p className="text-neutral-100 font-medium mb-1">Selecione uma empresa</p>
+                <p className="text-sm text-neutral-500">Escolha uma empresa acima para visualizar os certificados</p>
               </div>
             </div>
           </div>

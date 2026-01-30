@@ -10,7 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
-from backend.app.api.deps import check_auth_with_ip
+from backend.app.api.deps import check_auth_with_ip, check_auth
 from backend.app.db.session import get_db
 
 from tests.factories.usuarios_ip_whitelist_factory import criar_usuarios_ip_whitelist
@@ -58,6 +58,7 @@ def non_admin_client(db_session, user_id, empresa_id):
             pass
 
     app.dependency_overrides[check_auth_with_ip] = mock_auth
+    app.dependency_overrides[check_auth] = mock_auth  # POST endpoint uses check_auth
     app.dependency_overrides[get_db] = override_get_db
 
     with TestClient(app) as test_client:

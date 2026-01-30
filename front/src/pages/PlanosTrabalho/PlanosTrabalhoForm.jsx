@@ -106,26 +106,26 @@ const PlanosTrabalhoForm = () => {
           <button
             type="button"
             onClick={() => navigate("/planos")}
-            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-gray-800 transition-all duration-200 cursor-pointer group"
+            className="p-2 hover:bg-dark-tertiary rounded-lg text-neutral-400 hover:text-neutral-100 transition-all duration-200 cursor-pointer group"
             title="Voltar"
           >
             <FiArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform duration-200" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+            <h1 className="text-3xl font-bold font-montserrat text-neutral-100 flex items-center gap-3">
               {isEdit ? (
                 <>
-                  <FiFlag className="text-blue-600" />
+                  <FiFlag className="text-blue-400" />
                   Editar Plano de Trabalho
                 </>
               ) : (
                 <>
-                  <FiFlag className="text-emerald-600" />
+                  <FiFlag className="text-xfire-orange" />
                   Novo Plano de Trabalho
                 </>
               )}
             </h1>
-            <p className="text-gray-600 text-sm mt-1">
+            <p className="text-neutral-400 text-sm mt-1">
               {isEdit ? "Atualize as informações do plano de trabalho" : "Crie um novo plano de trabalho para organizar suas atividades"}
             </p>
           </div>
@@ -133,14 +133,14 @@ const PlanosTrabalhoForm = () => {
       </div>
 
       {/* Form Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 overflow-hidden">
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Empresa */}
             {!isEdit && (
               <div className="group">
-                <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <FiBriefcase className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
+                <Label className="text-sm font-semibold text-neutral-400 mb-2 flex items-center gap-2">
+                  <FiBriefcase className="text-neutral-500 group-hover:text-xfire-orange transition-colors duration-200" size={16} />
                   Empresa *
                 </Label>
                 <SelectEmpresa
@@ -148,14 +148,14 @@ const PlanosTrabalhoForm = () => {
                   value={form.empresa_id}
                   onChange={(val) => setForm(prev => ({ ...prev, empresa_id: val }))}
                 />
-                <p className="text-xs text-gray-500 mt-1">Selecione a empresa para este plano de trabalho</p>
+                <p className="text-xs text-neutral-500 mt-1">Selecione a empresa para este plano de trabalho</p>
               </div>
             )}
 
             {/* Nome do Plano */}
             <div className="group">
-              <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <FiFileText className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
+              <Label className="text-sm font-semibold text-neutral-400 mb-2 flex items-center gap-2">
+                <FiFileText className="text-neutral-500 group-hover:text-xfire-orange transition-colors duration-200" size={16} />
                 Nome do Plano *
               </Label>
               <div className="relative">
@@ -165,16 +165,16 @@ const PlanosTrabalhoForm = () => {
                   value={form.nome}
                   onChange={handleChange}
                   required
-                  className="w-full transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full transition-all duration-200 focus:ring-2 focus:ring-xfire-orange focus:border-xfire-orange"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Escolha um nome descritivo e fácil de identificar</p>
+              <p className="text-xs text-neutral-500 mt-1">Escolha um nome descritivo e fácil de identificar</p>
             </div>
 
             {/* Descrição */}
             <div className="group">
-              <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <FiAlignLeft className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
+              <Label className="text-sm font-semibold text-neutral-400 mb-2 flex items-center gap-2">
+                <FiAlignLeft className="text-neutral-500 group-hover:text-xfire-orange transition-colors duration-200" size={16} />
                 Descrição
               </Label>
               <div className="relative">
@@ -183,30 +183,30 @@ const PlanosTrabalhoForm = () => {
                   placeholder="Descreva os objetivos e atividades do plano de trabalho..."
                   value={form.descricao}
                   onChange={handleChange}
-                  className="w-full transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 min-h-[120px] resize-y"
+                  className="w-full transition-all duration-200 focus:ring-2 focus:ring-xfire-orange focus:border-xfire-orange min-h-[120px] resize-y"
                   rows={5}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Adicione detalhes sobre o que este plano de trabalho irá gerenciar</p>
+              <p className="text-xs text-neutral-500 mt-1">Adicione detalhes sobre o que este plano de trabalho irá gerenciar</p>
             </div>
 
             {/* Character Counter */}
             {form.descricao && (
-              <div className="flex items-center gap-2 text-xs text-gray-500 animate-[fadeIn_0.3s_ease-out]">
+              <div className="flex items-center gap-2 text-xs text-neutral-500 animate-[fadeIn_0.3s_ease-out]">
                 <FiInfo size={14} />
                 <span>{form.descricao.length} caracteres</span>
               </div>
             )}
 
             {/* Divider */}
-            <div className="border-t border-gray-100"></div>
+            <div className="border-t border-neutral-800"></div>
 
             {/* Actions */}
             <div className="flex items-center justify-between gap-4 pt-2">
               <button
                 type="button"
                 onClick={() => navigate("/planos")}
-                className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200 cursor-pointer"
+                className="px-6 py-3 bg-dark-tertiary hover:bg-neutral-800 text-neutral-100 font-semibold rounded-xl transition-all duration-200 cursor-pointer"
               >
                 Cancelar
               </button>
@@ -219,8 +219,8 @@ const PlanosTrabalhoForm = () => {
                   shadow-lg transition-all duration-300 transform cursor-pointer
                   ${
                     isSaved
-                      ? "bg-emerald-500 text-white"
-                      : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0"
+                      ? "bg-xfire-orange text-white"
+                      : "bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white shadow-xfire-orange/30 hover:shadow-xl hover:shadow-xfire-orange/40 hover:-translate-y-0.5 active:translate-y-0"
                   }
                   disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none
                 `}
@@ -252,25 +252,25 @@ const PlanosTrabalhoForm = () => {
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <FiFlag className="text-purple-600" size={20} />
+        <div className="bg-purple-900/20 border border-purple-800/50 rounded-card p-4 flex items-start gap-3">
+          <div className="p-2 bg-purple-900/30 rounded-lg">
+            <FiFlag className="text-purple-400" size={20} />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-purple-900 mb-1">Planos de Trabalho</h3>
-            <p className="text-sm text-purple-800">
+            <h3 className="font-semibold text-purple-300 mb-1">Planos de Trabalho</h3>
+            <p className="text-sm text-purple-400">
               Organize grupos de usuários e gerencie permissões de acesso aos certificados.
             </p>
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <FiInfo className="text-blue-600" size={20} />
+        <div className="bg-blue-900/20 border border-blue-800/50 rounded-card p-4 flex items-start gap-3">
+          <div className="p-2 bg-blue-900/30 rounded-lg">
+            <FiInfo className="text-blue-400" size={20} />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-blue-900 mb-1">Próximos passos</h3>
-            <p className="text-sm text-blue-800">
+            <h3 className="font-semibold text-blue-300 mb-1">Próximos passos</h3>
+            <p className="text-sm text-blue-400">
               Após criar o plano, você poderá adicionar grupos e configurar regras de acesso.
             </p>
           </div>

@@ -48,6 +48,7 @@ class LoginResponse(BaseModel):
     requires_2fa: bool = False
     access_token: str | None = None
     csrf_token: str | None = None
+    user_id: str | None = None
 
 
 class Verify2FARequest(BaseModel):
@@ -158,12 +159,14 @@ class VerifyEmailRequest(BaseModel):
 # -----------------------------------------------------------------------------
 
 
-@router.post("/login", response_model=LoginResponse)
-async def login(
+@router.post("/login/web", response_model=LoginResponse)
+async def login_web(
     credentials: LoginRequest,
 ) -> LoginResponse:
     """
-    Authenticate user via Auth service.
+    Authenticate user via Auth service for web clients.
+
+    Web clients receive 1-hour session tokens with CSRF protection.
 
     Proxies the login request to Auth service and returns
     the access_token and csrf_token in the response body.
@@ -187,6 +190,54 @@ async def login(
             requires_2fa=requires_2fa,
             access_token=tokens.get("access_token"),
             csrf_token=tokens.get("csrf_token"),
+            user_id=str(data.get("user_id")) if data.get("user_id") else None,
+        )
+
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=e.message,
+        )
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )
+
+
+@router.post("/login/desktop", response_model=LoginResponse)
+async def login_desktop(
+    credentials: LoginRequest,
+) -> LoginResponse:
+    """
+    Authenticate user via Auth service for desktop clients.
+
+    Desktop clients receive 7-day access tokens instead of 1-hour.
+    No CSRF token is returned since desktop apps don't need CSRF protection.
+
+    Proxies the login request to Auth service /api/v1/auth/login/desktop.
+    """
+    try:
+        result = await auth_client.login(
+            email=credentials.email,
+            password=credentials.password,
+            client_type="desktop",
+        )
+
+        # Extract tokens and data from Auth service response
+        tokens = result.get("tokens", {})
+        data = result.get("data", {})
+        requires_2fa = data.get("requires_2fa", False)
+        user_id = data.get("user_id")
+
+        return LoginResponse(
+            message="Login realizado com sucesso"
+            if not requires_2fa
+            else "Codigo 2FA enviado para seu email",
+            requires_2fa=requires_2fa,
+            access_token=tokens.get("access_token"),
+            csrf_token=None,  # Desktop doesn't use CSRF protection
+            user_id=str(user_id) if user_id else None,
         )
 
     except AuthenticationError as e:

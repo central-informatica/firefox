@@ -80,26 +80,26 @@ const EmpresaForm = () => {
           <button
             type="button"
             onClick={() => navigate("/empresas")}
-            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-gray-800 transition-all duration-200 cursor-pointer group"
+            className="p-2 hover:bg-dark-secondary rounded-lg text-neutral-400 hover:text-neutral-100 transition-all duration-200 cursor-pointer group"
             title="Voltar"
           >
             <FiArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform duration-200" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-neutral-100 flex items-center gap-3 font-montserrat">
               {isEdit ? (
                 <>
-                  <FiBriefcase className="text-blue-600" />
+                  <FiBriefcase className="text-status-monitorado" />
                   Editar Empresa
                 </>
               ) : (
                 <>
-                  <FiBriefcase className="text-emerald-600" />
+                  <FiBriefcase className="text-xfire-orange" />
                   Nova Empresa
                 </>
               )}
             </h1>
-            <p className="text-gray-600 text-sm mt-1">
+            <p className="text-neutral-400 text-sm mt-1">
               {isEdit ? "Atualize os dados da empresa" : "Preencha os dados para cadastrar uma nova empresa"}
             </p>
           </div>
@@ -107,13 +107,13 @@ const EmpresaForm = () => {
       </div>
 
       {/* Form Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-dark-secondary rounded-card border border-neutral-900 overflow-hidden">
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Nome da Empresa */}
             <div className="group">
-              <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <FiFileText className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
+              <Label className="text-sm font-semibold text-neutral-300 mb-2 flex items-center gap-2">
+                <FiFileText className="text-neutral-500 group-hover:text-xfire-orange transition-colors duration-200" size={16} />
                 Nome da Empresa
               </Label>
               <div className="relative">
@@ -123,15 +123,15 @@ const EmpresaForm = () => {
                   value={form.razao_social}
                   onChange={handleChange}
                   required
-                  className="w-full transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full"
                 />
               </div>
             </div>
 
             {/* CNPJ */}
             <div className="group">
-              <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <FiBriefcase className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
+              <Label className="text-sm font-semibold text-neutral-300 mb-2 flex items-center gap-2">
+                <FiBriefcase className="text-neutral-500 group-hover:text-xfire-orange transition-colors duration-200" size={16} />
                 CNPJ
               </Label>
               <div className="relative">
@@ -142,33 +142,33 @@ const EmpresaForm = () => {
                   value={form.cnpj}
                   onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
                   required
-                  className="w-full transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
+                  className="w-full font-mono"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Digite apenas números, a máscara será aplicada automaticamente</p>
+              <p className="text-xs text-neutral-500 mt-1">Digite apenas numeros, a mascara sera aplicada automaticamente</p>
             </div>
 
-            {/* Ramo de Atuação */}
+            {/* Ramo de Atuacao */}
             <div className="group">
-              <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <FiTag className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
-                Ramo de Atuação
+              <Label className="text-sm font-semibold text-neutral-300 mb-2 flex items-center gap-2">
+                <FiTag className="text-neutral-500 group-hover:text-xfire-orange transition-colors duration-200" size={16} />
+                Ramo de Atuacao
               </Label>
               <div className="relative">
                 <SelectRamo
                   value={form.ramos_id}
                   onChange={(val) => setForm({ ...form, ramos_id: val })}
-                  placeholder="Selecione o ramo de atuação"
+                  placeholder="Selecione o ramo de atuacao"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Selecione o ramo de atuação da empresa</p>
+              <p className="text-xs text-neutral-500 mt-1">Selecione o ramo de atuacao da empresa</p>
             </div>
 
-            {/* Fuso Horário */}
+            {/* Fuso Horario */}
             <div className="group">
-              <Label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <FiClock className="text-gray-400 group-hover:text-emerald-500 transition-colors duration-200" size={16} />
-                Fuso Horário
+              <Label className="text-sm font-semibold text-neutral-300 mb-2 flex items-center gap-2">
+                <FiClock className="text-neutral-500 group-hover:text-xfire-orange transition-colors duration-200" size={16} />
+                Fuso Horario
               </Label>
               <div className="relative">
                 <Select
@@ -179,22 +179,21 @@ const EmpresaForm = () => {
                       : null
                   }
                   onChange={(opt) => setForm({ ...form, timezone: opt.value })}
-                  placeholder="Selecione o fuso horário"
-                  className="transition-all duration-200"
+                  placeholder="Selecione o fuso horario"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Selecione o fuso horário onde a empresa está localizada</p>
+              <p className="text-xs text-neutral-500 mt-1">Selecione o fuso horario onde a empresa esta localizada</p>
             </div>
 
             {/* Divider */}
-            <div className="border-t border-gray-100"></div>
+            <div className="border-t border-neutral-800"></div>
 
             {/* Actions */}
             <div className="flex items-center justify-between gap-4 pt-2">
               <button
                 type="button"
                 onClick={() => navigate("/empresas")}
-                className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200 cursor-pointer"
+                className="px-6 py-3 bg-dark-tertiary hover:bg-neutral-800 text-neutral-300 font-semibold rounded-xl transition-all duration-200 cursor-pointer border border-neutral-800"
               >
                 Cancelar
               </button>
@@ -207,8 +206,8 @@ const EmpresaForm = () => {
                   shadow-lg transition-all duration-300 transform cursor-pointer
                   ${
                     isSaved
-                      ? "bg-emerald-500 text-white"
-                      : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0"
+                      ? "bg-status-permitido text-white"
+                      : "bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white shadow-xfire-orange/30 hover:shadow-xl hover:shadow-xfire-orange/40 hover:-translate-y-0.5 active:translate-y-0"
                   }
                   disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none
                 `}
@@ -239,14 +238,14 @@ const EmpresaForm = () => {
       </div>
 
       {/* Info Card */}
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
-        <div className="p-2 bg-blue-100 rounded-lg">
-          <FiBriefcase className="text-blue-600" size={20} />
+      <div className="bg-status-monitorado/10 border border-status-monitorado/30 rounded-xl p-4 flex items-start gap-3">
+        <div className="p-2 bg-status-monitorado/20 rounded-lg">
+          <FiBriefcase className="text-status-monitorado" size={20} />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-blue-900 mb-1">Informações importantes</h3>
-          <p className="text-sm text-blue-800">
-            Após cadastrar a empresa, você poderá adicionar membros, certificados e configurar permissões específicas.
+          <h3 className="font-semibold text-status-monitorado mb-1">Informacoes importantes</h3>
+          <p className="text-sm text-status-monitorado/80">
+            Apos cadastrar a empresa, voce podera adicionar membros, certificados e configurar permissoes especificas.
           </p>
         </div>
       </div>

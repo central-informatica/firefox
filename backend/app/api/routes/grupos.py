@@ -53,9 +53,11 @@ def listar_grupos_empresa(
 ):
     """List grupos by empresa (optionally filtered by plano)."""
     _verificar_admin(current_user)
+    usuario_id = current_user.get("id") or current_user.get("usuario_id")
     return listar_grupos_por_empresa(
         db=db,
         empresa_id=empresa_id,
+        usuario_id=usuario_id,
         plano_id=plano_id,
     )
 
@@ -98,11 +100,13 @@ def atualizar(
     if not grupo:
         raise HTTPException(status_code=404, detail="Grupo nao encontrado")
 
+    usuario_id = current_user.get("id") or current_user.get("usuario_id")
     return atualizar_grupo(
         db=db,
         grupo_id=grupo_id,
         empresa_id=str(grupo.empresa_id),
-        payload=data.model_dump(exclude_unset=True)
+        usuario_id=usuario_id,
+        dados=data.model_dump(exclude_unset=True)
     )
 
 

@@ -6,12 +6,12 @@ export default function Layout({ children }) {
   const { expanded } = useSidebar();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-dark-primary">
       <Sidebar />
 
       <main
         className={`
-          flex-1 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100
+          flex-1 min-h-screen bg-dark-primary
           transition-all duration-300 ease-in-out
           ${expanded ? 'md:ml-64' : 'md:ml-20'}
           ml-0
