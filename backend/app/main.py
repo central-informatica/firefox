@@ -20,6 +20,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from backend.app.core.config import FRONTEND_ORIGINS
 from backend.app.core.exceptions import (
     CircuitBreakerOpenError,
     ServiceError,
@@ -116,17 +117,32 @@ app = FastAPI(
 # CORS Middleware
 # -----------------------------------------------------------------------------
 
-origins = [
+# Use origins from environment configuration
+# Fall back to localhost for development if not configured
+origins = FRONTEND_ORIGINS if FRONTEND_ORIGINS else [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
+]
+
+# Explicitly whitelist HTTP methods instead of using "*"
+ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
+# Explicitly whitelist headers instead of using "*"
+ALLOWED_HEADERS = [
+    "Authorization",
+    "Content-Type",
+    "X-CSRF-Token",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=ALLOWED_METHODS,
+    allow_headers=ALLOWED_HEADERS,
 )
 
 

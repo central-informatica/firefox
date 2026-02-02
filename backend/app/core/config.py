@@ -5,6 +5,8 @@ from backend.app.utils.chave_mestra import gerar_chave
 
 load_dotenv()
 
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+
 FRONTEND_ORIGINS = [
     os.getenv("FRONTEND_ORIGIN", "http://127.0.0.1:5173"),
 ]

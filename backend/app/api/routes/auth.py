@@ -10,8 +10,44 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, field_validator
+import re
 
 # from backend.app.api.deps import get_current_user
+from backend.app.core.config import DEBUG
+
+
+# Password validation constants
+MIN_PASSWORD_LENGTH = 12
+PASSWORD_PATTERN = re.compile(
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-_#^+=])[A-Za-z\d@$!%*?&\-_#^+=]{12,}$'
+)
+
+
+def validate_password_strength(password: str) -> str:
+    """
+    Validate password meets security requirements:
+    - At least 12 characters
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one digit
+    - At least one special character (@$!%*?&-_#^+=)
+    """
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise ValueError(f"Senha deve ter pelo menos {MIN_PASSWORD_LENGTH} caracteres")
+
+    if not re.search(r'[a-z]', password):
+        raise ValueError("Senha deve conter pelo menos uma letra minuscula")
+
+    if not re.search(r'[A-Z]', password):
+        raise ValueError("Senha deve conter pelo menos uma letra maiuscula")
+
+    if not re.search(r'\d', password):
+        raise ValueError("Senha deve conter pelo menos um numero")
+
+    if not re.search(r'[@$!%*?&\-_#^+=]', password):
+        raise ValueError("Senha deve conter pelo menos um caractere especial (@$!%*?&-_#^+=)")
+
+    return password
 from backend.app.core.exceptions import AuthenticationError, AuthServiceError
 from backend.app.utils.validators import (
     validate_cnpj,
@@ -68,12 +104,24 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
 
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        """Validate new password meets security requirements."""
+        return validate_password_strength(v)
+
 
 class ChangePasswordRequest(BaseModel):
     """Change password request."""
 
     current_password: str
     new_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        """Validate new password meets security requirements."""
+        return validate_password_strength(v)
 
 
 class RegisterRequest(BaseModel):
@@ -99,6 +147,12 @@ class RegisterRequest(BaseModel):
     admin_password: str
     admin_first_name: str
     admin_last_name: str
+
+    @field_validator('admin_password')
+    @classmethod
+    def validate_admin_password(cls, v: str) -> str:
+        """Validate admin password meets security requirements."""
+        return validate_password_strength(v)
 
     @field_validator('cnpj')
     @classmethod
@@ -162,14 +216,15 @@ class VerifyEmailRequest(BaseModel):
 @router.post("/login/web", response_model=LoginResponse)
 async def login_web(
     credentials: LoginRequest,
+    response: Response,
 ) -> LoginResponse:
     """
     Authenticate user via Auth service for web clients.
 
     Web clients receive 1-hour session tokens with CSRF protection.
-
-    Proxies the login request to Auth service and returns
-    the access_token and csrf_token in the response body.
+    Tokens are set as cookies:
+    - session_token: HttpOnly cookie (not accessible to JS, prevents XSS)
+    - csrf_token: Readable cookie (accessible to JS for header)
     """
     try:
         result = await auth_client.login(
@@ -183,13 +238,40 @@ async def login_web(
         data = result.get("data", {})
         requires_2fa = data.get("requires_2fa", False)
 
+        access_token = tokens.get("access_token")
+        csrf_token = tokens.get("csrf_token")
+
+        # Set cookies only if we have tokens (not during 2FA flow)
+        if access_token and not requires_2fa:
+            # Set HttpOnly cookie for session token (not accessible to JS)
+            response.set_cookie(
+                key="session_token",
+                value=access_token,
+                httponly=True,
+                secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
+                samesite="lax",
+                max_age=3600,  # 1 hour
+                path="/",
+            )
+
+            # Set readable cookie for CSRF token (accessible to JS)
+            response.set_cookie(
+                key="csrf_token",
+                value=csrf_token,
+                httponly=False,  # JS needs to read this
+                secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
+                samesite="lax",
+                max_age=3600,
+                path="/",
+            )
+
         return LoginResponse(
             message="Login realizado com sucesso"
             if not requires_2fa
             else "Codigo 2FA enviado para seu email",
             requires_2fa=requires_2fa,
-            access_token=tokens.get("access_token"),
-            csrf_token=tokens.get("csrf_token"),
+            access_token=None,  # Don't expose in body, use cookies
+            csrf_token=None,  # Don't expose in body, use cookies
             user_id=str(data.get("user_id")) if data.get("user_id") else None,
         )
 
@@ -254,21 +336,27 @@ async def login_desktop(
 
 @router.post("/logout")
 async def logout(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    request: Request,
+    response: Response,
 ) -> dict[str, str]:
     """
     Logout user and invalidate session.
 
-    Requires Authorization Bearer header with session token.
-    Proxies logout to Auth service to invalidate the session.
+    Reads session token from HttpOnly cookie and invalidates it.
+    Clears both session_token and csrf_token cookies.
     """
-    session_token = credentials.credentials
+    # Get session token from cookie
+    session_token = request.cookies.get("session_token")
 
     if session_token:
         try:
             await auth_client.logout(session_token)
         except Exception:
             pass
+
+    # Clear cookies
+    response.delete_cookie(key="session_token", path="/")
+    response.delete_cookie(key="csrf_token", path="/")
 
     return {"message": "Logout realizado com sucesso"}
 
@@ -314,13 +402,27 @@ async def get_me(
     """
     Get current authenticated user.
 
-    Forwards request to Auth service /api/v1/auth/me.
+    Reads session token from HttpOnly cookie and CSRF token from header.
+    Forwards request to Auth service /api/v1/auth/me with Authorization header.
     """
-    excluded_headers = {'content-length', 'host', 'transfer-encoding', 'content-type'}
+    # Get session token from cookie
+    session_token = request.cookies.get("session_token")
+    csrf_token = request.headers.get("X-CSRF-Token")
+
+    if not session_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Nao autenticado",
+        )
+
+    # Build headers for auth service, including Authorization
+    excluded_headers = {'content-length', 'host', 'transfer-encoding', 'content-type', 'cookie'}
     headers = {
         k: v for k, v in request.headers.items()
         if k.lower() not in excluded_headers
     }
+    # Add Authorization header with session token
+    headers["Authorization"] = f"Bearer {session_token}"
 
     try:
         return await auth_client.proxy_request(

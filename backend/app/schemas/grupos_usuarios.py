@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from uuid import UUID
 
@@ -19,8 +19,7 @@ class GrupoUsuarioUpdate(BaseModel):
 class GrupoUsuarioOut(GrupoUsuarioBase):
     grupo_usuario_id: UUID
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GrupoUsuarioBulkCreate(BaseModel):

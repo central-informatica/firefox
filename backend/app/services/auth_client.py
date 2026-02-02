@@ -315,7 +315,6 @@ class AuthClient(BaseServiceClient):
         Returns:
             True if password changed successfully
         """
-        print('veio aquio auth client')
         response = await self._post(
             "/api/v1/auth/change-password",
             json={

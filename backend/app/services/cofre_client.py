@@ -132,7 +132,6 @@ class CofreClient(BaseServiceClient):
             CofreServiceError: If upload fails
         """
         headers = await self._auth_headers()
-        print('metadata: ', metadata)
         # Prepare multipart form data
         files = {
             "arquivo": (metadata['nome_arquivo'], arquivo, "application/x-pkcs12"),

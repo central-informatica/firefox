@@ -74,8 +74,6 @@ async def check_auth_with_ip(request: Request) -> dict[str, Any]:
 
         db = SessionLocal()
         try:
-            print('passei aqui')
-            print('client_ip: ', client_ip)
             ip_allowed = crud_usuarios_ip_whitelist.verificar_ip_permitido(
                 db, usuario_id, empresa_id, client_ip
             )

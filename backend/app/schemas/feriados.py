@@ -1,4 +1,4 @@
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, ConfigDict, constr
 from datetime import date, datetime
 from typing import Optional
 from uuid import UUID
@@ -25,5 +25,4 @@ class FeriadoOut(FeriadoBase):
     feriado_id: UUID
     criado_em: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

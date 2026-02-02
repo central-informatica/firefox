@@ -78,10 +78,10 @@ def test_register_duplicate_email(mock_register, client):
 # ============================================
 
 @patch("backend.app.services.auth_client.auth_client.login", new_callable=AsyncMock)
-def test_login_web_success(mock_login, client):
-    """Test successful web login - should return access token and csrf token"""
+def test_login_web_success_sets_cookies(mock_login, client):
+    """Test successful web login sets HttpOnly cookies"""
     mock_login.return_value = {
-        "data": {"requires_2fa": False, "user_id": None},
+        "data": {"requires_2fa": False, "user_id": "user-123"},
         "tokens": {
             "access_token": "mock-access-token-web",
             "csrf_token": "mock-csrf-token-web"
@@ -90,21 +90,22 @@ def test_login_web_success(mock_login, client):
 
     response = client.post(
         "/auth/login/web",
-        json={
-            "email": "web@test.com",
-            "password": "password123"
-        }
+        json={"email": "web@test.com", "password": "password123"}
     )
 
     assert response.status_code == 200
     body = response.json()
 
-    # Check LoginResponse structure
+    # Tokens should NOT be in body (security)
+    assert body["access_token"] is None
+    assert body["csrf_token"] is None
     assert body["message"] == "Login realizado com sucesso"
-    assert body["requires_2fa"] == False
-    assert body["access_token"] == "mock-access-token-web"
-    assert body["csrf_token"] == "mock-csrf-token-web"
-    assert body["user_id"] is None
+
+    # Cookies SHOULD be set
+    assert "session_token" in response.cookies
+    assert response.cookies["session_token"] == "mock-access-token-web"
+    assert "csrf_token" in response.cookies
+    assert response.cookies["csrf_token"] == "mock-csrf-token-web"
 
     # Verify auth_client.login was called with correct params
     mock_login.assert_called_once_with(
@@ -112,6 +113,27 @@ def test_login_web_success(mock_login, client):
         password="password123",
         client_type="web"
     )
+
+
+@patch("backend.app.services.auth_client.auth_client.login", new_callable=AsyncMock)
+def test_login_web_2fa_no_cookies(mock_login, client):
+    """Test web login with 2FA does NOT set cookies yet"""
+    mock_login.return_value = {
+        "data": {"requires_2fa": True, "user_id": "user-123"},
+        "tokens": {"access_token": None, "csrf_token": None}
+    }
+
+    response = client.post(
+        "/auth/login/web",
+        json={"email": "2fa@test.com", "password": "password123"}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["requires_2fa"] == True
+    assert body["user_id"] == "user-123"
+    assert "session_token" not in response.cookies
+    assert "csrf_token" not in response.cookies
 
 
 @patch("backend.app.services.auth_client.auth_client.login", new_callable=AsyncMock)
@@ -252,12 +274,12 @@ def test_login_desktop_with_2fa(mock_login, client):
 
 
 # ============================================
-# /ME ENDPOINT TESTS (WEB)
+# /ME ENDPOINT TESTS (WEB - COOKIE AUTHENTICATION)
 # ============================================
 
 @patch("backend.app.services.auth_client.auth_client.proxy_request", new_callable=AsyncMock)
-def test_me_web_authenticated(mock_proxy, client):
-    """Test /me endpoint with valid WEB authentication"""
+def test_me_with_cookie_authentication(mock_proxy, client):
+    """Test /me endpoint reads session from cookie"""
     mock_proxy.return_value = {
         "id": "user-123",
         "email": "web@test.com",
@@ -267,185 +289,198 @@ def test_me_web_authenticated(mock_proxy, client):
 
     response = client.get(
         "/auth/me",
-        headers={
-            "X-CSRF-Token": "mock-csrf-token",
-            "Authorization": "Bearer mock-token"
-        }
+        cookies={"session_token": "mock-session-token"},
+        headers={"X-CSRF-Token": "mock-csrf-token"}
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body["email"] == "web@test.com"
 
-
-@patch("backend.app.services.auth_client.auth_client.proxy_request", new_callable=AsyncMock)
-def test_me_web_missing_csrf(mock_proxy, client):
-    """Test /me endpoint without CSRF header"""
-    from backend.app.core.exceptions import AuthServiceError
-
-    mock_proxy.side_effect = AuthServiceError(
-        message="CSRF token missing",
-        status_code=403
-    )
-
-    response = client.get("/auth/me")
-
-    assert response.status_code == 403
+    # Verify proxy was called with Authorization header
+    mock_proxy.assert_called_once()
+    call_kwargs = mock_proxy.call_args.kwargs
+    assert "headers" in call_kwargs
+    assert "Authorization" in call_kwargs["headers"]
+    assert call_kwargs["headers"]["Authorization"] == "Bearer mock-session-token"
 
 
-@patch("backend.app.services.auth_client.auth_client.proxy_request", new_callable=AsyncMock)
-def test_me_web_unauthenticated(mock_proxy, client):
-    """Test /me endpoint without authentication"""
-    from backend.app.core.exceptions import AuthServiceError
-
-    mock_proxy.side_effect = AuthServiceError(
-        message="Unauthorized",
-        status_code=401
-    )
-
-    response = client.get("/auth/me")
-
-    assert response.status_code == 401
-
-
-# ============================================
-# /ME ENDPOINT TESTS (DESKTOP)
-# ============================================
-
-@patch("backend.app.services.auth_client.auth_client.proxy_request", new_callable=AsyncMock)
-def test_me_desktop_authenticated(mock_proxy, client):
-    """Test /me endpoint with valid DESKTOP authentication (Bearer token)"""
-    mock_proxy.return_value = {
-        "id": "user-456",
-        "email": "desktop@test.com",
-        "first_name": "Desktop",
-        "last_name": "User"
-    }
-
+def test_me_without_cookie_returns_401(client):
+    """Test /me endpoint returns 401 when no session cookie"""
     response = client.get(
         "/auth/me",
-        headers={"Authorization": "Bearer mock-desktop-token"}
-    )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["email"] == "desktop@test.com"
-
-
-@patch("backend.app.services.auth_client.auth_client.proxy_request", new_callable=AsyncMock)
-def test_me_desktop_invalid_token(mock_proxy, client):
-    """Test /me endpoint with invalid Bearer token"""
-    from backend.app.core.exceptions import AuthServiceError
-
-    mock_proxy.side_effect = AuthServiceError(
-        message="Invalid token",
-        status_code=401
-    )
-
-    response = client.get(
-        "/auth/me",
-        headers={"Authorization": "Bearer invalid.token"}
+        headers={"X-CSRF-Token": "mock-csrf"}
     )
 
     assert response.status_code == 401
-
-
-@patch("backend.app.services.auth_client.auth_client.proxy_request", new_callable=AsyncMock)
-def test_me_desktop_malformed_authorization(mock_proxy, client):
-    """Test /me endpoint with malformed Authorization header"""
-    from backend.app.core.exceptions import AuthServiceError
-
-    mock_proxy.side_effect = AuthServiceError(
-        message="Invalid authorization format",
-        status_code=401
-    )
-
-    response = client.get(
-        "/auth/me",
-        headers={"Authorization": "NotBearer token"}
-    )
-
-    assert response.status_code == 401
+    assert "Nao autenticado" in response.json()["detail"]
 
 
 # ============================================
-# LOGOUT TESTS (WEB)
+# /ME ENDPOINT TESTS (DESKTOP) - REMOVED
+# ============================================
+# Desktop clients do not use the /me endpoint via this API.
+# Desktop authentication is handled differently.
+
+
+# ============================================
+# LOGOUT TESTS (COOKIE-BASED)
 # ============================================
 
 @patch("backend.app.services.auth_client.auth_client.logout", new_callable=AsyncMock)
-def test_logout_web_success(mock_logout, client):
-    """Test successful web logout - should revoke token"""
+def test_logout_reads_cookie_and_clears(mock_logout, client):
+    """Test logout reads session from cookie and clears cookies"""
     mock_logout.return_value = True
 
     response = client.post(
         "/auth/logout",
-        headers={"Authorization": "Bearer mock-session-token"}
+        cookies={"session_token": "mock-session-token", "csrf_token": "mock-csrf"}
     )
 
     assert response.status_code == 200
     assert "Logout realizado com sucesso" in response.json()["message"]
 
-    mock_logout.assert_called_once()
+    # Verify logout was called with correct token
+    mock_logout.assert_called_once_with("mock-session-token")
 
-
-# ============================================
-# LOGOUT TESTS (DESKTOP)
-# ============================================
 
 @patch("backend.app.services.auth_client.auth_client.logout", new_callable=AsyncMock)
-def test_logout_desktop_success(mock_logout, client):
-    """Test successful desktop logout - should revoke token"""
+def test_logout_without_cookie_still_succeeds(mock_logout, client):
+    """Test logout succeeds even without session cookie"""
+    response = client.post("/auth/logout")
+
+    assert response.status_code == 200
+    # logout should NOT be called since no token
+    mock_logout.assert_not_called()
+
+
+# ============================================
+# INTEGRATION TEST - FULL COOKIE AUTH FLOW
+# ============================================
+
+@patch("backend.app.services.auth_client.auth_client.login", new_callable=AsyncMock)
+@patch("backend.app.services.auth_client.auth_client.proxy_request", new_callable=AsyncMock)
+@patch("backend.app.services.auth_client.auth_client.logout", new_callable=AsyncMock)
+def test_full_cookie_auth_flow(mock_logout, mock_proxy, mock_login, client):
+    """Test complete authentication flow with cookies"""
+    # 1. Login
+    mock_login.return_value = {
+        "data": {"requires_2fa": False, "user_id": "user-123"},
+        "tokens": {"access_token": "session-abc", "csrf_token": "csrf-xyz"}
+    }
+
+    login_response = client.post(
+        "/auth/login/web",
+        json={"email": "test@test.com", "password": "pass123"}
+    )
+    assert login_response.status_code == 200
+    session_token = login_response.cookies.get("session_token")
+    csrf_token = login_response.cookies.get("csrf_token")
+    assert session_token == "session-abc"
+    assert csrf_token == "csrf-xyz"
+
+    # 2. Access /me with cookies
+    mock_proxy.return_value = {"id": "user-123", "email": "test@test.com"}
+
+    me_response = client.get(
+        "/auth/me",
+        cookies={"session_token": session_token},
+        headers={"X-CSRF-Token": csrf_token}
+    )
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == "test@test.com"
+
+    # Verify Authorization header was constructed from cookie
+    call_kwargs = mock_proxy.call_args.kwargs
+    assert call_kwargs["headers"]["Authorization"] == "Bearer session-abc"
+
+    # 3. Logout
     mock_logout.return_value = True
+    logout_response = client.post(
+        "/auth/logout",
+        cookies={"session_token": session_token}
+    )
+    assert logout_response.status_code == 200
+    mock_logout.assert_called_once_with("session-abc")
+
+
+# ============================================
+# DEBUG FLAG COOKIE SECURITY TESTS
+# ============================================
+
+@patch("backend.app.api.routes.auth.DEBUG", True)
+@patch("backend.app.services.auth_client.auth_client.login", new_callable=AsyncMock)
+def test_login_web_cookies_not_secure_in_debug_mode(mock_login, client):
+    """Test cookies have secure=False when DEBUG=True (development)"""
+    mock_login.return_value = {
+        "data": {"requires_2fa": False, "user_id": "user-123"},
+        "tokens": {
+            "access_token": "mock-access-token",
+            "csrf_token": "mock-csrf-token"
+        }
+    }
 
     response = client.post(
-        "/auth/logout",
-        headers={"Authorization": "Bearer mock-desktop-token"}
+        "/auth/login/web",
+        json={"email": "test@test.com", "password": "password123"}
     )
 
     assert response.status_code == 200
 
-    mock_logout.assert_called_once()
+    # Parse Set-Cookie headers to check secure flag
+    set_cookie_headers = response.headers.get_list("set-cookie")
 
-
-# ============================================
-# TOKEN VALIDATION TESTS
-# ============================================
-
-@patch("backend.app.services.auth_client.auth_client.proxy_request", new_callable=AsyncMock)
-def test_web_token_cannot_be_used_as_bearer(mock_proxy, client):
-    """Test that WEB tokens cannot be used with Authorization header"""
-    from backend.app.core.exceptions import AuthServiceError
-
-    mock_proxy.side_effect = AuthServiceError(
-        message="Tipo de cliente inválido",
-        status_code=401
+    session_cookie = next(
+        (h for h in set_cookie_headers if h.startswith("session_token=")), None
+    )
+    csrf_cookie = next(
+        (h for h in set_cookie_headers if h.startswith("csrf_token=")), None
     )
 
-    response = client.get(
-        "/auth/me",
-        headers={"Authorization": "Bearer web-session-token"}
+    assert session_cookie is not None, "session_token cookie not found"
+    assert csrf_cookie is not None, "csrf_token cookie not found"
+
+    # In debug mode (DEBUG=True), secure flag should NOT be present
+    assert "secure" not in session_cookie.lower(), \
+        f"session_token should NOT have secure flag in debug mode: {session_cookie}"
+    assert "secure" not in csrf_cookie.lower(), \
+        f"csrf_token should NOT have secure flag in debug mode: {csrf_cookie}"
+
+
+@patch("backend.app.api.routes.auth.DEBUG", False)
+@patch("backend.app.services.auth_client.auth_client.login", new_callable=AsyncMock)
+def test_login_web_cookies_secure_in_production_mode(mock_login, client):
+    """Test cookies have secure=True when DEBUG=False (production)"""
+    mock_login.return_value = {
+        "data": {"requires_2fa": False, "user_id": "user-123"},
+        "tokens": {
+            "access_token": "mock-access-token",
+            "csrf_token": "mock-csrf-token"
+        }
+    }
+
+    response = client.post(
+        "/auth/login/web",
+        json={"email": "test@test.com", "password": "password123"}
     )
 
-    assert response.status_code == 401
-    body = response.json()
-    assert "Tipo de cliente inválido" in body["detail"]
+    assert response.status_code == 200
 
+    # Parse Set-Cookie headers to check secure flag
+    set_cookie_headers = response.headers.get_list("set-cookie")
 
-@patch("backend.app.services.auth_client.auth_client.proxy_request", new_callable=AsyncMock)
-def test_desktop_token_cannot_be_used_in_cookie(mock_proxy, client):
-    """Test that DESKTOP tokens cannot be used via cookies"""
-    from backend.app.core.exceptions import AuthServiceError
-
-    mock_proxy.side_effect = AuthServiceError(
-        message="Tipo de cliente inválido",
-        status_code=401
+    session_cookie = next(
+        (h for h in set_cookie_headers if h.startswith("session_token=")), None
+    )
+    csrf_cookie = next(
+        (h for h in set_cookie_headers if h.startswith("csrf_token=")), None
     )
 
-    response = client.get(
-        "/auth/me",
-        headers={"X-CSRF-Token": "fake-csrf"}
-    )
+    assert session_cookie is not None, "session_token cookie not found"
+    assert csrf_cookie is not None, "csrf_token cookie not found"
 
-    assert response.status_code == 401
-    body = response.json()
-    assert "Tipo de cliente inválido" in body["detail"]
+    # In production mode (DEBUG=False), secure flag SHOULD be present
+    assert "secure" in session_cookie.lower(), \
+        f"session_token should have secure flag in production mode: {session_cookie}"
+    assert "secure" in csrf_cookie.lower(), \
+        f"csrf_token should have secure flag in production mode: {csrf_cookie}"

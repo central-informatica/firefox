@@ -28,6 +28,10 @@ from backend.app.services.cofre_client import cofre_client
 
 router = APIRouter(prefix="/certificados", tags=["Certificados"])
 
+# Maximum certificate file size (10 MB)
+# PFX/P12 certificates are typically under 10KB, but may include full chains
+MAX_CERT_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
 
 # -----------------------------------------------------------------------------
 # Request/Response Models
@@ -317,6 +321,26 @@ def verificar_regras_acesso(
     )
 
 
+def _normalize_domain(domain: str) -> str:
+    """
+    Normalize a domain name to prevent homograph attacks.
+
+    Uses IDNA encoding to convert Unicode domains to ASCII (Punycode),
+    which ensures consistent comparison regardless of Unicode representation.
+
+    Examples:
+    - "example.com" -> "example.com"
+    - "exаmple.com" (Cyrillic 'а') -> "xn--exmple-4uf.com"
+    """
+    try:
+        # Encode to IDNA (Punycode) for Unicode normalization
+        # This converts Unicode homoglyphs to their ASCII representation
+        return domain.encode('idna').decode('ascii').lower()
+    except (UnicodeError, UnicodeDecodeError):
+        # If encoding fails, fall back to lowercase
+        return domain.lower()
+
+
 def verificar_url_permitida(
     db: Session,
     usuario_id: str,
@@ -330,6 +354,7 @@ def verificar_url_permitida(
     - Request URL must be HTTPS
     - Only the domain is compared (not the full path)
     - Allowed URLs in database must also be HTTPS
+    - Domains are normalized using IDNA encoding to prevent homograph attacks
 
     Returns:
         True if URL is allowed
@@ -349,7 +374,8 @@ def verificar_url_permitida(
             detail="Acesso negado: apenas URLs HTTPS sao permitidas"
         )
 
-    request_domain = parsed_url.netloc.lower()  # e.g., "www.example.com"
+    # Normalize the request domain using IDNA encoding to prevent homograph attacks
+    request_domain = _normalize_domain(parsed_url.netloc)
 
     # Get grupo_cert entries for this user and certificate
     grupo_certs = (
@@ -387,7 +413,8 @@ def verificar_url_permitida(
             allowed_parsed = urlparse(url_entry.url)
             # Only allow HTTPS URLs from database
             if allowed_parsed.scheme == "https":
-                allowed_domain = allowed_parsed.netloc.lower()
+                # Normalize allowed domain for consistent comparison
+                allowed_domain = _normalize_domain(allowed_parsed.netloc)
                 if request_domain == allowed_domain:
                     return True
 
@@ -433,12 +460,19 @@ async def upload_certificate(
             detail="empresa_id deve ser um UUID válido",
         )
 
-    # 3. Read file content
+    # 3. Read file content with size limit check
     file_content = await arquivo.read()
     if not file_content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Arquivo vazio",
+        )
+
+    # Check file size to prevent DoS attacks
+    if len(file_content) > MAX_CERT_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Arquivo muito grande. Tamanho maximo permitido: {MAX_CERT_SIZE_BYTES // (1024 * 1024)} MB",
         )
 
     # 4. Validate PFX password
