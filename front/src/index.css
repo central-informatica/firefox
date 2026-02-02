@@ -1,5 +1,61 @@
 @import "tailwindcss";
 
+@theme {
+  /* Brand Colors */
+  --color-xfire-red: #D32F2F;
+  --color-xfire-orange: #F57C00;
+
+  /* Dark Backgrounds */
+  --color-dark-primary: #0F0F0F;
+  --color-dark-secondary: #1A1A1A;
+  --color-dark-tertiary: #222222;
+
+  /* Neutrals */
+  --color-neutral-100: #F5F5F5;
+  --color-neutral-200: #E0E0E0;
+  --color-neutral-300: #BDBDBD;
+  --color-neutral-400: #9E9E9E;
+  --color-neutral-500: #757575;
+  --color-neutral-600: #616161;
+  --color-neutral-700: #424242;
+  --color-neutral-800: #303030;
+  --color-neutral-900: #2B2B2B;
+
+  /* Status Colors */
+  --color-status-permitido: #2E7D32;
+  --color-status-monitorado: #1565C0;
+  --color-status-alerta: #FB8C00;
+  --color-status-bloqueado: #C62828;
+  --color-status-expirando: #F9A825;
+
+  /* Legacy */
+  --color-primary: #F57C00;
+  --color-secondary: #D32F2F;
+  --color-success: #2E7D32;
+  --color-danger: #C62828;
+  --color-purple: #642d61;
+
+  /* Font Families */
+  --font-montserrat: 'Montserrat', system-ui, sans-serif;
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Border Radius */
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --radius-modal: 16px;
+
+  /* Spacing */
+  --spacing-260: 260px;
+
+  /* Animations */
+  --animate-fadeIn: fadeIn 0.5s ease-in-out;
+  --animate-slideUp: slideUp 0.6s ease-out;
+  --animate-slideInLeft: slideInLeft 0.8s ease-out;
+  --animate-blob: blob 7s infinite;
+  --animate-float: float 3s ease-in-out infinite;
+}
+
 @layer base {
   :root {
     font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;

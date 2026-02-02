@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch, apiFetchWithToken } from "../api/api";
+import { apiFetchWithToken } from "../api/api";
 import { loginWeb, getMe, logout as logoutApi } from "../api/auth/auth";
 
 export const AuthContext = createContext();
@@ -15,14 +15,19 @@ export function AuthProvider({ children }) {
       const res = await getMe();
 
       if (res.ok) {
-        // const data = await res.json();
-        // setUser(data);
-        setUser({ id: 1, nome: "Usuário de Exemplo", email: "guibson@teste.com"})
+        const data = await res.json();
+        setUser({
+          id: data.id,
+          nome: `${data.first_name || ""} ${data.last_name || ""}`.trim() || data.email,
+          email: data.email,
+          organization_id: data.organization_id,
+          is_admin: data.is_admin,
+        });
       } else {
         setUser(null);
       }
     } catch (err) {
-      console.error("Erro ao carregar usuário:", err);
+      console.error("Erro ao carregar usuario:", err);
       setUser(null);
     } finally {
       setLoading(false);
@@ -34,29 +39,52 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function login(email, senha) {
-    // const response = await loginWeb(email, senha);
+    const response = await loginWeb(email, senha);
 
-    // if (!response.ok) {
-    
-    //   throw new Error("Login inválido");
-    // }
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || "Login invalido");
+    }
 
-    // const data = await response.json();
-    // setUser(data);
-    setUser({ id: 1, nome: "Usuário de Exemplo", email: "guibson@teste.com" });
-
+    // Cookies are set by backend automatically
+    // Load user data from /auth/me
+    await loadUser();
     navigate("/");
   }
 
-  async function register({ nome, email, senha, telefone }) {
+  async function register({
+    organization_name,
+    cnpj,
+    address_street,
+    address_city,
+    address_state,
+    address_country,
+    address_postal_code,
+    admin_email,
+    admin_password,
+    admin_first_name,
+    admin_last_name,
+  }) {
     const response = await apiFetchWithToken("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, email, senha, telefone }),
+      body: JSON.stringify({
+        organization_name,
+        cnpj,
+        address_street,
+        address_city,
+        address_state,
+        address_country,
+        address_postal_code,
+        admin_email,
+        admin_password,
+        admin_first_name,
+        admin_last_name,
+      }),
     });
 
     if (!response.ok) {
-      let msg = "Erro ao cadastrar usuário";
+      let msg = "Erro ao cadastrar usuario";
 
       try {
         const data = await response.json();
@@ -76,13 +104,13 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     try {
-      await logoutApi();
+      await logoutApi(); // Backend clears cookies
     } catch (err) {
       console.error("Erro ao fazer logout:", err);
     }
 
     setUser(null);
-    navigate("/login"); // ✔ redireciona
+    navigate("/login");
   }
 
   return (
