@@ -1,6 +1,6 @@
 import { getCookie } from "./cookies";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = import.meta.env.VITE_URL_BACKEND || "http://localhost:8000";
 
 /**
  * Basic API fetch without authentication

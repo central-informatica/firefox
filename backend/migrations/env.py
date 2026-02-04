@@ -4,11 +4,15 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+from dotenv import load_dotenv
 
 # Adiciona raiz do projeto ao PYTHONPATH
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(PROJECT_ROOT)
+
+# Carrega o .env explicitamente do diretório raiz do projeto
+dotenv_path = os.path.join(PROJECT_ROOT, ".env")
+load_dotenv(dotenv_path)
 
 from backend.app.db.database import Base
 from backend.app.core.config import DATABASE_URL

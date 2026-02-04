@@ -25,18 +25,6 @@ class Base(DeclarativeBase):
     pass
 
 
-class Ramos(Base):
-    """Ramos de atuacao das empresas (industry sectors)."""
-    __tablename__ = 'ramos'
-    __table_args__ = (
-        PrimaryKeyConstraint('ramos_id', name='ramos_pkey'),
-        {'comment': 'Ramos de atuacao das empresas.'}
-    )
-
-    ramos_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
-    ramo: Mapped[str] = mapped_column(String(80), nullable=False, comment='Nome do ramo de atuacao.')
-
-
 class Certificados(Base):
     """Certificados digitais criptografados das empresas."""
     __tablename__ = 'certificados'

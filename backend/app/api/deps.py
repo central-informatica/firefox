@@ -14,7 +14,13 @@ from typing import Any
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from backend.app.core.exceptions import AuthServiceError
+from backend.app.core.exceptions import (
+    AuthServiceError,
+    CircuitBreakerOpenError,
+    ServiceError,
+    ServiceTimeoutError,
+    ServiceUnavailableError,
+)
 from backend.app.services.auth_client import auth_client
 
 # Headers to exclude when forwarding
@@ -25,16 +31,31 @@ async def check_auth(request: Request) -> dict[str, Any]:
     """
     Check if user is authenticated by forwarding to Auth service /api/v1/auth/me.
 
+    Reads session_token from HttpOnly cookie and converts to Authorization header.
+
     Returns:
         dict with user information from Auth service
 
     Raises:
         HTTPException 401: If not authenticated
     """
+    # Get session token from cookie
+    session_token = request.cookies.get("session_token")
+
+    if not session_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authorization header",
+        )
+
+    # Build headers, excluding certain ones
     headers = {
         k: v for k, v in request.headers.items()
         if k.lower() not in EXCLUDED_HEADERS
     }
+
+    # Add Authorization header with session token from cookie
+    headers["Authorization"] = f"Bearer {session_token}"
 
     try:
         return await auth_client.proxy_request(
@@ -46,6 +67,31 @@ async def check_auth(request: Request) -> dict[str, Any]:
         raise HTTPException(
             status_code=e.status_code or status.HTTP_401_UNAUTHORIZED,
             detail=e.message or "Nao autenticado",
+        )
+    except ServiceTimeoutError:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Servico de autenticacao demorou muito para responder",
+        )
+    except ServiceUnavailableError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Servico de autenticacao indisponivel",
+        )
+    except CircuitBreakerOpenError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Servico de autenticacao temporariamente bloqueado",
+        )
+    except ServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=e.message or "Erro ao verificar autenticacao",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro inesperado ao verificar autenticacao: {str(e)}",
         )
 
 
@@ -60,6 +106,9 @@ async def check_auth_with_ip(request: Request) -> dict[str, Any]:
         HTTPException 401: If not authenticated
         HTTPException 403: If IP not whitelisted
     """
+    import logging
+
+    logger = logging.getLogger(__name__)
     user_data = await check_auth(request)
 
     # IP Whitelist validation
@@ -82,6 +131,15 @@ async def check_auth_with_ip(request: Request) -> dict[str, Any]:
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"Acesso negado: IP nao autorizado para este usuario/empresa, {client_ip}",
                 )
+        except HTTPException:
+            # Re-raise HTTP exceptions (like 403 for IP not allowed)
+            raise
+        except Exception as e:
+            # Log the error but allow access if IP whitelist check fails
+            # This handles cases like missing table, database errors, etc.
+            logger.warning(
+                f"IP whitelist check failed (allowing access): {type(e).__name__}: {e}"
+            )
         finally:
             db.close()
 

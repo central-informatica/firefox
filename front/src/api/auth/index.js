@@ -1,1 +1,1 @@
-export { loginWeb, getMe, logout } from "./auth";
+export { loginWeb, getMe, logout, verifyEmail, forgotPassword, resetPassword, verify2FA } from "./auth";

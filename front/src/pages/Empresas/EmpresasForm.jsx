@@ -243,9 +243,9 @@ const EmpresaForm = () => {
           <FiBriefcase className="text-status-monitorado" size={20} />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-status-monitorado mb-1">Informacoes importantes</h3>
+          <h3 className="font-semibold text-status-monitorado mb-1">Informações importantes</h3>
           <p className="text-sm text-status-monitorado/80">
-            Apos cadastrar a empresa, voce podera adicionar membros, certificados e configurar permissoes especificas.
+            Apos cadastrar a empresa, voce podera adicionar membros, certificados e configurar permissões especificas.
           </p>
         </div>
       </div>

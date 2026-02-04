@@ -1,18 +1,23 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiMail, FiLock, FiArrowRight, FiShield } from "react-icons/fi";
 
 import Input from "./components/Input/Input";
+import TwoFactorAuth from "./components/TwoFactorAuth/TwoFactorAuth";
 import { useAuth } from "./auth/useAuth";
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, completeLogin } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // 2FA state
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [userId2FA, setUserId2FA] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,15 +29,51 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      await login(email, senha);
-      toast.success("Login realizado com sucesso!");
+      const result = await login(email, senha);
+
+      if (result?.requires_2fa) {
+        // Show 2FA screen
+        setRequires2FA(true);
+        setUserId2FA(result.user_id);
+        toast.info("Codigo de verificacao enviado para seu email.");
+      } else {
+        toast.success("Login realizado com sucesso!");
+      }
     } catch (err) {
       console.error(err);
-      toast.error("Credenciais invalidas.");
+      toast.error(err?.message || "Credenciais invalidas.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handle2FASuccess = async () => {
+    try {
+      await completeLogin();
+      toast.success("Login realizado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao completar login.");
+    }
+  };
+
+  const handle2FABack = () => {
+    setRequires2FA(false);
+    setUserId2FA(null);
+    setSenha("");
+  };
+
+  // Show 2FA screen if required
+  if (requires2FA) {
+    return (
+      <TwoFactorAuth
+        userId={userId2FA}
+        email={email}
+        onSuccess={handle2FASuccess}
+        onBack={handle2FABack}
+      />
+    );
+  }
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-dark-primary p-4">
@@ -86,6 +127,16 @@ const Login = () => {
               className="pl-12 w-full"
               autoComplete="current-password"
             />
+          </div>
+
+          <div className="text-right">
+            <button
+              type="button"
+              onClick={() => navigate('/esqueci-senha')}
+              className="text-sm text-neutral-400 hover:text-xfire-orange transition-colors duration-300 bg-transparent border-none cursor-pointer"
+            >
+              Esqueceu sua senha?
+            </button>
           </div>
 
           <button

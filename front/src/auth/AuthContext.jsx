@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetchWithToken } from "../api/api";
+import { apiFetch, apiFetchWithToken } from "../api/api";
 import { loginWeb, getMe, logout as logoutApi } from "../api/auth/auth";
 
 export const AuthContext = createContext();
@@ -23,12 +23,15 @@ export function AuthProvider({ children }) {
           organization_id: data.organization_id,
           is_admin: data.is_admin,
         });
+        return true;
       } else {
         setUser(null);
+        return false;
       }
     } catch (err) {
       console.error("Erro ao carregar usuario:", err);
       setUser(null);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -46,10 +49,32 @@ export function AuthProvider({ children }) {
       throw new Error(error.detail || "Login invalido");
     }
 
+    const data = await response.json();
+
+    // Check if 2FA is required
+    if (data.requires_2fa) {
+      return {
+        requires_2fa: true,
+        user_id: data.user_id,
+        email: email,
+      };
+    }
+
     // Cookies are set by backend automatically
     // Load user data from /auth/me
     await loadUser();
     navigate("/");
+    return { requires_2fa: false };
+  }
+
+  async function completeLogin() {
+    // Called after 2FA verification to load user and navigate
+    const success = await loadUser();
+    if (success) {
+      navigate("/");
+    } else {
+      throw new Error("Falha ao carregar dados do usuario. Tente fazer login novamente.");
+    }
   }
 
   async function register({
@@ -65,7 +90,7 @@ export function AuthProvider({ children }) {
     admin_first_name,
     admin_last_name,
   }) {
-    const response = await apiFetchWithToken("/auth/register", {
+    const response = await apiFetch("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -115,7 +140,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, logout, register }}
+      value={{ user, loading, login, logout, register, completeLogin }}
     >
       {children}
     </AuthContext.Provider>
