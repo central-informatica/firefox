@@ -30,6 +30,7 @@ def listar_detalhado_por_empresa(
     page: int = 1,
     limit: int = 10,
     search: str = "",
+    grupo_id: str | None = None,
     db: Session = Depends(get_db),
     current_user: dict[str, Any] = Depends(check_auth_with_ip),
 ):
@@ -57,6 +58,10 @@ def listar_detalhado_por_empresa(
             Certificados.deleted_at.is_(None),
         )
     )
+
+    # Apply grupo filter
+    if grupo_id:
+        query = query.filter(GruposCertificados.grupo_id == grupo_id)
 
     # Apply search filter
     if search:

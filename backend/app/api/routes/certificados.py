@@ -758,7 +758,7 @@ async def list_certificates(
     """
     List certificates with pagination.
 
-    Admin only - If empresa_id is provided, lists certificates for that empresa.
+    If empresa_id is provided, lists certificates for that empresa.
     Otherwise, lists all certificates the user has access to.
 
     Args:
@@ -769,13 +769,7 @@ async def list_certificates(
         sort: Sort field and direction
         grupo_id: Filter by grupo ID
     """
-    # Check if user is admin
-    if not user_data.get("is_admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas administradores podem listar certificados",
-        )
-
+    # Usuários comuns podem listar certificados
     usuario_id = get_user_id_from_data(user_data)
 
     if empresa_id:
@@ -975,15 +969,8 @@ async def get_certificate(
     """
     Get specific certificate by ID.
 
-    Admin only.
+    Usuários comuns podem visualizar certificados que têm acesso.
     """
-    # Check if user is admin
-    if not user_data.get("is_admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas administradores podem visualizar certificados",
-        )
-
     usuario_id = get_user_id_from_data(user_data)
 
     cert = verificar_acesso_certificado(db, usuario_id, certificado_id)

@@ -41,7 +41,14 @@ export default function GlobalURLs() {
       setSites(response.data || []);
     } catch (error) {
       console.error("Erro ao carregar sites:", error);
-      toast.error("Erro ao carregar sites");
+      let errorMessage = "Erro ao carregar sites";
+      try {
+        const parsed = JSON.parse(error.message);
+        errorMessage = parsed.detail || errorMessage;
+      } catch {
+        errorMessage = error.message || errorMessage;
+      }
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -109,7 +116,14 @@ export default function GlobalURLs() {
       carregarSites();
     } catch (error) {
       console.error("Erro ao salvar site:", error);
-      toast.error("Erro ao salvar site");
+      let errorMessage = "Erro ao salvar site";
+      try {
+        const parsed = JSON.parse(error.message);
+        errorMessage = parsed.detail || errorMessage;
+      } catch {
+        errorMessage = error.message || errorMessage;
+      }
+      toast.error(errorMessage);
     }
   };
 
@@ -121,7 +135,14 @@ export default function GlobalURLs() {
         carregarSites();
       } catch (error) {
         console.error("Erro ao remover site:", error);
-        toast.error("Erro ao remover site");
+        let errorMessage = "Erro ao remover site";
+        try {
+          const parsed = JSON.parse(error.message);
+          errorMessage = parsed.detail || errorMessage;
+        } catch {
+          errorMessage = error.message || errorMessage;
+        }
+        toast.error(errorMessage);
       }
     }
   };

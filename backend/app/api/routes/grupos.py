@@ -52,7 +52,7 @@ def listar_grupos_empresa(
     current_user=Depends(check_auth_with_ip),
 ):
     """List grupos by empresa (optionally filtered by plano)."""
-    _verificar_admin(current_user)
+    # Usuários comuns podem listar grupos
     usuario_id = current_user.get("id") or current_user.get("usuario_id")
     return listar_grupos_por_empresa(
         db=db,
@@ -69,7 +69,7 @@ def obter(
     current_user=Depends(check_auth_with_ip),
 ):
     """Get a specific grupo by ID."""
-    _verificar_admin(current_user)
+    # Usuários comuns podem visualizar grupo
     grupo = get_grupo(db, grupo_id)
     if not grupo:
         raise HTTPException(status_code=404, detail="Grupo nao encontrado")
@@ -135,7 +135,7 @@ def listar_certificados_grupo(
     current_user=Depends(check_auth_with_ip),
 ):
     """List certificados associated with a grupo."""
-    _verificar_admin(current_user)
+    # Usuários comuns podem listar certificados do grupo
     return listar_certificados_do_grupo(db=db, grupo_id=grupo_id)
 
 

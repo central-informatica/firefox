@@ -15,10 +15,12 @@ import {
   FiPlus,
   FiX,
   FiTrash2,
+  FiLayers,
 } from "react-icons/fi";
 
 import DataTable from "../../components/Tables/DataTable";
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
+import SelectPlanoTrabalho from "../../components/Select/SelectPlanoTrabalho";
 import SelectGrupo from "../../components/Select/SelectGrupo";
 import { apiFetchWithToken } from "../../api/api";
 import {
@@ -30,11 +32,13 @@ import {
 export default function CertificadosGruposList() {
   const navigate = useNavigate();
   const [empresaId, setEmpresaId] = useState(null);
+  const [filterGrupoId, setFilterGrupoId] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [stats, setStats] = useState({ total: 0, ativos: 0, expirando: 0, expirados: 0 });
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
+  const [selectedPlanoId, setSelectedPlanoId] = useState(null);
   const [selectedGrupoId, setSelectedGrupoId] = useState(null);
   const [availableCerts, setAvailableCerts] = useState([]);
   const [selectedCerts, setSelectedCerts] = useState([]);
@@ -63,6 +67,10 @@ export default function CertificadosGruposList() {
       limit,
       search: search || "",
     });
+
+    if (filterGrupoId) {
+      params.append("grupo_id", filterGrupoId);
+    }
 
     const res = await apiFetchWithToken(
       `/grupos-certificados/empresa/${empresaId}/detalhado?${params.toString()}`
@@ -99,6 +107,7 @@ export default function CertificadosGruposList() {
       return;
     }
     setShowModal(true);
+    setSelectedPlanoId(null);
     setSelectedGrupoId(null);
     setSelectedCerts([]);
     setLoadingCerts(true);
@@ -117,6 +126,7 @@ export default function CertificadosGruposList() {
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setSelectedPlanoId(null);
     setSelectedGrupoId(null);
     setSelectedCerts([]);
   };
@@ -337,8 +347,26 @@ export default function CertificadosGruposList() {
               value={empresaId}
               onChange={(id) => {
                 setEmpresaId(id);
+                setFilterGrupoId(null);
                 setReloadKey((k) => k + 1);
               }}
+            />
+          </div>
+
+          <div className="flex-1 max-w-sm">
+            <label className="block text-sm font-medium text-neutral-400 mb-2 flex items-center gap-2">
+              <FiUsers className="text-neutral-500" size={14} />
+              Grupo
+            </label>
+            <SelectGrupo
+              empresaId={empresaId}
+              value={filterGrupoId}
+              onChange={(id) => {
+                setFilterGrupoId(id);
+                setReloadKey((k) => k + 1);
+              }}
+              placeholder="Todos os grupos"
+              isDisabled={!empresaId}
             />
           </div>
         </div>
@@ -459,6 +487,26 @@ export default function CertificadosGruposList() {
 
             {/* Modal Body */}
             <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+              {/* Seleção de Plano de Trabalho */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2 flex items-center gap-2">
+                  <FiLayers className="text-neutral-500" size={14} />
+                  Plano de Trabalho
+                </label>
+                <SelectPlanoTrabalho
+                  empresaId={empresaId}
+                  value={selectedPlanoId}
+                  onChange={(id) => {
+                    setSelectedPlanoId(id);
+                    setSelectedGrupoId(null); // Reset grupo when plano changes
+                  }}
+                  placeholder="Selecione um plano de trabalho"
+                />
+                <p className="mt-1 text-xs text-neutral-500">
+                  Selecione um plano para poder criar novos grupos
+                </p>
+              </div>
+
               {/* Seleção de Grupo */}
               <div>
                 <label className="block text-sm font-medium text-neutral-400 mb-2 flex items-center gap-2">
@@ -467,9 +515,11 @@ export default function CertificadosGruposList() {
                 </label>
                 <SelectGrupo
                   empresaId={empresaId}
+                  planoTrabalhoId={selectedPlanoId}
                   value={selectedGrupoId}
                   onChange={setSelectedGrupoId}
-                  placeholder="Selecione um grupo"
+                  placeholder={selectedPlanoId ? "Selecione ou crie um grupo" : "Selecione um plano primeiro"}
+                  isDisabled={!selectedPlanoId}
                 />
               </div>
 
