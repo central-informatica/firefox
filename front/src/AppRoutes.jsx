@@ -14,6 +14,9 @@ import GruposList from "./pages/Grupos/GruposList";
 import GruposForm from "./pages/Grupos/GruposForm";
 import AssociarUsuarios from "./pages/Grupos/AssociarUsuarios";
 import GlobalURLs from "./pages/Seguranca/GlobalURLs";
+import RegrasAcessoUrlsList from "./pages/Seguranca/RegrasAcessoUrlsList";
+import RegrasAcessoIpsList from "./pages/Seguranca/RegrasAcessoIpsList";
+import FeriadosList from "./pages/Configuracoes/FeriadosList";
 
 
 export default function AppRoutes() {
@@ -49,6 +52,10 @@ export default function AppRoutes() {
       <Route path="/grupos/associar-usuarios" element={<AssociarUsuarios />} />
 
       <Route path="/seguranca/enderecos-permitidos" element={<GlobalURLs />} />
+      <Route path="/seguranca/regras-acesso-urls" element={<RegrasAcessoUrlsList />} />
+      <Route path="/seguranca/regras-acesso-ips" element={<RegrasAcessoIpsList />} />
+
+      <Route path="/configuracoes/feriados" element={<FeriadosList />} />
 
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>

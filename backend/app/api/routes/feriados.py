@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from backend.app.api.deps import check_auth_with_ip
 from backend.app.db.session import get_db
+from backend.app.db.models import Feriados
 from backend.app.schemas.feriados import (
     FeriadoCreate,
     FeriadoUpdate,
@@ -16,15 +17,59 @@ router = APIRouter(prefix="/feriados", tags=["Feriados"])
 
 @router.get("/", response_model=list[FeriadoOut])
 def listar_feriados(db: Session = Depends(get_db), current_user=Depends(check_auth_with_ip)):
-    if not current_user.get("is_admin"):
-        raise HTTPException(status_code=403, detail="Apenas administradores podem listar feriados")
+    # Usuários comuns podem listar feriados
     return crud_feriados.listar(db)
+
+
+@router.get("/empresa/{empresa_id}")
+def listar_feriados_por_empresa(
+    empresa_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(check_auth_with_ip),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    search: str = "",
+):
+    """Lista feriados de uma empresa com paginação."""
+    # Usuários comuns podem listar feriados
+    query = db.query(Feriados).filter(Feriados.empresa_id == empresa_id)
+
+    # Aplicar filtro de busca
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(Feriados.nome.ilike(search_term))
+
+    # Ordenar por data
+    query = query.order_by(Feriados.data.desc())
+
+    # Total antes da paginação
+    total = query.count()
+
+    # Aplicar paginação
+    offset = (page - 1) * limit
+    items = query.offset(offset).limit(limit).all()
+
+    return {
+        "data": [
+            {
+                "feriado_id": str(f.feriado_id),
+                "empresa_id": str(f.empresa_id),
+                "data": str(f.data),
+                "nome": f.nome,
+                "recorrente": f.recorrente,
+                "criado_em": str(f.criado_em) if f.criado_em else None,
+            }
+            for f in items
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }
 
 
 @router.get("/{feriado_id}", response_model=FeriadoOut)
 def obter_feriado(feriado_id: str, db: Session = Depends(get_db), current_user=Depends(check_auth_with_ip)):
-    if not current_user.get("is_admin"):
-        raise HTTPException(status_code=403, detail="Apenas administradores podem visualizar feriados")
+    # Usuários comuns podem visualizar feriados
     return crud_feriados.get(db, feriado_id)
 
 

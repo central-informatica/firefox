@@ -47,6 +47,8 @@ from backend.app.api.routes.grupos_certificados import router as grupos_certific
 from backend.app.api.routes.grupos_certificados_urls import router as grupos_certificados_urls_router
 from backend.app.api.routes.grupos_usuarios import router as grupos_usuarios_router
 from backend.app.api.routes.regras_acesso import router as regras_acesso_router
+from backend.app.api.routes.regras_acesso_urls import router as regras_acesso_urls_router
+from backend.app.api.routes.regras_acesso_ips import router as regras_acesso_ips_router
 from backend.app.api.routes.usuarios_ip_whitelist import router as usuarios_ip_whitelist_router
 from backend.app.api.routes.global_urls import router as global_urls_router
 from backend.app.api.routes.company_categories import router as company_categories_router
@@ -285,6 +287,8 @@ app.include_router(grupos_usuarios_router)
 app.include_router(planos_trabalho_router)
 app.include_router(feriados_router)
 app.include_router(regras_acesso_router)
+app.include_router(regras_acesso_urls_router)
+app.include_router(regras_acesso_ips_router)
 app.include_router(usuarios_ip_whitelist_router)
 app.include_router(global_urls_router)
 app.include_router(company_categories_router)

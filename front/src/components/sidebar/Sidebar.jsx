@@ -3,7 +3,7 @@ import { FiLogOut } from "react-icons/fi";
 import {
   FiGrid, FiUsers, FiSettings, FiLifeBuoy, FiCreditCard,
   FiFlag, FiChevronDown, FiChevronRight, FiMenu, FiX, FiChevronsLeft, FiChevronsRight,
-  FiShield
+  FiShield, FiCalendar
 } from "react-icons/fi";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
@@ -73,10 +73,19 @@ export default function Sidebar() {
       label: "Seguranca",
       icon: <FiShield />,
       children: [
-        { id: "seg-whitelist", label: "Enderecos permitidos", path: "/seguranca/enderecos-permitidos" }
+        { id: "seg-whitelist", label: "Enderecos permitidos", path: "/seguranca/enderecos-permitidos" },
+        { id: "seg-regras-urls", label: "Regras de acesso URLs", path: "/seguranca/regras-acesso-urls" },
+        { id: "seg-regras-ips", label: "Regras de acesso IPs", path: "/seguranca/regras-acesso-ips" }
       ]
     },
-    { id: "config", label: "Configuracoes", icon: <FiSettings />, path: "/config" },
+    {
+      id: "config",
+      label: "Configuracoes",
+      icon: <FiSettings />,
+      children: [
+        { id: "config-feriados", label: "Feriados", path: "/configuracoes/feriados" }
+      ]
+    },
   ];
 
   const toggleMobileSidebar = () => setMobileOpen(!mobileOpen);
