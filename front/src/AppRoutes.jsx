@@ -6,6 +6,7 @@ import UsuariosList from "./pages/Usuarios/UsuariosList";
 import UsuariosForm from "./pages/Usuarios/UsuariosForm";
 import CertificadosList from "./pages/Certificados/CertificadosList"
 import CertificadosForm from "./pages/Certificados/CertificadosForm"
+import CertificadosGruposList from "./pages/Certificados/CertificadosGruposList"
 import PlanosList from "./pages/PlanosTrabalho/PlanosTrabalhoList"
 import PlanosForm from "./pages/PlanosTrabalho/PlanosTrabalhoForm"
 import GerenciarAssociacoes from "./pages/PlanosTrabalho/GerenciarAssociacoes"
@@ -34,6 +35,7 @@ export default function AppRoutes() {
 
       <Route path="/certificados" element={<CertificadosList />} />
       <Route path="/certificados/novo" element={<CertificadosForm />} />
+      <Route path="/certificados/grupos" element={<CertificadosGruposList />} />
 
 
       <Route path="/planos" element={<PlanosList />} />

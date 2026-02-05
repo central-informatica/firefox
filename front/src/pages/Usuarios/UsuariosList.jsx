@@ -117,13 +117,14 @@ const UsuariosList = () => {
   const getNivelBadge = (nivel) => {
     const badges = {
       ADMINISTRADOR: { color: "bg-purple-900/30 text-purple-400", icon: <FiShield size={12} />, label: "Admin" },
-      COMUM: { color: "bg-blue-900/30 text-blue-400", icon: <FiUsers size={12} />, label: "Usuário" },
+      USUARIO: { color: "bg-blue-900/30 text-blue-400", icon: <FiUsers size={12} />, label: "Usuário" },
+      COMUM: { color: "bg-blue-900/30 text-blue-400", icon: <FiUsers size={12} />, label: "Usuário" }, // backward compat
       MODERADOR: { color: "bg-orange-900/30 text-orange-400", icon: <FiUserCheck size={12} />, label: "Moderador" },
     };
 
     // Convert nivel to string and uppercase safely
-    const nivelKey = String(nivel || 'COMUM').toUpperCase();
-    const badge = badges[nivelKey] || badges.COMUM;
+    const nivelKey = String(nivel || 'USUARIO').toUpperCase();
+    const badge = badges[nivelKey] || badges.USUARIO;
 
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 ${badge.color} rounded-full text-xs font-medium`}>
@@ -227,7 +228,7 @@ const UsuariosList = () => {
             <span className="text-blue-400">Gerenciamento de Usuários</span>
           </h3>
           <p className="text-sm text-neutral-400">
-            Os usuários podem ter diferentes níveis de acesso: Administrador (controle total), Moderador (gerenciamento limitado) ou Usuário (acesso básico). Administradores podem gerenciar empresas, certificados e permissões.
+            Os usuários podem ter diferentes níveis de acesso: Administrador (controle total) ou Usuário (acesso básico). Administradores podem gerenciar empresas, certificados e permissões.
           </p>
         </div>
       </div>

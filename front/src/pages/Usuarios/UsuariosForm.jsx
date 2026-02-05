@@ -35,7 +35,7 @@ const UsuarioForm = () => {
   const [form, setForm] = useState({
     nome: "",
     email: "",
-    nivel: "COMUM",
+    nivel: "USUARIO",
     empresa_id: null,
   });
 
@@ -71,6 +71,7 @@ const UsuarioForm = () => {
           nome: form.nome,
           email: form.email,
           telefone: form.telefone,
+          nivel: form.nivel,
         });
         toast.success("Usuário atualizado com sucesso!");
       } else {
@@ -183,7 +184,7 @@ const UsuarioForm = () => {
                 {/* Usuário Comum */}
                 <label className={`
                   relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
-                  ${form.nivel === 'COMUM'
+                  ${form.nivel === 'USUARIO'
                     ? 'border-xfire-orange bg-xfire-orange/10 shadow-md shadow-xfire-orange/20'
                     : 'border-neutral-700 hover:border-xfire-orange/50 hover:bg-dark-tertiary'
                   }
@@ -191,23 +192,23 @@ const UsuarioForm = () => {
                   <input
                     type="radio"
                     name="nivel"
-                    value="COMUM"
-                    checked={form.nivel === 'COMUM'}
+                    value="USUARIO"
+                    checked={form.nivel === 'USUARIO'}
                     onChange={handleChange}
                     className="sr-only"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className={`p-1.5 rounded-lg ${form.nivel === 'COMUM' ? 'bg-blue-900/30' : 'bg-dark-tertiary'}`}>
-                        <FiUser className={form.nivel === 'COMUM' ? 'text-blue-400' : 'text-neutral-500'} size={16} />
+                      <div className={`p-1.5 rounded-lg ${form.nivel === 'USUARIO' ? 'bg-blue-900/30' : 'bg-dark-tertiary'}`}>
+                        <FiUser className={form.nivel === 'USUARIO' ? 'text-blue-400' : 'text-neutral-500'} size={16} />
                       </div>
-                      <span className={`font-semibold text-sm ${form.nivel === 'COMUM' ? 'text-xfire-orange' : 'text-neutral-100'}`}>
+                      <span className={`font-semibold text-sm ${form.nivel === 'USUARIO' ? 'text-xfire-orange' : 'text-neutral-100'}`}>
                         Comum
                       </span>
                     </div>
                     <p className="text-xs text-neutral-400">Acesso básico ao sistema</p>
                   </div>
-                  {form.nivel === 'COMUM' && (
+                  {form.nivel === 'USUARIO' && (
                     <div className="absolute top-2 right-2">
                       <div className="w-5 h-5 bg-xfire-orange rounded-full flex items-center justify-center">
                         <FiCheck className="text-white" size={12} />

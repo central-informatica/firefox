@@ -45,9 +45,12 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     """User update request."""
 
+    nome: str | None = None
+    nivel: str | None = None
     first_name: str | None = None
     last_name: str | None = None
     is_active: bool | None = None
+    role: str | None = None
     requires_2fa: bool | None = None
 
 
@@ -79,6 +82,11 @@ async def list_users(
 
     headers = get_forwarded_headers(request)
 
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
     params = {
         "limit": limit,
         "offset": offset,
@@ -88,12 +96,38 @@ async def list_users(
         params["organization_id"] = organization_id
 
     try:
-        return await auth_client.proxy_request(
+        result = await auth_client.proxy_request(
             method="GET",
             path="/api/v1/users/",
             headers=headers,
             params=params,
         )
+
+        # Transform response to frontend expected format
+        users = result.get("users", [])
+        transformed_users = [
+            {
+                "id": u.get("id"),
+                "nome": f"{u.get('first_name', '') or ''} {u.get('last_name', '') or ''}".strip(),
+                "email": u.get("email"),
+                "nivel": u.get("role", "USUARIO"),
+                "role": u.get("role", "USUARIO"),
+                "is_active": u.get("is_active", True),
+                "is_owner": u.get("is_owner", False),
+                "first_name": u.get("first_name"),
+                "last_name": u.get("last_name"),
+                "created_at": u.get("created_at"),
+                "updated_at": u.get("updated_at"),
+            }
+            for u in users
+        ]
+
+        return {
+            "users": transformed_users,
+            "total": result.get("total", len(transformed_users)),
+            "limit": result.get("limit", limit),
+            "offset": result.get("offset", offset),
+        }
 
     except AuthServiceError as e:
         raise HTTPException(
@@ -194,12 +228,14 @@ async def get_user(
         first_name = result.get("first_name", "") or ""
         last_name = result.get("last_name", "") or ""
         nome = f"{first_name} {last_name}".strip()
+        role = result.get("role", "USUARIO")
 
         return {
             "id": result.get("id"),
             "nome": nome,
             "email": result.get("email"),
-            "nivel": "ADMINISTRADOR" if result.get("is_admin") else "COMUM",
+            "nivel": role,
+            "role": role,
             "is_active": result.get("is_active", True),
             "first_name": first_name,
             "last_name": last_name,
@@ -232,7 +268,25 @@ async def update_user(
         )
 
     headers = get_forwarded_headers(request)
+
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
     update_data = data.model_dump(exclude_none=True)
+
+    # Convert nome to first_name/last_name
+    if "nome" in update_data:
+        nome = update_data.pop("nome")
+        name_parts = nome.strip().split(" ", 1)
+        update_data["first_name"] = name_parts[0] if name_parts else ""
+        update_data["last_name"] = name_parts[1] if len(name_parts) > 1 else ""
+
+    # Convert nivel to role
+    if "nivel" in update_data:
+        nivel = update_data.pop("nivel")
+        update_data["role"] = nivel
 
     try:
         return await auth_client.proxy_request(
@@ -268,6 +322,11 @@ async def delete_user(
         )
 
     headers = get_forwarded_headers(request)
+
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
 
     try:
         return await auth_client.proxy_request(
@@ -346,7 +405,8 @@ async def list_users_by_company(
                 "nome": f"{u.get('first_name', '')} {u.get('last_name', '')}".strip(),
                 "email": u.get("email"),
                 "is_active": u.get("is_active", True),
-                "is_admin": u.get("is_admin", False),
+                "role": u.get("role", "USUARIO"),
+                "nivel": u.get("role", "USUARIO"),
                 "added_at": u.get("added_at"),
             }
             for u in paginated_users
