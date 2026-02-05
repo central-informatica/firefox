@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
 import Label from "../../components/Label/Label";
+import ConfirmModal from "../../components/ConfirmModal";
 import { listarUsuariosPaginado } from "../../services/usuariosService";
 import { listarGruposPorEmpresa, addUsuariosToGrupoBulk, getUsuariosByGrupo, listarGruposUsuariosPorEmpresa, removerUsuarioDoGrupo } from "../../services/gruposService";
 import { toast } from "react-toastify";
@@ -20,6 +21,10 @@ export default function AssociarUsuarios() {
 
   // Members of the selected group
   const [groupMembers, setGroupMembers] = useState([]);
+
+  // Modal state for remove confirmation
+  const [removeModal, setRemoveModal] = useState({ open: false, grupoUsuarioId: null, userName: "" });
+  const [removeLoading, setRemoveLoading] = useState(false);
 
   useEffect(() => {
     if (!empresaId) {
@@ -139,17 +144,31 @@ export default function AssociarUsuarios() {
     }
   };
 
-  const handleRemoveFromGroup = async (grupoUsuarioId, userName) => {
-    if (!confirm(`Deseja remover "${userName}" do grupo?`)) return;
+  const openRemoveModal = (grupoUsuarioId, userName) => {
+    setRemoveModal({ open: true, grupoUsuarioId, userName });
+  };
+
+  const closeRemoveModal = () => {
+    setRemoveModal({ open: false, grupoUsuarioId: null, userName: "" });
+  };
+
+  const handleConfirmRemove = async () => {
+    const { grupoUsuarioId } = removeModal;
+    if (!grupoUsuarioId) return;
+
     try {
+      setRemoveLoading(true);
       await removerUsuarioDoGrupo(grupoUsuarioId);
       toast.success("Usuário removido do grupo");
+      closeRemoveModal();
       // Refresh
       await fetchGroupMembers(selectedGrupo?.grupo_id);
       await buildUserGroupsMap();
     } catch (err) {
       console.error(err);
       toast.error("Erro ao remover usuário do grupo");
+    } finally {
+      setRemoveLoading(false);
     }
   };
 
@@ -362,7 +381,7 @@ export default function AssociarUsuarios() {
                     </div>
                   </div>
                   <button
-                    onClick={() => handleRemoveFromGroup(m.grupo_usuario_id, m.nome)}
+                    onClick={() => openRemoveModal(m.grupo_usuario_id, m.nome)}
                     className="p-1.5 text-red-400 hover:bg-red-900/30 rounded transition-colors"
                     title="Remover do grupo"
                   >
@@ -374,6 +393,19 @@ export default function AssociarUsuarios() {
           )}
         </div>
       )}
+
+      {/* Modal de confirmação para remoção */}
+      <ConfirmModal
+        open={removeModal.open}
+        title="Remover usuário do grupo"
+        description={`Tem certeza que deseja remover "${removeModal.userName}" do grupo "${selectedGrupo?.nome}"?`}
+        confirmText="Remover"
+        cancelText="Cancelar"
+        onConfirm={handleConfirmRemove}
+        onCancel={closeRemoveModal}
+        loading={removeLoading}
+        variant="danger"
+      />
     </div>
   );
 }
