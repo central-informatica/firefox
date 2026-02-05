@@ -7,6 +7,7 @@ import { useAuth } from "../../auth/useAuth";
 import {
   listarCertificadosPaginado,
   excluir_certificado,
+  toggleCertificadoAtivo,
 } from "../../services/certificadosService";
 import { toast } from "react-toastify";
 import {
@@ -44,6 +45,21 @@ export default function CertificadosList() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmData, setConfirmData] = useState(null); // { id, nome }
   const [isDeleting, setIsDeleting] = useState(false);
+  const [togglingId, setTogglingId] = useState(null);
+
+  const handleToggleAtivo = async (certificadoId) => {
+    setTogglingId(certificadoId);
+    try {
+      const result = await toggleCertificadoAtivo(certificadoId);
+      toast.success(result.message);
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao alterar status do certificado");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const getCertificateStatus = (validoAte) => {
     const hoje = new Date();
@@ -193,6 +209,37 @@ export default function CertificadosList() {
           {new Date(row.original.criado_em).toLocaleDateString("pt-BR")}
         </div>
       ),
+    },
+    {
+      accessorKey: "ativo",
+      header: "Status",
+      cell: ({ row }) => {
+        const cert = row.original;
+        const isToggling = togglingId === cert.certificado_id;
+        const isAtivo = cert.ativo !== false; // default true if undefined
+
+        return (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleToggleAtivo(cert.certificado_id)}
+              disabled={isToggling}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-xfire-orange focus:ring-offset-2 focus:ring-offset-dark-primary ${
+                isAtivo ? 'bg-green-600' : 'bg-neutral-600'
+              } ${isToggling ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+              title={isAtivo ? 'Clique para desativar' : 'Clique para ativar'}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                  isAtivo ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-medium ${isAtivo ? 'text-green-400' : 'text-neutral-500'}`}>
+              {isAtivo ? 'Ativo' : 'Inativo'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       header: "Ações",

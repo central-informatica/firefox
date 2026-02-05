@@ -57,6 +57,7 @@ class CertificateResponse(BaseModel):
     validade_inicio: str | None = None
     valido_ate: str | None = None
     criado_em: str | None = None
+    ativo: bool = True
 
 
 class CertificateUploadResponse(BaseModel):
@@ -504,30 +505,84 @@ async def upload_certificate(
         from backend.app.services.auth_client import auth_client
         from backend.app.core.exceptions import AuthServiceError
 
-        # Extract CNPJ from certificate subject (CN field usually contains the CNPJ)
+        # Extract CNPJ from certificate subject
+        # ICP-Brasil certificates may have CNPJ in various fields:
+        # - serialNumber (most common for e-CNPJ)
+        # - CN (Common Name)
+        # - OU (Organizational Unit)
+        # - O (Organization Name)
         cert_cnpj = None
         cert_name = None
         cn_value = None
+        debug_info = {}  # Store extracted values for error messages
+
+        def extract_cnpj_from_text(text):
+            """Extract CNPJ (14 digits) from text, handling various formats."""
+            if not text:
+                return None
+            # Remove ALL non-digit characters
+            digits_only = re.sub(r'\D', '', text)
+            # CNPJ has exactly 14 digits
+            if len(digits_only) >= 14:
+                # Find first sequence of 14 digits
+                cnpj_match = re.search(r'\d{14}', digits_only)
+                if cnpj_match:
+                    return cnpj_match.group(0)
+            return None
 
         if certificate:
             try:
-                # Get the subject's common name
                 subject = certificate.subject
+
+                # Try to get CN for certificate name
                 cn_attrs = subject.get_attributes_for_oid(NameOID.COMMON_NAME)
                 if cn_attrs:
-                    cn = cn_attrs[0].value
-                    cn_value = cn  # Store for error message
-                    cert_name = cn
+                    cn_value = cn_attrs[0].value
+                    cert_name = cn_value
+                    debug_info['CN'] = cn_value
 
-                    # Remove ALL non-digit characters to find CNPJ
-                    digits_only = re.sub(r'\D', '', cn)
+                # 1. First try serialNumber (ICP-Brasil standard for e-CNPJ)
+                serial_attrs = subject.get_attributes_for_oid(NameOID.SERIAL_NUMBER)
+                if serial_attrs:
+                    serial_value = serial_attrs[0].value
+                    debug_info['serialNumber'] = serial_value
+                    cert_cnpj = extract_cnpj_from_text(serial_value)
 
-                    # Look for 14 consecutive digits (CNPJ)
-                    if len(digits_only) >= 14:
-                        # Find all sequences of 14+ digits
-                        cnpj_match = re.search(r'\d{14}', digits_only)
-                        if cnpj_match:
-                            cert_cnpj = cnpj_match.group(0)
+                # 2. Try CN (Common Name) if serialNumber didn't work
+                if not cert_cnpj and cn_value:
+                    cert_cnpj = extract_cnpj_from_text(cn_value)
+
+                # 3. Try OU (Organizational Unit)
+                if not cert_cnpj:
+                    ou_attrs = subject.get_attributes_for_oid(NameOID.ORGANIZATIONAL_UNIT_NAME)
+                    for ou_attr in ou_attrs:
+                        debug_info['OU'] = ou_attr.value
+                        cert_cnpj = extract_cnpj_from_text(ou_attr.value)
+                        if cert_cnpj:
+                            break
+
+                # 4. Try O (Organization Name)
+                if not cert_cnpj:
+                    org_attrs = subject.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)
+                    if org_attrs:
+                        debug_info['O'] = org_attrs[0].value
+                        cert_cnpj = extract_cnpj_from_text(org_attrs[0].value)
+
+                # 5. Try Subject Alternative Names extension
+                if not cert_cnpj:
+                    try:
+                        from cryptography.x509 import ExtensionOID, SubjectAlternativeName
+                        san_ext = certificate.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+                        san = san_ext.value
+                        for name in san:
+                            name_str = str(name.value) if hasattr(name, 'value') else str(name)
+                            debug_info['SAN'] = name_str
+                            cert_cnpj = extract_cnpj_from_text(name_str)
+                            if cert_cnpj:
+                                break
+                    except Exception:
+                        pass  # SAN extension not present or error reading it
+
             except Exception:
                 pass
 
@@ -544,10 +599,15 @@ async def upload_certificate(
 
         if not cert_cnpj or len(cert_cnpj) != 14:
             detail_msg = "Não foi possível extrair o CNPJ do certificado."
-            if cn_value:
-                # Truncate CN if too long for error message
-                cn_display = cn_value[:100] + "..." if len(cn_value) > 100 else cn_value
-                detail_msg += f" CN do certificado: '{cn_display}'."
+            # Add debug info about what fields were found
+            if debug_info:
+                fields_found = []
+                for field, value in debug_info.items():
+                    # Truncate long values
+                    display_val = value[:80] + "..." if len(str(value)) > 80 else value
+                    fields_found.append(f"{field}='{display_val}'")
+                if fields_found:
+                    detail_msg += f" Campos encontrados: {'; '.join(fields_found)}."
             detail_msg += " Forneça o CNPJ manualmente (14 dígitos)."
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -793,6 +853,7 @@ async def list_certificates(
             "validade_inicio": str(c.validade_inicio) if c.validade_inicio else None,
             "valido_ate": str(c.valido_ate) if c.valido_ate else None,
             "criado_em": str(c.criado_em) if c.criado_em else None,
+            "ativo": c.ativo,
         }
         for c in certs
     ]
@@ -937,6 +998,7 @@ async def get_certificate(
         validade_inicio=str(cert.validade_inicio) if cert.validade_inicio else None,
         valido_ate=str(cert.valido_ate) if cert.valido_ate else None,
         criado_em=str(cert.criado_em) if cert.criado_em else None,
+        ativo=cert.ativo,
     )
 
 
@@ -1057,3 +1119,54 @@ async def delete_certificate(
     db.commit()
 
     return {"message": "Certificado removido com sucesso"}
+
+
+@router.patch("/{certificado_id}/toggle-ativo")
+async def toggle_certificate_status(
+    certificado_id: str,
+    db: Session = Depends(get_db),
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> dict[str, Any]:
+    """
+    Toggle certificate active status.
+
+    Admin only - Toggles the 'ativo' field between True and False.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem alterar o status do certificado",
+        )
+
+    usuario_id = get_user_id_from_data(user_data)
+
+    # Get certificate (exclude deleted)
+    cert = (
+        db.query(Certificados)
+        .filter(
+            Certificados.certificado_id == certificado_id,
+            Certificados.deleted_at.is_(None),
+        )
+        .first()
+    )
+
+    if not cert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Certificado nao encontrado",
+        )
+
+    # Verify user is empresa owner/member
+    exigir_acesso_empresa(db, cert.empresa_id, usuario_id)
+
+    # Toggle the ativo status
+    cert.ativo = not cert.ativo
+    db.commit()
+    db.refresh(cert)
+
+    return {
+        "certificado_id": str(cert.certificado_id),
+        "ativo": cert.ativo,
+        "message": f"Certificado {'ativado' if cert.ativo else 'desativado'} com sucesso",
+    }

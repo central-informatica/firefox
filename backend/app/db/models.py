@@ -47,6 +47,7 @@ class Certificados(Base):
     validade_inicio: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), comment='Data de inicio da validade')
     valido_ate: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), comment='Data do fim da validade')
     cofre_cert_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True, comment='ID do certificado no servico Cofre')
+    ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'), comment='Indica se o certificado esta ativo para uso')
     deleted_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True, comment='Data/hora da exclusao (soft delete)')
     deleted_by: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True, comment='ID do usuario que excluiu o certificado')
 

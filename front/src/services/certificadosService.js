@@ -86,6 +86,20 @@ export async function excluir_certificado(id) {
   return res.json();
 }
 
+export async function toggleCertificadoAtivo(id) {
+  const res = await apiFetchWithToken(`/certificados/${id}/toggle-ativo`, {
+    method: "PATCH",
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Erro ao alterar status", errorText);
+    throw new Error("Erro ao alterar status do certificado");
+  }
+
+  return res.json();
+}
+
 
 // Mock data para testes de associação
 const certificadosMock = [

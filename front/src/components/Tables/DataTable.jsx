@@ -5,7 +5,7 @@ import {
 } from "@tanstack/react-table";
 
 import { ChevronLeft, ChevronRight, ArrowUpDown, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function DataTable({ columns, fetchData, limit = 10 }) {
   const [data, setData] = useState([]);
@@ -15,11 +15,15 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
   const [sort, setSort] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Use ref to always have access to the latest fetchData without causing re-renders
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
   async function load() {
     setLoading(true);
 
     try {
-      const res = await fetchData({ page, limit, search, sort });
+      const res = await fetchDataRef.current({ page, limit, search, sort });
       setData(Array.isArray(res?.data) ? res.data : []);
       setTotal(Number(res?.total) || 0);
     } catch (err) {
@@ -33,6 +37,7 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, search, sort]);
 
   const table = useReactTable({
