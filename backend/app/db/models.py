@@ -272,6 +272,7 @@ class RegrasAcessoUrls(Base):
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
     dias_especificos: Mapped[Optional[list[int]]] = mapped_column(ARRAY(Integer()), comment='Lista de dias (ex: 1=segunda ... 7=domingo) quando tipo_dia = especificos.')
     bloquear_em_feriado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'), comment='Bloqueia acesso em feriados da empresa.')
+    ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'), comment='Indica se a regra esta ativa.')
 
     grupo: Mapped['Grupos'] = relationship('Grupos', back_populates='regras_acesso_urls')
     global_url: Mapped['GlobalUrls'] = relationship('GlobalUrls', back_populates='regras_acesso_urls')

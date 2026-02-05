@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import {
-  FiClock, FiPlus, FiTrash2, FiSettings, FiAlertCircle, FiEdit2, FiX, FiSave, FiGlobe, FiUsers, FiCalendar, FiCheck
+  FiClock, FiPlus, FiTrash2, FiSettings, FiAlertCircle, FiEdit2, FiX, FiSave, FiGlobe, FiUsers, FiCalendar, FiCheck, FiToggleLeft, FiToggleRight
 } from "react-icons/fi";
 import Label from "../../components/Label/Label";
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
@@ -9,7 +9,8 @@ import {
   listarRegrasPorEmpresa,
   createRegraBulk,
   updateRegra,
-  deleteRegra
+  deleteRegra,
+  toggleRegraAtivo
 } from "../../services/regrasAcessoUrlsService";
 import { listarGruposPorEmpresa } from "../../services/gruposService";
 import { listarGlobalUrlsPaginado } from "../../services/globalUrlsService";
@@ -47,6 +48,7 @@ export default function RegrasAcessoUrlsList() {
     dias_especificos: [],
     horarios: [{ inicio: "08:00", fim: "18:00" }],
     bloquear_em_feriado: false,
+    ativo: true,
   });
 
   const carregarRegras = async () => {
@@ -128,6 +130,7 @@ export default function RegrasAcessoUrlsList() {
         dias_especificos: item.dias_especificos || [],
         horarios: item.horarios || [{ inicio: "08:00", fim: "18:00" }],
         bloquear_em_feriado: item.bloquear_em_feriado || false,
+        ativo: item.ativo !== undefined ? item.ativo : true,
       });
     } else {
       setEditingId(null);
@@ -140,6 +143,7 @@ export default function RegrasAcessoUrlsList() {
         dias_especificos: [],
         horarios: [{ inicio: "08:00", fim: "18:00" }],
         bloquear_em_feriado: false,
+        ativo: true,
       });
     }
     setShowModal(true);
@@ -157,6 +161,7 @@ export default function RegrasAcessoUrlsList() {
       dias_especificos: [],
       horarios: [{ inicio: "08:00", fim: "18:00" }],
       bloquear_em_feriado: false,
+      ativo: true,
     });
   };
 
@@ -248,6 +253,7 @@ export default function RegrasAcessoUrlsList() {
           dias_especificos: formData.tipo_dia === "especificos" ? formData.dias_especificos : null,
           horarios: formData.horarios,
           bloquear_em_feriado: formData.bloquear_em_feriado,
+          ativo: formData.ativo,
         });
         toast.success("Regra atualizada com sucesso!");
       } else {
@@ -259,6 +265,7 @@ export default function RegrasAcessoUrlsList() {
           dias_especificos: formData.tipo_dia === "especificos" ? formData.dias_especificos : null,
           horarios: formData.horarios,
           bloquear_em_feriado: formData.bloquear_em_feriado,
+          ativo: formData.ativo,
         };
 
         const result = await createRegraBulk(payload);
@@ -302,6 +309,23 @@ export default function RegrasAcessoUrlsList() {
         }
         toast.error(errorMessage);
       }
+    }
+  };
+
+  const handleToggleAtivo = async (id) => {
+    try {
+      await toggleRegraAtivo(id);
+      carregarRegras();
+    } catch (error) {
+      console.error("Erro ao alterar status:", error);
+      let errorMessage = "Erro ao alterar status da regra";
+      try {
+        const parsed = JSON.parse(error.message);
+        errorMessage = parsed.detail || errorMessage;
+      } catch {
+        errorMessage = error.message || errorMessage;
+      }
+      toast.error(errorMessage);
     }
   };
 
@@ -400,6 +424,9 @@ export default function RegrasAcessoUrlsList() {
               <thead className="bg-gradient-to-r from-dark-tertiary to-neutral-800 border-b border-neutral-800">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                     Grupo
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
@@ -421,7 +448,26 @@ export default function RegrasAcessoUrlsList() {
               </thead>
               <tbody className="divide-y divide-neutral-800">
                 {regras.map((item) => (
-                  <tr key={item.regra_id} className="hover:bg-dark-tertiary transition-colors duration-150">
+                  <tr key={item.regra_id} className={`hover:bg-dark-tertiary transition-colors duration-150 ${!item.ativo ? 'opacity-60' : ''}`}>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleToggleAtivo(item.regra_id)}
+                        className="cursor-pointer"
+                        title={item.ativo ? "Clique para desativar" : "Clique para ativar"}
+                      >
+                        {item.ativo ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-900/30 text-green-400">
+                            <FiToggleRight size={14} />
+                            Ativo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-700/50 text-neutral-400">
+                            <FiToggleLeft size={14} />
+                            Inativo
+                          </span>
+                        )}
+                      </button>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <FiUsers className="text-purple-400" size={16} />
@@ -676,6 +722,19 @@ export default function RegrasAcessoUrlsList() {
                 />
                 <Label htmlFor="bloquear_em_feriado" className="text-sm font-medium text-neutral-400">
                   Bloquear acesso em feriados
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="ativo"
+                  checked={formData.ativo}
+                  onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
+                  className="w-4 h-4 text-purple-600 bg-dark-tertiary border-neutral-700 rounded focus:ring-purple-500"
+                />
+                <Label htmlFor="ativo" className="text-sm font-medium text-neutral-400">
+                  Regra ativa
                 </Label>
               </div>
 

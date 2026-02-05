@@ -68,3 +68,39 @@ export async function deleteFeriado(id) {
 
   return true;
 }
+
+export async function listarFeriadosPadroes() {
+  const res = await apiFetchWithToken(`/feriados/padroes/lista`);
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json();
+}
+
+export async function replicarFeriados(data) {
+  const res = await apiFetchWithToken(`/feriados/replicar`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json();
+}
+
+export async function importarFeriadosPadroes(data) {
+  const res = await apiFetchWithToken(`/feriados/importar-padroes`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json();
+}

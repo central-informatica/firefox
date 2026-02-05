@@ -7,7 +7,9 @@ from backend.app.db.models import Feriados
 from backend.app.schemas.feriados import (
     FeriadoCreate,
     FeriadoUpdate,
-    FeriadoOut
+    FeriadoOut,
+    FeriadosReplicar,
+    FeriadosImportarPadroes,
 )
 from backend.app.crud.feriados import crud_feriados
 
@@ -92,3 +94,73 @@ def deletar_feriado(feriado_id: str, db: Session = Depends(get_db), current_user
     if not current_user.get("is_admin"):
         raise HTTPException(status_code=403, detail="Apenas administradores podem deletar feriados")
     return crud_feriados.deletar(db, feriado_id)
+
+
+@router.get("/padroes/lista")
+def listar_feriados_padroes(current_user=Depends(check_auth_with_ip)):
+    """Lista os feriados nacionais padrões disponíveis para importação."""
+    return crud_feriados.listar_padroes()
+
+
+@router.post("/replicar", status_code=201)
+def replicar_feriados(
+    data: FeriadosReplicar,
+    db: Session = Depends(get_db),
+    current_user=Depends(check_auth_with_ip)
+):
+    """Replica feriados selecionados para outras empresas."""
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem replicar feriados")
+
+    result = crud_feriados.replicar(db, data)
+
+    # Formatar resposta
+    criados_formatados = [
+        {
+            "feriado_id": str(f.feriado_id),
+            "empresa_id": str(f.empresa_id),
+            "data": str(f.data),
+            "nome": f.nome,
+            "recorrente": f.recorrente,
+            "criado_em": str(f.criado_em) if f.criado_em else None,
+        }
+        for f in result["criados"]
+    ]
+
+    return {
+        "criados": criados_formatados,
+        "total_criados": result["total_criados"],
+        "erros": result["erros"]
+    }
+
+
+@router.post("/importar-padroes", status_code=201)
+def importar_feriados_padroes(
+    data: FeriadosImportarPadroes,
+    db: Session = Depends(get_db),
+    current_user=Depends(check_auth_with_ip)
+):
+    """Importa feriados nacionais padrões para uma empresa."""
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem importar feriados")
+
+    result = crud_feriados.importar_padroes(db, data)
+
+    # Formatar resposta
+    criados_formatados = [
+        {
+            "feriado_id": str(f.feriado_id),
+            "empresa_id": str(f.empresa_id),
+            "data": str(f.data),
+            "nome": f.nome,
+            "recorrente": f.recorrente,
+            "criado_em": str(f.criado_em) if f.criado_em else None,
+        }
+        for f in result["criados"]
+    ]
+
+    return {
+        "criados": criados_formatados,
+        "total_criados": result["total_criados"],
+        "erros": result["erros"]
+    }

@@ -102,6 +102,7 @@ class CRUDRegrasAcessoUrls:
             dias_especificos=data.dias_especificos,
             horarios=data.horarios,
             bloquear_em_feriado=data.bloquear_em_feriado or False,
+            ativo=data.ativo if data.ativo is not None else True,
         )
 
         db.add(nova)
@@ -154,6 +155,7 @@ class CRUDRegrasAcessoUrls:
                 dias_especificos=data.dias_especificos,
                 horarios=data.horarios,
                 bloquear_em_feriado=data.bloquear_em_feriado or False,
+                ativo=data.ativo if data.ativo is not None else True,
             )
             db.add(nova)
             criadas.append(nova)
@@ -194,6 +196,14 @@ class CRUDRegrasAcessoUrls:
         for campo, valor in updates.items():
             setattr(regra, campo, valor)
 
+        db.commit()
+        db.refresh(regra)
+        return regra
+
+    def toggle_ativo(self, db: Session, regra_id: str):
+        """Alterna o estado ativo/inativo de uma regra."""
+        regra = self.get(db, regra_id)
+        regra.ativo = not regra.ativo
         db.commit()
         db.refresh(regra)
         return regra

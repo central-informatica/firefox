@@ -64,6 +64,7 @@ def listar_regras_por_empresa(
             "dias_especificos": r.dias_especificos,
             "horarios": r.horarios,
             "bloquear_em_feriado": r.bloquear_em_feriado,
+            "ativo": r.ativo,
             "criado_em": str(r.criado_em) if r.criado_em else None,
             "grupo_nome": grupo.nome if grupo else None,
             "url": url.url if url else None,
@@ -99,6 +100,7 @@ def listar_regras_por_grupo(
             "dias_especificos": r.dias_especificos,
             "horarios": r.horarios,
             "bloquear_em_feriado": r.bloquear_em_feriado,
+            "ativo": r.ativo,
             "criado_em": str(r.criado_em) if r.criado_em else None,
             "url": url.url if url else None,
         })
@@ -123,6 +125,7 @@ def obter_regra(regra_id: str, db: Session = Depends(get_db), current_user=Depen
         "dias_especificos": r.dias_especificos,
         "horarios": r.horarios,
         "bloquear_em_feriado": r.bloquear_em_feriado,
+        "ativo": r.ativo,
         "criado_em": str(r.criado_em) if r.criado_em else None,
         "grupo_nome": grupo.nome if grupo else None,
         "url": url.url if url else None,
@@ -149,6 +152,7 @@ def criar_regra(data: RegraAcessoUrlsCreate, db: Session = Depends(get_db), curr
         "dias_especificos": r.dias_especificos,
         "horarios": r.horarios,
         "bloquear_em_feriado": r.bloquear_em_feriado,
+        "ativo": r.ativo,
         "criado_em": str(r.criado_em) if r.criado_em else None,
         "grupo_nome": grupo.nome if grupo else None,
         "url": url.url if url else None,
@@ -178,6 +182,7 @@ def criar_regras_bulk(data: RegraAcessoUrlsCreateBulk, db: Session = Depends(get
             "dias_especificos": r.dias_especificos,
             "horarios": r.horarios,
             "bloquear_em_feriado": r.bloquear_em_feriado,
+            "ativo": r.ativo,
             "criado_em": str(r.criado_em) if r.criado_em else None,
             "grupo_nome": grupo.nome if grupo else None,
             "url": url.url if url else None,
@@ -210,6 +215,34 @@ def atualizar_regra(regra_id: str, data: RegraAcessoUrlsUpdate, db: Session = De
         "dias_especificos": r.dias_especificos,
         "horarios": r.horarios,
         "bloquear_em_feriado": r.bloquear_em_feriado,
+        "ativo": r.ativo,
+        "criado_em": str(r.criado_em) if r.criado_em else None,
+        "grupo_nome": grupo.nome if grupo else None,
+        "url": url.url if url else None,
+    }
+
+
+@router.patch("/{regra_id}/toggle")
+def toggle_ativo(regra_id: str, db: Session = Depends(get_db), current_user=Depends(check_auth_with_ip)):
+    """Alterna o estado ativo/inativo de uma regra de acesso URL."""
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem alterar regras de acesso")
+
+    r = crud_regras_acesso_urls.toggle_ativo(db, regra_id)
+
+    grupo = db.query(Grupos).filter(Grupos.grupo_id == r.grupo_id).first()
+    url = db.query(GlobalUrls).filter(GlobalUrls.global_urls_id == r.global_urls_id).first()
+
+    return {
+        "regra_id": str(r.regra_id),
+        "empresa_id": str(r.empresa_id),
+        "grupo_id": str(r.grupo_id),
+        "global_urls_id": str(r.global_urls_id),
+        "tipo_dia": r.tipo_dia,
+        "dias_especificos": r.dias_especificos,
+        "horarios": r.horarios,
+        "bloquear_em_feriado": r.bloquear_em_feriado,
+        "ativo": r.ativo,
         "criado_em": str(r.criado_em) if r.criado_em else None,
         "grupo_nome": grupo.nome if grupo else None,
         "url": url.url if url else None,

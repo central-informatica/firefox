@@ -44,6 +44,7 @@ class RegraAcessoUrlsBase(BaseModel):
     dias_especificos: Optional[List[int]] = None
     horarios: List[Dict]   # ex: [{"inicio": "08:00", "fim": "18:00"}]
     bloquear_em_feriado: Optional[bool] = False
+    ativo: Optional[bool] = True
 
     @model_validator(mode="after")
     def validar_dias(self) -> Self:
@@ -125,6 +126,7 @@ class RegraAcessoUrlsCreateBulk(BaseModel):
     dias_especificos: Optional[List[int]] = None
     horarios: List[Dict]
     bloquear_em_feriado: Optional[bool] = False
+    ativo: Optional[bool] = True
 
     @model_validator(mode="after")
     def validar_dias(self) -> Self:
@@ -180,6 +182,7 @@ class RegraAcessoUrlsUpdate(BaseModel):
     dias_especificos: Optional[List[int]] = None
     horarios: Optional[List[Dict]] = None
     bloquear_em_feriado: Optional[bool] = None
+    ativo: Optional[bool] = None
 
     @field_validator("dias_especificos")
     @classmethod

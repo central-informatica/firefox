@@ -80,6 +80,18 @@ export async function updateRegra(id, data) {
   return await res.json();
 }
 
+export async function toggleRegraAtivo(id) {
+  const res = await apiFetchWithToken(`/regras-acesso-urls/${id}/toggle`, {
+    method: "PATCH",
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.json();
+}
+
 export async function deleteRegra(id) {
   const res = await apiFetchWithToken(`/regras-acesso-urls/${id}`, {
     method: "DELETE",
