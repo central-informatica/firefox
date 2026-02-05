@@ -29,11 +29,17 @@ export function useRamos() {
         }
 
         setOptions(
-          categorias.map((c) => ({
-            // Tenta vários nomes de campos possíveis
-            value: c.id || c.category_id || c.codigo || c.code || Object.values(c)[0],
-            label: c.name || c.category_name || c.nome || c.descricao || c.description || Object.values(c)[1],
-          }))
+          categorias.map((c) => {
+            // Determina o value (id da categoria)
+            const value = c.id || c.category_id || c.codigo || c.code;
+            // Determina o label (nome da categoria)
+            // Auth service retorna 'category' como nome do campo
+            const label = c.category || c.name || c.category_name || c.nome || c.description || c.descricao;
+
+            console.log("[useRamos] mapeando:", { original: c, value, label });
+
+            return { value, label };
+          })
         );
 
       } catch (e) {

@@ -61,3 +61,18 @@ export async function verify2FA(userId, code) {
     body: JSON.stringify({ user_id: userId, code }),
   });
 }
+
+export async function acceptInvitation(token, password, firstName, lastName) {
+  return apiFetch("/auth/invitations/accept", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      token,
+      password,
+      first_name: firstName,
+      last_name: lastName,
+    }),
+  });
+}

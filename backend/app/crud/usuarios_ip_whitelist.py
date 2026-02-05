@@ -54,9 +54,25 @@ class CRUDUsuariosIpWhitelist:
         """
         Check if a user+IP combination is allowed for the given empresa.
 
+        Uses permissive mode: if no IPs are whitelisted for the user+empresa,
+        all IPs are allowed. If at least one IP is whitelisted, only those IPs
+        are allowed.
+
         Returns:
-            True if the IP is whitelisted for this user+empresa, False otherwise.
+            True if the IP is allowed, False otherwise.
         """
+        # First, check if there are ANY whitelist entries for this user+empresa
+        any_entries = db.query(UsuariosIpWhitelist).filter(
+            UsuariosIpWhitelist.usuario_id == usuario_id,
+            UsuariosIpWhitelist.empresa_id == empresa_id,
+            UsuariosIpWhitelist.deleted_at.is_(None)
+        ).first()
+
+        # If no entries exist, allow all IPs (permissive mode)
+        if any_entries is None:
+            return True
+
+        # If entries exist, check if the specific IP is whitelisted
         entry = db.query(UsuariosIpWhitelist).filter(
             UsuariosIpWhitelist.usuario_id == usuario_id,
             UsuariosIpWhitelist.empresa_id == empresa_id,

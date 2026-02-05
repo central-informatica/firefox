@@ -616,3 +616,46 @@ async def verify_email(
             status_code=e.status_code or 400,
             detail=e.message,
         )
+
+
+class AcceptInvitationRequest(BaseModel):
+    """Accept invitation request."""
+    token: str
+    password: str
+    first_name: str | None = None
+    last_name: str | None = None
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """Validate password meets security requirements."""
+        return validate_password_strength(v)
+
+
+@router.post("/invitations/accept")
+async def accept_invitation(
+    data: AcceptInvitationRequest,
+) -> dict[str, Any]:
+    """
+    Accept an employee invitation and create user account.
+
+    Proxies request to Auth service /api/v1/invitations/accept.
+    """
+    try:
+        result = await auth_client.proxy_request(
+            method="POST",
+            path="/api/v1/invitations/accept",
+            json={
+                "token": data.token,
+                "password": data.password,
+                "first_name": data.first_name,
+                "last_name": data.last_name,
+            },
+        )
+        return result
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 400,
+            detail=e.message,
+        )

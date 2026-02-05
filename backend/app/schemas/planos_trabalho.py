@@ -12,6 +12,7 @@ class PlanoTrabalhoBase(BaseModel):
 class PlanoTrabalhoCreate(BaseModel):
     nome: str
     descricao: str | None = None
+    empresa_id: UUID
 
 
 class PlanoTrabalhoUpdate(BaseModel):

@@ -50,6 +50,7 @@ from backend.app.api.routes.regras_acesso import router as regras_acesso_router
 from backend.app.api.routes.usuarios_ip_whitelist import router as usuarios_ip_whitelist_router
 from backend.app.api.routes.global_urls import router as global_urls_router
 from backend.app.api.routes.company_categories import router as company_categories_router
+from backend.app.api.routes.empresas import router as empresas_router
 
 
 # Configure logging
@@ -287,6 +288,7 @@ app.include_router(regras_acesso_router)
 app.include_router(usuarios_ip_whitelist_router)
 app.include_router(global_urls_router)
 app.include_router(company_categories_router)
+app.include_router(empresas_router)
 
 
 # -----------------------------------------------------------------------------

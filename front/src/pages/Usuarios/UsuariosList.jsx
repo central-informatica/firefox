@@ -95,7 +95,7 @@ const UsuariosList = () => {
         return (
           <div className="flex items-center justify-end gap-2">
             <button
-              onClick={()=> handleOnClickEdit(u.usuario_id)}
+              onClick={()=> handleOnClickEdit(u.id)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-xfire-orange/20 hover:bg-xfire-orange/30 text-xfire-orange rounded-lg text-sm font-medium"
             >
               <FiEdit2 size={14} />

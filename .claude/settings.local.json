@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\presentation\\api\\v1\\endpoints",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\infrastructure\\mappers",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\application\\use_cases\\employee_invitation"
+    ]
+  }
+}

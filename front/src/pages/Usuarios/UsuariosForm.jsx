@@ -9,10 +9,13 @@ import {
   FiSave,
   FiUserPlus,
   FiAlertCircle,
-  FiCheck
+  FiCheck,
+  FiBriefcase
 } from "react-icons/fi";
 
 import Input from "../../components/Input/Input";
+import Label from "../../components/Label/Label";
+import SelectEmpresa from "../../components/Select/SelectEmpresa";
 
 import {
   createUsuario,
@@ -33,6 +36,7 @@ const UsuarioForm = () => {
     nome: "",
     email: "",
     nivel: "COMUM",
+    empresa_id: null,
   });
 
   useEffect(() => {
@@ -53,6 +57,11 @@ const UsuarioForm = () => {
 
     if (!form.nome || !form.email) {
       toast.error("Preencha todos os campos obrigatórios!");
+      return;
+    }
+
+    if (!isEdit && !form.empresa_id) {
+      toast.error("Selecione uma empresa!");
       return;
     }
     setIsLoading(true);
@@ -145,6 +154,22 @@ const UsuarioForm = () => {
                 />
               </div>
             </div>
+
+            {/* Empresa Select - only for new users */}
+            {!isEdit && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-sm font-semibold text-neutral-400">
+                  <FiBriefcase className="text-xfire-orange" size={18} />
+                  Empresa *
+                </Label>
+                <SelectEmpresa
+                  placeholder="Selecione uma empresa"
+                  value={form.empresa_id}
+                  onChange={(val) => setForm(prev => ({ ...prev, empresa_id: val }))}
+                />
+                <p className="text-xs text-neutral-500">O usuário será vinculado a esta empresa</p>
+              </div>
+            )}
 
             {/* Nível Select */}
             <div className="space-y-2">

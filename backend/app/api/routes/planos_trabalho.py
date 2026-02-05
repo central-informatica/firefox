@@ -63,17 +63,19 @@ def criar_plano_trabalho(
     current_user = Depends(check_auth_with_ip),
 ):
     _verificar_admin(current_user)
-    empresa_id = current_user.get("organization_id")
+
+    # Usa empresa_id do payload (selecionada pelo usuário)
+    empresa_id = data.empresa_id
     if not empresa_id:
         raise HTTPException(
-            status_code=403,
-            detail="Usuário não possui empresa vinculada"
+            status_code=400,
+            detail="empresa_id é obrigatório"
         )
 
     return crud_planos_trabalho.criar(
         db=db,
         data=data,
-        empresa_id=empresa_id,
+        empresa_id=str(empresa_id),
         usuario_id=current_user["id"],
     )
 
