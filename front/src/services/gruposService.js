@@ -239,3 +239,12 @@ export async function removeCertificadoFromGrupo(grupo_id, certificado_id) {
   return await parseJsonSafe(res);
 }
 
+// Remover usuário do grupo por grupo_usuario_id
+export async function removerUsuarioDoGrupo(grupo_usuario_id) {
+  const res = await apiFetchWithToken(`/grupos-usuarios/${grupo_usuario_id}`, {
+    method: "DELETE",
+  });
+  await ensureOk(res);
+  return await parseJsonSafe(res);
+}
+

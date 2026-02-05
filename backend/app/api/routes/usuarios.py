@@ -342,6 +342,7 @@ async def list_users_by_company(
         data = [
             {
                 "id": u.get("user_id"),
+                "usuario_id": u.get("user_id"),  # Also include usuario_id for compatibility
                 "nome": f"{u.get('first_name', '')} {u.get('last_name', '')}".strip(),
                 "email": u.get("email"),
                 "is_active": u.get("is_active", True),

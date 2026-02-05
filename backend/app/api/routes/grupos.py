@@ -191,7 +191,11 @@ def listar_usuarios_do_grupo(
     registros = crud_grupos_usuarios.listar_por_grupo(db, grupo_id)
     usuarios = []
     for r in registros:
-        usuarios.append({"usuario_id": str(r.usuario_id)})
+        usuarios.append({
+            "grupo_usuario_id": str(r.grupo_usuario_id),
+            "usuario_id": str(r.usuario_id),
+            "empresa_id": str(r.empresa_id) if r.empresa_id else None,
+        })
     return usuarios
 
 
