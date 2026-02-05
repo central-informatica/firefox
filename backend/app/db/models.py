@@ -284,9 +284,7 @@ class RegrasAcessoIps(Base):
     __table_args__ = (
         ForeignKeyConstraint(['grupo_id'], ['grupos.grupo_id'], ondelete='CASCADE', name='regras_acesso_ips_grupo_fk'),
         PrimaryKeyConstraint('regra_id', name='regras_acesso_ips_pkey'),
-        UniqueConstraint('grupo_id', 'ip_address', name='regras_acesso_ips_grupo_ip_unq'),
         Index('idx_regras_acesso_ips_grupo', 'grupo_id'),
-        Index('idx_regras_acesso_ips_ip', 'ip_address'),
         Index('idx_regras_acesso_ips_emp', 'empresa_id'),
         {'comment': 'Regras de dias e horarios permitidos para enderecos IP especificos de um grupo.'}
     )
@@ -294,7 +292,7 @@ class RegrasAcessoIps(Base):
     regra_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
     empresa_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment='ID da empresa (validado pelo Auth service)')
     grupo_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    ip_address: Mapped[str] = mapped_column(String(45), nullable=False, comment='Endereco IP (IPv4 ou IPv6)')
+    ip_addresses: Mapped[list] = mapped_column(JSONB, nullable=False, comment='Lista de enderecos IP (IPv4, IPv6 ou blocos CIDR)')
     tipo_dia: Mapped[str] = mapped_column(String(20), nullable=False, comment='Tipo de regra: corridos, uteis ou especificos.')
     horarios: Mapped[dict] = mapped_column(JSONB, nullable=False, comment='Lista de janelas de horario em JSON (inicio/fim no formato HH:MI).')
     criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))

@@ -20,8 +20,13 @@ class CRUDRegrasAcessoIps:
         query = db.query(RegrasAcessoIps).filter(RegrasAcessoIps.empresa_id == empresa_id)
 
         if search:
-            # Busca por IP
-            query = query.filter(RegrasAcessoIps.ip_address.ilike(f"%{search}%"))
+            # Busca por IP dentro do JSONB array usando operador de containment
+            # Isso encontra regras que contenham um IP começando com o termo de busca
+            search_term = f"%{search}%"
+            # Cast ip_addresses to text for ILIKE search
+            query = query.filter(
+                RegrasAcessoIps.ip_addresses.cast(db.bind.dialect.type_descriptor(str)).ilike(search_term)
+            )
 
         total = query.count()
         offset = (page - 1) * limit
@@ -44,10 +49,11 @@ class CRUDRegrasAcessoIps:
         )
 
     def listar_por_ip(self, db: Session, ip_address: str):
-        """Lista regras aplicadas a um IP específico."""
+        """Lista regras que contêm um IP específico."""
+        # Busca usando o operador JSONB contains
         return (
             db.query(RegrasAcessoIps)
-            .filter(RegrasAcessoIps.ip_address == ip_address)
+            .filter(RegrasAcessoIps.ip_addresses.contains([ip_address]))
             .all()
         )
 
@@ -74,23 +80,11 @@ class CRUDRegrasAcessoIps:
         if str(grupo.empresa_id) != str(data.empresa_id):
             raise HTTPException(400, "O grupo não pertence à empresa informada")
 
-        # Verificar se já existe uma regra para este grupo+IP
-        existente = (
-            db.query(RegrasAcessoIps)
-            .filter(
-                RegrasAcessoIps.grupo_id == data.grupo_id,
-                RegrasAcessoIps.ip_address == data.ip_address
-            )
-            .first()
-        )
-        if existente:
-            raise HTTPException(400, "Já existe uma regra de acesso para este grupo e IP")
-
-        # Criação direta, tipos JSONB e ARRAY são aceitos naturalmente
+        # Criação com ip_addresses como JSONB
         nova = RegrasAcessoIps(
             empresa_id=data.empresa_id,
             grupo_id=data.grupo_id,
-            ip_address=data.ip_address,
+            ip_addresses=data.ip_addresses,  # Lista de IPs/CIDRs
             tipo_dia=data.tipo_dia,
             dias_especificos=data.dias_especificos,
             horarios=data.horarios,
@@ -104,7 +98,7 @@ class CRUDRegrasAcessoIps:
         return nova
 
     def criar_bulk(self, db: Session, data: RegraAcessoIpsCreateBulk):
-        """Cria regras de acesso IP para múltiplos grupos."""
+        """Cria regras de acesso IP para múltiplos grupos (mesmos IPs)."""
 
         criadas = []
         erros = []
@@ -119,24 +113,11 @@ class CRUDRegrasAcessoIps:
                 erros.append(f"Grupo {grupo.nome} não pertence à empresa informada")
                 continue
 
-            # Verificar se já existe uma regra para este grupo+IP
-            existente = (
-                db.query(RegrasAcessoIps)
-                .filter(
-                    RegrasAcessoIps.grupo_id == grupo_id,
-                    RegrasAcessoIps.ip_address == data.ip_address
-                )
-                .first()
-            )
-            if existente:
-                erros.append(f"Já existe regra para o grupo {grupo.nome}")
-                continue
-
             # Criar a regra
             nova = RegrasAcessoIps(
                 empresa_id=data.empresa_id,
                 grupo_id=grupo_id,
-                ip_address=data.ip_address,
+                ip_addresses=data.ip_addresses,  # Lista de IPs/CIDRs
                 tipo_dia=data.tipo_dia,
                 dias_especificos=data.dias_especificos,
                 horarios=data.horarios,

@@ -30,12 +30,13 @@ const DIAS_SEMANA = [
   { value: 7, label: "Domingo" },
 ];
 
-// Regex para validar IPv4 e IPv6
+// Regex para validar IPv4, IPv6 e CIDR
 const IPV4_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 const IPV6_REGEX = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::(?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}$|^(?:[0-9a-fA-F]{1,4}:){1,6}:$|^(?:[0-9a-fA-F]{1,4}:){1,5}:[0-9a-fA-F]{1,4}$|^(?:[0-9a-fA-F]{1,4}:){1,4}:(?:[0-9a-fA-F]{1,4}:)?[0-9a-fA-F]{1,4}$|^(?:[0-9a-fA-F]{1,4}:){1,3}:(?:[0-9a-fA-F]{1,4}:){0,2}[0-9a-fA-F]{1,4}$|^(?:[0-9a-fA-F]{1,4}:){1,2}:(?:[0-9a-fA-F]{1,4}:){0,3}[0-9a-fA-F]{1,4}$|^[0-9a-fA-F]{1,4}::(?:[0-9a-fA-F]{1,4}:){0,4}[0-9a-fA-F]{1,4}$|^::(?:[0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{1,4}$|^(?:[0-9a-fA-F]{1,4}:){1,7}:$/;
+const CIDR_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:[12]?[0-9]|3[0-2])$/;
 
-function isValidIP(ip) {
-  return IPV4_REGEX.test(ip) || IPV6_REGEX.test(ip);
+function isValidIPOrCIDR(ip) {
+  return IPV4_REGEX.test(ip) || IPV6_REGEX.test(ip) || CIDR_REGEX.test(ip);
 }
 
 export default function RegrasAcessoIpsList() {
@@ -49,7 +50,7 @@ export default function RegrasAcessoIpsList() {
     empresa_id: null,
     grupo_ids: [], // Array para múltiplos grupos na criação
     grupo_id: "",  // String para edição (único grupo)
-    ip_address: "",
+    ip_addresses_text: "", // Texto para IPs separados por vírgula ou nova linha
     tipo_dia: "corridos",
     dias_especificos: [],
     horarios: [{ inicio: "08:00", fim: "18:00" }],
@@ -108,11 +109,15 @@ export default function RegrasAcessoIpsList() {
   const handleOpenModal = (item = null) => {
     if (item) {
       setEditingId(item.regra_id);
+      // Converte array de IPs para texto
+      const ipText = Array.isArray(item.ip_addresses)
+        ? item.ip_addresses.join("\n")
+        : "";
       setFormData({
         empresa_id: item.empresa_id,
         grupo_ids: [],
         grupo_id: item.grupo_id,
-        ip_address: item.ip_address,
+        ip_addresses_text: ipText,
         tipo_dia: item.tipo_dia || "corridos",
         dias_especificos: item.dias_especificos || [],
         horarios: item.horarios || [{ inicio: "08:00", fim: "18:00" }],
@@ -125,7 +130,7 @@ export default function RegrasAcessoIpsList() {
         empresa_id: empresaSelecionada,
         grupo_ids: [],
         grupo_id: "",
-        ip_address: "",
+        ip_addresses_text: "",
         tipo_dia: "corridos",
         dias_especificos: [],
         horarios: [{ inicio: "08:00", fim: "18:00" }],
@@ -143,7 +148,7 @@ export default function RegrasAcessoIpsList() {
       empresa_id: null,
       grupo_ids: [],
       grupo_id: "",
-      ip_address: "",
+      ip_addresses_text: "",
       tipo_dia: "corridos",
       dias_especificos: [],
       horarios: [{ inicio: "08:00", fim: "18:00" }],
@@ -210,6 +215,14 @@ export default function RegrasAcessoIpsList() {
     }
   };
 
+  // Converte texto de IPs para array, validando cada um
+  const parseIpAddresses = (text) => {
+    return text
+      .split(/[,\n]/)
+      .map(ip => ip.trim())
+      .filter(ip => ip.length > 0);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -218,8 +231,21 @@ export default function RegrasAcessoIpsList() {
       return;
     }
 
-    if (!formData.ip_address || !isValidIP(formData.ip_address)) {
-      toast.error("Informe um endereço IP válido (IPv4 ou IPv6)");
+    // Validação de IPs
+    const ips = parseIpAddresses(formData.ip_addresses_text);
+    if (ips.length === 0) {
+      toast.error("Informe ao menos um endereço IP ou bloco CIDR");
+      return;
+    }
+
+    if (ips.length > 256) {
+      toast.error("Máximo de 256 IPs por regra");
+      return;
+    }
+
+    const invalidIps = ips.filter(ip => !isValidIPOrCIDR(ip));
+    if (invalidIps.length > 0) {
+      toast.error(`IPs/CIDRs inválidos: ${invalidIps.slice(0, 3).join(", ")}${invalidIps.length > 3 ? "..." : ""}`);
       return;
     }
 
@@ -236,6 +262,7 @@ export default function RegrasAcessoIpsList() {
     try {
       if (editingId) {
         await updateRegra(editingId, {
+          ip_addresses: ips,
           tipo_dia: formData.tipo_dia,
           dias_especificos: formData.tipo_dia === "especificos" ? formData.dias_especificos : null,
           horarios: formData.horarios,
@@ -247,18 +274,17 @@ export default function RegrasAcessoIpsList() {
         const payload = {
           empresa_id: formData.empresa_id,
           grupo_ids: formData.grupo_ids,
-          ip_address: formData.ip_address,
+          ip_addresses: ips,
           tipo_dia: formData.tipo_dia,
           dias_especificos: formData.tipo_dia === "especificos" ? formData.dias_especificos : null,
           horarios: formData.horarios,
           bloquear_em_feriado: formData.bloquear_em_feriado,
           ativo: formData.ativo,
         };
-
         const result = await createRegraBulk(payload);
 
         if (result.erros && result.erros.length > 0) {
-          toast.warning(`${result.total_criadas} regra(s) criada(s). Avisos: ${result.erros.join(", ")}`);
+          toast.warning(`${result.total_criadas} regra(s) criada(s). Avisos: ${result.erros.slice(0, 3).join(", ")}${result.erros.length > 3 ? "..." : ""}`);
         } else {
           toast.success(`${result.total_criadas} regra(s) criada(s) com sucesso!`);
         }
@@ -334,6 +360,13 @@ export default function RegrasAcessoIpsList() {
     return horarios.map(h => `${h.inicio} - ${h.fim}`).join(", ");
   };
 
+  const formatIpAddresses = (ip_addresses) => {
+    if (!ip_addresses || ip_addresses.length === 0) return "-";
+    if (ip_addresses.length === 1) return ip_addresses[0];
+    if (ip_addresses.length <= 3) return ip_addresses.join(", ");
+    return `${ip_addresses.slice(0, 2).join(", ")} +${ip_addresses.length - 2}`;
+  };
+
   return (
     <div className="space-y-6 w-full animate-fadeIn">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -344,7 +377,7 @@ export default function RegrasAcessoIpsList() {
             </div>
             Regras de Acesso por IP
           </h1>
-          <p className="text-neutral-400">Configure horários e dias permitidos para cada endereço IP por grupo</p>
+          <p className="text-neutral-400">Configure horários e dias permitidos para endereços IP por grupo</p>
         </div>
 
         <button
@@ -381,8 +414,8 @@ export default function RegrasAcessoIpsList() {
           <div>
             <p className="text-sm font-medium text-cyan-300 mb-1">Como funcionam as regras de acesso por IP</p>
             <p className="text-sm text-cyan-400">
-              Defina horários e dias específicos em que cada endereço IP (IPv4 ou IPv6) pode ser utilizado por um ou mais grupos.
-              Acessos fora dos horários configurados ou com regras inativas serão bloqueados automaticamente.
+              Defina horários e dias específicos em que cada endereço IP (IPv4, IPv6 ou bloco CIDR) pode ser utilizado por um ou mais grupos.
+              Cada regra pode conter múltiplos IPs. Acessos fora dos horários configurados ou com regras inativas serão bloqueados automaticamente.
             </p>
           </div>
         </div>
@@ -417,7 +450,7 @@ export default function RegrasAcessoIpsList() {
                     Grupo
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                    IP
+                    IPs
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                     Dias
@@ -464,7 +497,12 @@ export default function RegrasAcessoIpsList() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <FiWifi className="text-teal-400" size={16} />
-                        <span className="text-sm text-neutral-100 font-mono">{item.ip_address || "-"}</span>
+                        <span
+                          className="text-sm text-neutral-100 font-mono cursor-help"
+                          title={Array.isArray(item.ip_addresses) ? item.ip_addresses.join("\n") : "-"}
+                        >
+                          {formatIpAddresses(item.ip_addresses)}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -599,17 +637,19 @@ export default function RegrasAcessoIpsList() {
                 </div>
               )}
 
+              {/* IPs Input - sempre como textarea */}
               <div>
-                <Label className="text-sm font-medium text-neutral-400 mb-2">Endereço IP *</Label>
-                <input
-                  type="text"
-                  value={formData.ip_address}
-                  onChange={(e) => setFormData({ ...formData, ip_address: e.target.value })}
-                  disabled={editingId}
-                  placeholder="Ex: 192.168.1.1 ou 2001:db8::1"
-                  className="w-full px-4 py-3 bg-dark-tertiary border border-neutral-800 rounded-xl text-neutral-100 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-colors disabled:opacity-50 font-mono"
+                <Label className="text-sm font-medium text-neutral-400 mb-2">Endereços IP *</Label>
+                <textarea
+                  value={formData.ip_addresses_text}
+                  onChange={(e) => setFormData({ ...formData, ip_addresses_text: e.target.value })}
+                  placeholder="192.168.1.1&#10;192.168.1.0/24&#10;10.0.0.1&#10;&#10;ou separados por vírgula: 192.168.1.1, 10.0.0.1"
+                  rows={4}
+                  className="w-full px-4 py-3 bg-dark-tertiary border border-neutral-800 rounded-xl text-neutral-100 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-colors font-mono resize-none"
                 />
-                <p className="text-xs text-neutral-500 mt-1">Suporta IPv4 e IPv6</p>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Separe os IPs por vírgula ou nova linha. Suporta IPv4, IPv6 e blocos CIDR (ex: 192.168.1.0/24). Máximo: 256 IPs
+                </p>
               </div>
 
               <div>

@@ -34,10 +34,11 @@ def listar_regras_por_empresa(
     """Lista regras de acesso IPs de uma empresa com paginação."""
     query = db.query(RegrasAcessoIps).filter(RegrasAcessoIps.empresa_id == empresa_id)
 
-    # Aplicar filtro de busca pelo IP
+    # Aplicar filtro de busca pelo IP (cast JSONB to text para busca ILIKE)
     if search:
+        from sqlalchemy import cast, Text
         search_term = f"%{search}%"
-        query = query.filter(RegrasAcessoIps.ip_address.ilike(search_term))
+        query = query.filter(cast(RegrasAcessoIps.ip_addresses, Text).ilike(search_term))
 
     # Ordenar por data de criação
     query = query.order_by(RegrasAcessoIps.criado_em.desc())
@@ -58,7 +59,7 @@ def listar_regras_por_empresa(
             "regra_id": str(r.regra_id),
             "empresa_id": str(r.empresa_id),
             "grupo_id": str(r.grupo_id),
-            "ip_address": r.ip_address,
+            "ip_addresses": r.ip_addresses,  # Lista de IPs/CIDRs
             "tipo_dia": r.tipo_dia,
             "dias_especificos": r.dias_especificos,
             "horarios": r.horarios,
@@ -91,7 +92,7 @@ def listar_regras_por_grupo(
             "regra_id": str(r.regra_id),
             "empresa_id": str(r.empresa_id),
             "grupo_id": str(r.grupo_id),
-            "ip_address": r.ip_address,
+            "ip_addresses": r.ip_addresses,
             "tipo_dia": r.tipo_dia,
             "dias_especificos": r.dias_especificos,
             "horarios": r.horarios,
@@ -114,7 +115,7 @@ def obter_regra(regra_id: str, db: Session = Depends(get_db), current_user=Depen
         "regra_id": str(r.regra_id),
         "empresa_id": str(r.empresa_id),
         "grupo_id": str(r.grupo_id),
-        "ip_address": r.ip_address,
+        "ip_addresses": r.ip_addresses,
         "tipo_dia": r.tipo_dia,
         "dias_especificos": r.dias_especificos,
         "horarios": r.horarios,
@@ -139,7 +140,7 @@ def criar_regra(data: RegraAcessoIpsCreate, db: Session = Depends(get_db), curre
         "regra_id": str(r.regra_id),
         "empresa_id": str(r.empresa_id),
         "grupo_id": str(r.grupo_id),
-        "ip_address": r.ip_address,
+        "ip_addresses": r.ip_addresses,
         "tipo_dia": r.tipo_dia,
         "dias_especificos": r.dias_especificos,
         "horarios": r.horarios,
@@ -167,7 +168,7 @@ def criar_regras_bulk(data: RegraAcessoIpsCreateBulk, db: Session = Depends(get_
             "regra_id": str(r.regra_id),
             "empresa_id": str(r.empresa_id),
             "grupo_id": str(r.grupo_id),
-            "ip_address": r.ip_address,
+            "ip_addresses": r.ip_addresses,
             "tipo_dia": r.tipo_dia,
             "dias_especificos": r.dias_especificos,
             "horarios": r.horarios,
@@ -198,7 +199,7 @@ def atualizar_regra(regra_id: str, data: RegraAcessoIpsUpdate, db: Session = Dep
         "regra_id": str(r.regra_id),
         "empresa_id": str(r.empresa_id),
         "grupo_id": str(r.grupo_id),
-        "ip_address": r.ip_address,
+        "ip_addresses": r.ip_addresses,
         "tipo_dia": r.tipo_dia,
         "dias_especificos": r.dias_especificos,
         "horarios": r.horarios,
@@ -223,7 +224,7 @@ def toggle_ativo(regra_id: str, db: Session = Depends(get_db), current_user=Depe
         "regra_id": str(r.regra_id),
         "empresa_id": str(r.empresa_id),
         "grupo_id": str(r.grupo_id),
-        "ip_address": r.ip_address,
+        "ip_addresses": r.ip_addresses,
         "tipo_dia": r.tipo_dia,
         "dias_especificos": r.dias_especificos,
         "horarios": r.horarios,

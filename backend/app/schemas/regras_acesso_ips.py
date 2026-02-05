@@ -37,22 +37,46 @@ def _validate_time_range(inicio: str, fim: str) -> None:
         )
 
 
-def _validate_ip_address(ip: str) -> str:
-    """Validate IPv4 or IPv6 address."""
+def _validate_ip_or_cidr(ip: str) -> str:
+    """Validate IPv4, IPv6 address or CIDR notation."""
+    ip = ip.strip()
     try:
-        # This will raise ValueError if invalid
+        # Try as individual IP first
         ipaddress.ip_address(ip)
         return ip
     except ValueError:
+        pass
+
+    try:
+        # Try as CIDR network
+        net = ipaddress.ip_network(ip, strict=False)
+        # Limit CIDR to /24 (256 addresses max)
+        if net.num_addresses > 256:
+            raise ValueError(
+                f"Bloco de IP muito grande ({net.num_addresses} enderecos). Maximo permitido: /24 (256 enderecos)"
+            )
+        return ip
+    except ValueError:
         raise ValueError(
-            f"'{ip}' nao e um endereco IP valido (IPv4 ou IPv6)"
+            f"'{ip}' nao e um endereco IP ou bloco CIDR valido"
         )
+
+
+def _expand_ip_network(network: str) -> List[str]:
+    """Expand a CIDR network into individual IP addresses."""
+    net = ipaddress.ip_network(network, strict=False)
+    # Limit to /24 networks (256 IPs) to prevent abuse
+    if net.num_addresses > 256:
+        raise ValueError(
+            f"Bloco de IP muito grande ({net.num_addresses} enderecos). Maximo permitido: /24 (256 enderecos)"
+        )
+    return [str(ip) for ip in net.hosts()]  # hosts() excludes network and broadcast addresses
 
 
 class RegraAcessoIpsBase(BaseModel):
     empresa_id: UUID
     grupo_id: UUID
-    ip_address: str
+    ip_addresses: List[str]  # Lista de IPs ou blocos CIDR
     tipo_dia: TipoDiaEnum
     dias_especificos: Optional[List[int]] = None
     horarios: List[Dict]   # ex: [{"inicio": "08:00", "fim": "18:00"}]
@@ -66,11 +90,18 @@ class RegraAcessoIpsBase(BaseModel):
             raise ValueError("dias_especificos é obrigatório quando tipo_dia = 'especificos'")
         return self
 
-    @field_validator("ip_address")
+    @field_validator("ip_addresses")
     @classmethod
-    def validar_ip(cls, v: str) -> str:
-        """Validate that ip_address is a valid IPv4 or IPv6 address."""
-        return _validate_ip_address(v)
+    def validar_ip_addresses(cls, v: List[str]) -> List[str]:
+        """Validate that all IPs/CIDRs in the list are valid."""
+        if not v or len(v) == 0:
+            raise ValueError("Lista de IPs nao pode ser vazia")
+        if len(v) > 256:
+            raise ValueError("Maximo de 256 IPs por vez")
+        validated = []
+        for ip in v:
+            validated.append(_validate_ip_or_cidr(ip))
+        return list(dict.fromkeys(validated))  # Remove duplicates preserving order
 
     @field_validator("dias_especificos")
     @classmethod
@@ -137,10 +168,10 @@ class RegraAcessoIpsCreate(RegraAcessoIpsBase):
 
 
 class RegraAcessoIpsCreateBulk(BaseModel):
-    """Modelo para criação em lote - múltiplos grupos para um IP"""
+    """Modelo para criação em lote - múltiplos grupos para os mesmos IPs"""
     empresa_id: UUID
     grupo_ids: List[UUID]  # Lista de IDs de grupos
-    ip_address: str
+    ip_addresses: List[str]  # Lista de IPs ou blocos CIDR
     tipo_dia: TipoDiaEnum
     dias_especificos: Optional[List[int]] = None
     horarios: List[Dict]
@@ -154,11 +185,18 @@ class RegraAcessoIpsCreateBulk(BaseModel):
             raise ValueError("dias_especificos é obrigatório quando tipo_dia = 'especificos'")
         return self
 
-    @field_validator("ip_address")
+    @field_validator("ip_addresses")
     @classmethod
-    def validar_ip(cls, v: str) -> str:
-        """Validate that ip_address is a valid IPv4 or IPv6 address."""
-        return _validate_ip_address(v)
+    def validar_ip_addresses(cls, v: List[str]) -> List[str]:
+        """Validate that all IPs/CIDRs in the list are valid."""
+        if not v or len(v) == 0:
+            raise ValueError("Lista de IPs nao pode ser vazia")
+        if len(v) > 256:
+            raise ValueError("Maximo de 256 IPs por vez")
+        validated = []
+        for ip in v:
+            validated.append(_validate_ip_or_cidr(ip))
+        return list(dict.fromkeys(validated))
 
     @field_validator("grupo_ids")
     @classmethod
@@ -203,11 +241,27 @@ class RegraAcessoIpsCreateBulk(BaseModel):
 
 
 class RegraAcessoIpsUpdate(BaseModel):
+    ip_addresses: Optional[List[str]] = None  # Permite atualizar os IPs
     tipo_dia: Optional[TipoDiaEnum] = None
     dias_especificos: Optional[List[int]] = None
     horarios: Optional[List[Dict]] = None
     bloquear_em_feriado: Optional[bool] = None
     ativo: Optional[bool] = None
+
+    @field_validator("ip_addresses")
+    @classmethod
+    def validar_ip_addresses_update(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """Validate that all IPs/CIDRs in the list are valid."""
+        if v is None:
+            return v
+        if len(v) == 0:
+            raise ValueError("Lista de IPs nao pode ser vazia")
+        if len(v) > 256:
+            raise ValueError("Maximo de 256 IPs por vez")
+        validated = []
+        for ip in v:
+            validated.append(_validate_ip_or_cidr(ip))
+        return list(dict.fromkeys(validated))
 
     @field_validator("dias_especificos")
     @classmethod
