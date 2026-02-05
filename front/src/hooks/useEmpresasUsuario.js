@@ -16,6 +16,7 @@ export function useEmpresasUsuario() {
         const opts = empresas.map((e) => ({
           value: e.empresa_id,
           label: e.fantasia || e.razao_social || e.name,
+          ativo: e.ativo !== false, // default true
         }));
         console.log("[useEmpresasUsuario] options:", opts);
         setOptions(opts);

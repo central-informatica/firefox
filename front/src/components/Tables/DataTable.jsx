@@ -85,8 +85,13 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
                   const key = header.column.columnDef.accessorKey;
                   const isCurrentSort = sort.includes(key);
 
+                  const colWidth = header.column.columnDef.size;
                   return (
-                    <th className="bg-dark-tertiary p-3 text-left font-semibold border-b border-neutral-800 text-neutral-300 first:rounded-tl-lg last:rounded-tr-lg" key={header.id}>
+                    <th
+                      className="bg-dark-tertiary p-3 text-left font-semibold border-b border-neutral-800 text-neutral-300 first:rounded-tl-lg last:rounded-tr-lg"
+                      key={header.id}
+                      style={colWidth ? { width: colWidth } : undefined}
+                    >
                       {key ? (
                         <button
                           className={`bg-transparent border-none font-semibold cursor-pointer flex items-center gap-1.5 hover:text-white transition-colors ${
@@ -139,12 +144,17 @@ export default function DataTable({ columns, fetchData, limit = 10 }) {
                     const value = col.cell
                       ? col.cell({ row: { original: row } })
                       : row[col.accessorKey];
+                    const colWidth = col.size;
 
                     return (
-                      <td className="p-3 border-b border-neutral-800 text-neutral-100" key={j}>
-                        <span className="max-w-[180px] inline-block overflow-hidden whitespace-nowrap text-ellipsis align-middle" title={typeof value === 'string' ? value : ''}>
+                      <td
+                        className="p-3 border-b border-neutral-800 text-neutral-100"
+                        key={j}
+                        style={colWidth ? { width: colWidth } : undefined}
+                      >
+                        <div className={`${colWidth ? '' : 'max-w-[180px]'} overflow-hidden whitespace-nowrap text-ellipsis`} title={typeof value === 'string' ? value : ''}>
                           {value}
-                        </span>
+                        </div>
                       </td>
                     );
                   })}

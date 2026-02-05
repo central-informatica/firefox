@@ -8,9 +8,12 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from backend.app.api.deps import check_auth_with_ip
 from backend.app.core.exceptions import AuthServiceError
+from backend.app.db.session import get_db
+from backend.app.db.models import Certificados
 from backend.app.services.auth_client import auth_client
 
 router = APIRouter(prefix="/empresas", tags=["Empresas"])
@@ -344,6 +347,121 @@ async def deletar_empresa(
             path=f"/api/v1/organizations/{org_id}/companies/{empresa_id}",
             headers=headers,
         )
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )
+
+
+@router.get("/id/{empresa_id}/status")
+async def get_empresa_status(
+    request: Request,
+    empresa_id: str,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    Get the active status of a company from Auth service.
+    """
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem verificar status de empresas",
+        )
+
+    org_id = user_data.get("organization_id")
+    if not org_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuário não está associado a uma organização",
+        )
+
+    headers = get_forwarded_headers(request)
+
+    try:
+        empresa = await auth_client.proxy_request(
+            method="GET",
+            path=f"/api/v1/organizations/{org_id}/companies/{empresa_id}",
+            headers=headers,
+        )
+
+        return {
+            "empresa_id": empresa_id,
+            "ativo": empresa.get("is_active", True),
+        }
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )
+
+
+@router.patch("/id/{empresa_id}/toggle-ativo")
+async def toggle_empresa_status(
+    request: Request,
+    empresa_id: str,
+    db: Session = Depends(get_db),
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    Toggle the active status of a company.
+    When deactivated: all certificates for this company are also deactivated.
+    When activated: all certificates for this company are also activated.
+    """
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem alterar status de empresas",
+        )
+
+    org_id = user_data.get("organization_id")
+    if not org_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuário não está associado a uma organização",
+        )
+
+    headers = get_forwarded_headers(request)
+
+    try:
+        # Get current status from Auth service
+        empresa = await auth_client.proxy_request(
+            method="GET",
+            path=f"/api/v1/organizations/{org_id}/companies/{empresa_id}",
+            headers=headers,
+        )
+
+        current_status = empresa.get("is_active", True)
+        new_status = not current_status
+
+        # Update status in Auth service
+        await auth_client.proxy_request(
+            method="PUT",
+            path=f"/api/v1/organizations/{org_id}/companies/{empresa_id}",
+            headers=headers,
+            json={"is_active": new_status},
+        )
+
+        # Update all certificates for this empresa in local database
+        cert_count = (
+            db.query(Certificados)
+            .filter(
+                Certificados.empresa_id == empresa_id,
+                Certificados.deleted_at.is_(None),
+            )
+            .update({"ativo": new_status})
+        )
+
+        db.commit()
+
+        return {
+            "empresa_id": empresa_id,
+            "ativo": new_status,
+            "certificados_atualizados": cert_count,
+            "message": f"Empresa {'ativada' if new_status else 'desativada'} com sucesso. {cert_count} certificado(s) {'ativado(s)' if new_status else 'desativado(s)'}.",
+        }
 
     except AuthServiceError as e:
         raise HTTPException(

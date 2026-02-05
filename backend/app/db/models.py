@@ -244,3 +244,5 @@ class UsuariosIpWhitelist(Base):
     criado_por: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment='ID do admin que criou a entrada')
     deleted_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True, comment='Data/hora da exclusao (soft delete)')
     deleted_by: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True, comment='ID do usuario que excluiu')
+
+

@@ -13,6 +13,8 @@ function mapAuthToFrontend(empresa) {
     fantasia: empresa.name || empresa.fantasia,
     // company_category_id no Auth service, ramos_id no frontend legado
     ramos_id: empresa.company_category_id || empresa.category_id || empresa.ramos_id,
+    // is_active no Auth service, ativo no frontend
+    ativo: empresa.is_active !== undefined ? empresa.is_active : (empresa.ativo !== undefined ? empresa.ativo : true),
   };
 }
 
@@ -162,4 +164,33 @@ export async function deleteEmpresa(id) {
   }
 
   return true;
+}
+
+/**
+ * GET empresa status (ativo/inativo)
+ */
+export async function getEmpresaStatus(id) {
+  const res = await apiFetchWithToken(`/empresas/id/${id}/status`);
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return res.json();
+}
+
+/**
+ * TOGGLE empresa ativo status
+ * Also toggles all certificates for this empresa
+ */
+export async function toggleEmpresaAtivo(id) {
+  const res = await apiFetchWithToken(`/empresas/id/${id}/toggle-ativo`, {
+    method: "PATCH",
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return res.json();
 }

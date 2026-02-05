@@ -176,6 +176,26 @@ def remover_certificado(
     return {"success": True}
 
 
+@router.delete("/{grupo_id}/remover/certificado")
+def remover_certificado_alternativo(
+    grupo_id: str,
+    data: GrupoCertificadoRemove,
+    db: Session = Depends(get_db),
+    current_user=Depends(check_auth_with_ip),
+):
+    """Remove a certificado from a grupo (admin only) - alternate route for frontend compatibility."""
+    _verificar_admin(current_user)
+    ok = remover_certificado_do_grupo(
+        db=db,
+        grupo_id=grupo_id,
+        certificado_id=data.certificado_id,
+        empresa_id=data.empresa_id
+    )
+    if not ok:
+        raise HTTPException(status_code=404, detail="Vinculo nao encontrado")
+    return {"success": True}
+
+
 # ---------------------------------------------------------------------------
 # Grupos <-> Usuarios
 # ---------------------------------------------------------------------------
