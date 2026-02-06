@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{include = "backend_certificado", from = "src"}]
+# packages configuration removed - not needed for this project structure
 
 
 [tool.poetry.group.dev.dependencies]
