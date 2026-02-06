@@ -54,23 +54,15 @@ async def get_dashboard_stats(
                 headers=headers,
             )
 
-            print(f"DEBUG: users_response type: {type(users_response)}")
-            print(f"DEBUG: users_response content: {users_response}")
-
             # Extract user count
             total_usuarios = 0
             if isinstance(users_response, dict):
                 total_usuarios = users_response.get("total", 0)
-                print(f"DEBUG: Extracted total from dict: {total_usuarios}")
             elif isinstance(users_response, list):
                 total_usuarios = len(users_response)
-                print(f"DEBUG: Counted list length: {total_usuarios}")
-            else:
-                print(f"DEBUG: Unexpected response type: {type(users_response)}")
 
         except AuthServiceError as e:
             # If auth service fails, return 0 for users
-            print(f"Error fetching users from auth service: {e}")
             total_usuarios = 0
 
         # Get active certificates count from database
@@ -89,7 +81,6 @@ async def get_dashboard_stats(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in get_dashboard_stats: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching dashboard stats: {str(e)}",
