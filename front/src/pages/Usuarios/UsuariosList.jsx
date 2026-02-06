@@ -3,12 +3,13 @@ import { useState } from "react";
 import {
   FiPlus, FiEdit2, FiTrash2, FiUsers, FiUserCheck, FiShield, FiAlertCircle, FiMail, FiUserPlus
 } from "react-icons/fi";
-import { deletarUsuario, listarUsuariosPaginado } from "../../services/usuariosService";
+import { deletarUsuario, listarUsuariosPaginado, toggleUsuarioAtivo } from "../../services/usuariosService";
 import { toast } from "react-toastify";
 
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
 import DataTable from "../../components/Tables/DataTable";
 import VincularUsuarioModal from "../../components/VincularUsuarioModal";
+import ConfirmModal from "../../components/ConfirmModal";
 
 const UsuariosList = () => {
   const navigate = useNavigate();
@@ -22,6 +23,14 @@ const UsuariosList = () => {
   // Vincular usuario modal state
   const [vincularModalOpen, setVincularModalOpen] = useState(false);
 
+  // Toggle state management
+  const [statusOverride, setStatusOverride] = useState({});
+  const [togglingId, setTogglingId] = useState(null);
+
+  // Confirmation modal state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState(null); // { user_id, nome, currentStatus }
+
 
   const fetchUsuarios = async ({ page, limit, search, sort }) => {
     if (!empresaId) return { rows: [], total: 0 , total_adm: 0};
@@ -29,6 +38,10 @@ const UsuariosList = () => {
     setTotalUsuarios(res.total);
     setTotalUserAtivos(res.total);
     setTotalUsuariosAdmin(res.total_adm);
+
+    // Clear status overrides on reload
+    setStatusOverride({});
+
     return res;
   };
 
@@ -49,6 +62,46 @@ const UsuariosList = () => {
     } catch (error) {
       console.error(error);
       alert("Erro ao excluir usuário");
+    }
+  };
+
+  const handleToggleClick = (usuario) => {
+    // Use override if exists, otherwise use is_active from the user
+    const currentStatus = statusOverride[usuario.id] !== undefined
+      ? statusOverride[usuario.id]
+      : (usuario.is_active !== false);
+
+    setConfirmData({
+      user_id: usuario.id,
+      nome: usuario.nome,
+      currentStatus,
+    });
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmToggle = async () => {
+    if (!confirmData) return;
+
+    setTogglingId(confirmData.user_id);
+    setConfirmOpen(false);
+
+    try {
+      const result = await toggleUsuarioAtivo(confirmData.user_id);
+      toast.success(result.message);
+
+      // Update local override
+      setStatusOverride(prev => ({
+        ...prev,
+        [confirmData.user_id]: result.is_active,
+      }));
+
+      setRefreshKey(k => k + 1);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao alterar status do usuário");
+    } finally {
+      setTogglingId(null);
+      setConfirmData(null);
     }
   };
 
@@ -90,13 +143,37 @@ const UsuariosList = () => {
     },
     {
       header: "Status",
-      size: 100,
-      cell: () => (
-        <span className="badge-permitido">
-          <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-          Ativo
-        </span>
-      ),
+      size: 140,
+      cell: ({ row }) => {
+        const u = row.original;
+        const isToggling = togglingId === u.id;
+        // Use override if exists, otherwise use is_active from user
+        const isAtivo = statusOverride[u.id] !== undefined
+          ? statusOverride[u.id]
+          : (u.is_active !== false);
+
+        return (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleToggleClick(u)}
+              disabled={isToggling}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-xfire-orange focus:ring-offset-2 focus:ring-offset-dark-primary ${
+                isAtivo ? 'bg-green-600' : 'bg-neutral-600'
+              } ${isToggling ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+              title={isAtivo ? 'Clique para desativar' : 'Clique para ativar'}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                  isAtivo ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-medium ${isAtivo ? 'text-green-400' : 'text-neutral-500'}`}>
+              {isAtivo ? 'Ativo' : 'Inativo'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       header: "Ações",
@@ -266,6 +343,25 @@ const UsuariosList = () => {
           toast.success("Usuário vinculado à empresa com sucesso!");
           setRefreshKey(k => k + 1);
         }}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        open={confirmOpen}
+        title={confirmData?.currentStatus ? "Desativar usuário?" : "Ativar usuário?"}
+        description={
+          confirmData?.currentStatus
+            ? `Ao desativar o usuário "${confirmData?.nome}", ele não poderá mais fazer login no sistema. Deseja continuar?`
+            : `Ao ativar o usuário "${confirmData?.nome}", ele poderá fazer login no sistema novamente. Deseja continuar?`
+        }
+        confirmText={confirmData?.currentStatus ? "Desativar" : "Ativar"}
+        cancelText="Cancelar"
+        onConfirm={handleConfirmToggle}
+        onCancel={() => {
+          setConfirmOpen(false);
+          setConfirmData(null);
+        }}
+        variant={confirmData?.currentStatus ? "danger" : "primary"}
       />
     </div>
   );

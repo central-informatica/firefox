@@ -8,18 +8,20 @@ export default function VincularUsuarioModal({ open, empresaId, empresaNome, onC
   const [usuariosVinculados, setUsuariosVinculados] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState([]); // Changed to array for multiple selection
   const [searchTerm, setSearchTerm] = useState('');
+  const [linkingUserId, setLinkingUserId] = useState(null); // Track individual quick link action
 
   useEffect(() => {
     if (open && empresaId) {
       loadUsuarios();
     } else {
       // Reset state when closed
-      setSelectedUserId('');
+      setSelectedUserIds([]);
       setSearchTerm('');
       setUsuarios([]);
       setUsuariosVinculados([]);
+      setLinkingUserId(null);
     }
   }, [open, empresaId]);
 
@@ -54,13 +56,55 @@ export default function VincularUsuarioModal({ open, empresaId, empresaNome, onC
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedUserId) return;
+    if (selectedUserIds.length === 0) return;
 
     setSubmitting(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      // Link all selected users sequentially
+      for (const userId of selectedUserIds) {
+        try {
+          const res = await apiFetchWithToken(`/empresas/id/${empresaId}/usuarios`, {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId }),
+          });
+
+          if (!res.ok) {
+            const error = await res.text();
+            throw new Error(error);
+          }
+          successCount++;
+        } catch (error) {
+          console.error(`Erro ao vincular usuário ${userId}:`, error);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        onSuccess?.();
+      }
+
+      if (errorCount > 0) {
+        alert(`${successCount} usuário(s) vinculado(s) com sucesso. ${errorCount} erro(s).`);
+      }
+
+      onClose();
+    } catch (error) {
+      console.error('Erro ao vincular usuários:', error);
+      alert(error.message || 'Erro ao vincular usuários');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleQuickLink = async (userId) => {
+    setLinkingUserId(userId);
     try {
       const res = await apiFetchWithToken(`/empresas/id/${empresaId}/usuarios`, {
         method: 'POST',
-        body: JSON.stringify({ user_id: selectedUserId }),
+        body: JSON.stringify({ user_id: userId }),
       });
 
       if (!res.ok) {
@@ -68,14 +112,25 @@ export default function VincularUsuarioModal({ open, empresaId, empresaNome, onC
         throw new Error(error);
       }
 
+      // Remove user from list after successful link
+      setUsuarios(prev => prev.filter(u => u.id !== userId));
       onSuccess?.();
-      onClose();
     } catch (error) {
       console.error('Erro ao vincular usuário:', error);
       alert(error.message || 'Erro ao vincular usuário');
     } finally {
-      setSubmitting(false);
+      setLinkingUserId(null);
     }
+  };
+
+  const toggleUserSelection = (userId) => {
+    setSelectedUserIds(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      } else {
+        return [...prev, userId];
+      }
+    });
   };
 
   // Filtra usuários baseado no termo de busca
@@ -97,7 +152,7 @@ export default function VincularUsuarioModal({ open, empresaId, empresaNome, onC
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-neutral-100 font-montserrat">
-              Vincular Usuário
+              Vincular Usuários
             </h3>
             <p className="text-sm text-neutral-400 mt-1">
               Empresa: <span className="text-neutral-300">{empresaNome}</span>
@@ -126,7 +181,7 @@ export default function VincularUsuarioModal({ open, empresaId, empresaNome, onC
           {/* Users List */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-neutral-300 mb-2">
-              Selecione o usuário
+              Selecione um ou mais usuários
             </label>
 
             {loading ? (
@@ -143,27 +198,47 @@ export default function VincularUsuarioModal({ open, empresaId, empresaNome, onC
                   </div>
                 ) : (
                   filteredUsuarios.map((user) => (
-                    <label
+                    <div
                       key={user.id}
-                      className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-neutral-800/50 transition-colors border-b border-neutral-800 last:border-b-0 ${
-                        selectedUserId === user.id ? 'bg-xfire-orange/10' : ''
+                      className={`flex items-center gap-3 p-3 hover:bg-neutral-800/50 transition-colors border-b border-neutral-800 last:border-b-0 ${
+                        selectedUserIds.includes(user.id) ? 'bg-xfire-orange/10' : ''
                       }`}
                     >
                       <input
-                        type="radio"
-                        name="usuario"
-                        value={user.id}
-                        checked={selectedUserId === user.id}
-                        onChange={(e) => setSelectedUserId(e.target.value)}
-                        className="w-4 h-4 text-xfire-orange focus:ring-xfire-orange focus:ring-offset-dark-tertiary"
+                        type="checkbox"
+                        checked={selectedUserIds.includes(user.id)}
+                        onChange={() => toggleUserSelection(user.id)}
+                        className="w-4 h-4 text-xfire-orange focus:ring-xfire-orange focus:ring-offset-dark-tertiary rounded"
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 cursor-pointer" onClick={() => toggleUserSelection(user.id)}>
                         <div className="text-sm font-medium text-neutral-100">
                           {user.first_name} {user.last_name}
                         </div>
                         <div className="text-xs text-neutral-500">{user.email}</div>
                       </div>
-                    </label>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickLink(user.id)}
+                        disabled={linkingUserId === user.id}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          linkingUserId === user.id
+                            ? 'bg-neutral-700 text-neutral-500 cursor-wait'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                      >
+                        {linkingUserId === user.id ? (
+                          <span className="flex items-center gap-1">
+                            <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            ...
+                          </span>
+                        ) : (
+                          'Vincular'
+                        )}
+                      </button>
+                    </div>
                   ))
                 )}
               </div>
@@ -183,9 +258,9 @@ export default function VincularUsuarioModal({ open, empresaId, empresaNome, onC
 
             <button
               type="submit"
-              disabled={!selectedUserId || submitting}
+              disabled={selectedUserIds.length === 0 || submitting}
               className={`px-4 py-2.5 rounded-button text-white font-medium transition-all duration-200 flex items-center gap-2 ${
-                !selectedUserId || submitting
+                selectedUserIds.length === 0 || submitting
                   ? 'bg-neutral-700 cursor-not-allowed'
                   : 'bg-xfire-orange hover:bg-xfire-orange/90'
               }`}
@@ -201,7 +276,7 @@ export default function VincularUsuarioModal({ open, empresaId, empresaNome, onC
               ) : (
                 <>
                   <FiUserPlus size={16} />
-                  Vincular Usuário
+                  Vincular {selectedUserIds.length > 0 ? `(${selectedUserIds.length})` : 'Selecionados'}
                 </>
               )}
             </button>

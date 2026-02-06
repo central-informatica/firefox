@@ -73,3 +73,18 @@ export async function deletarUsuario(empresaId, usuarioId) {
   if (!res.ok) throw new Error(await res.text());
   return true;
 }
+
+/**
+ * TOGGLE user active status (organization-level)
+ */
+export async function toggleUsuarioAtivo(userId) {
+  const res = await apiFetchWithToken(`/usuarios/${userId}/toggle-active`, {
+    method: "PATCH",
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return res.json();
+}

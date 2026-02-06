@@ -422,3 +422,44 @@ async def list_users_by_company(
             status_code=e.status_code or 500,
             detail=e.message,
         )
+
+
+@router.patch("/{user_id}/toggle-active")
+async def toggle_user_active(
+    request: Request,
+    user_id: str,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    Toggle user active status (organization-level).
+
+    Admin only - Forwards request to Auth service /api/v1/users/{user_id}/toggle-active.
+    This controls whether the user can login to the system.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem ativar/desativar usuários",
+        )
+
+    headers = get_forwarded_headers(request)
+
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
+    try:
+        result = await auth_client.proxy_request(
+            method="PATCH",
+            path=f"/api/v1/users/{user_id}/toggle-active",
+            headers=headers,
+        )
+        return result
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )
