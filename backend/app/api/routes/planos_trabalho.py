@@ -7,6 +7,7 @@ from backend.app.schemas.planos_trabalho import (
     PlanoTrabalhoCreate, PlanoTrabalhoUpdate, PlanoTrabalhoOut, PlanoTrabalhoPage
 )
 from backend.app.crud.planos_trabalho import crud_planos_trabalho
+from backend.app.core.uuid_validator import validate_uuid
 
 router = APIRouter(prefix="/planos-trabalho", tags=["Planos de Trabalho"])
 
@@ -52,6 +53,7 @@ def getPlanoTrabalho(
     current_user = Depends(check_auth_with_ip),
 ):
     _verificar_admin(current_user)
+    plano_id = validate_uuid(plano_id, "plano_id")
     usuario_id = current_user["id"]
     return crud_planos_trabalho.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
 
@@ -88,6 +90,7 @@ def atualizar_plano_trabalho(
     current_user = Depends(check_auth_with_ip),
 ):
     _verificar_admin(current_user)
+    plano_id = validate_uuid(plano_id, "plano_id")
     usuario_id = current_user["id"]
     return crud_planos_trabalho.atualizar(db, usuario_id=usuario_id, plano_id=plano_id, data=data)
 
@@ -99,6 +102,7 @@ def deletar_plano_trabalho(
     current_user = Depends(check_auth_with_ip),
 ):
     _verificar_admin(current_user)
+    plano_id = validate_uuid(plano_id, "plano_id")
     usuario_id = current_user["id"]
     crud_planos_trabalho.deletar(db, usuario_id=usuario_id, plano_id=plano_id)
     return {"ok": True}
