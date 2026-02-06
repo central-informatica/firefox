@@ -4,10 +4,11 @@ import { listarEmpresasPaginado, toggleEmpresaAtivo } from "../../services/empre
 import { useAuth } from "../../auth/useAuth";
 import { toast } from "react-toastify";
 import {
-  FiPlus, FiEdit2, FiClock, FiBriefcase, FiTrendingUp
+  FiPlus, FiEdit2, FiClock, FiBriefcase, FiTrendingUp, FiUserPlus
 } from "react-icons/fi";
 import DataTable from "../../components/Tables/DataTable";
 import ConfirmModal from "../../components/ConfirmModal";
+import VincularUsuarioModal from "../../components/VincularUsuarioModal";
 import formatCNPJ from "../../utils/formatCNPJ"
 
 const EmpresasList = () => {
@@ -24,6 +25,10 @@ const EmpresasList = () => {
   // Confirmation modal state
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmData, setConfirmData] = useState(null); // { empresa_id, razao_social, currentStatus }
+
+  // Vincular usuario modal state
+  const [vincularModalOpen, setVincularModalOpen] = useState(false);
+  const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
   if (loading || !user) {
     return null;
@@ -137,15 +142,28 @@ const EmpresasList = () => {
     },
     {
       header: "Ações",
-      size: 100,
+      size: 180,
       cell: ({ row }) => (
-        <button
-          onClick={() => navigate(`/empresas/editar/${row.original.empresa_id}`)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 bg-xfire-orange/10 hover:bg-xfire-orange/20 text-xfire-orange rounded-lg text-sm font-medium transition-all duration-200"
-        >
-          <FiEdit2 size={14} />
-          Editar
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setSelectedEmpresa(row.original);
+              setVincularModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium transition-all duration-200"
+            title="Vincular usuário"
+          >
+            <FiUserPlus size={14} />
+            Usuários
+          </button>
+          <button
+            onClick={() => navigate(`/empresas/editar/${row.original.empresa_id}`)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 bg-xfire-orange/10 hover:bg-xfire-orange/20 text-xfire-orange rounded-lg text-sm font-medium transition-all duration-200"
+          >
+            <FiEdit2 size={14} />
+            Editar
+          </button>
+        </div>
       ),
     },
   ];
@@ -235,6 +253,21 @@ const EmpresasList = () => {
           setConfirmData(null);
         }}
         variant={confirmData?.currentStatus ? "danger" : "primary"}
+      />
+
+      {/* Vincular Usuario Modal */}
+      <VincularUsuarioModal
+        open={vincularModalOpen}
+        empresaId={selectedEmpresa?.empresa_id}
+        empresaNome={selectedEmpresa?.razao_social}
+        onClose={() => {
+          setVincularModalOpen(false);
+          setSelectedEmpresa(null);
+        }}
+        onSuccess={() => {
+          toast.success("Usuário vinculado à empresa com sucesso!");
+          setReloadKey(k => k + 1);
+        }}
       />
     </div>
   );

@@ -1,20 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
-  FiPlus, FiEdit2, FiTrash2, FiUsers, FiUserCheck, FiShield, FiAlertCircle, FiMail
+  FiPlus, FiEdit2, FiTrash2, FiUsers, FiUserCheck, FiShield, FiAlertCircle, FiMail, FiUserPlus
 } from "react-icons/fi";
 import { deletarUsuario, listarUsuariosPaginado } from "../../services/usuariosService";
+import { toast } from "react-toastify";
 
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
 import DataTable from "../../components/Tables/DataTable";
+import VincularUsuarioModal from "../../components/VincularUsuarioModal";
 
 const UsuariosList = () => {
   const navigate = useNavigate();
   const [empresaId, setEmpresaSelecionada] = useState(null);
+  const [empresaNome, setEmpresaNome] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [totalUsuariosAtivos, setTotalUserAtivos] = useState(0);
   const [totalUsuarios, setTotalUsuarios] = useState(0);
   const [totalUsuariosAdmin, setTotalUsuariosAdmin] = useState(0);
+
+  // Vincular usuario modal state
+  const [vincularModalOpen, setVincularModalOpen] = useState(false);
 
 
   const fetchUsuarios = async ({ page, limit, search, sort }) => {
@@ -50,6 +56,7 @@ const UsuariosList = () => {
   {
       header: "Usuário",
       accessorKey: "nome",
+      size: 350,
       cell: ({ row }) => {
         const u = row.original;
         return (
@@ -67,6 +74,7 @@ const UsuariosList = () => {
     {
       header: "Email",
       accessorKey: "email",
+      size: 250,
       cell: ({ row }) => (
         <div className="flex items-center gap-2 text-sm text-neutral-400">
           <FiMail size={14} className="text-neutral-500" />
@@ -77,10 +85,12 @@ const UsuariosList = () => {
     {
       header: "Nível",
       accessorKey: "nivel",
+      size: 120,
       cell: ({ row }) => getNivelBadge(row.original.nivel),
     },
     {
       header: "Status",
+      size: 100,
       cell: () => (
         <span className="badge-permitido">
           <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
@@ -90,6 +100,7 @@ const UsuariosList = () => {
     },
     {
       header: "Ações",
+      size: 200,
       cell: ({ row }) => {
         const u = row.original;
         return (
@@ -143,13 +154,24 @@ const UsuariosList = () => {
           <p className="text-neutral-400">Gerencie os usuários cadastrados no sistema</p>
         </div>
 
-        <button
-          onClick={() => navigate("/usuarios/novo")}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white font-semibold rounded-xl shadow-lg shadow-xfire-orange/30 hover:shadow-xl hover:shadow-xfire-orange/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-        >
-          <FiPlus size={20} />
-          Novo Usuário
-        </button>
+        <div className="flex items-center gap-3">
+          {empresaId && (
+            <button
+              onClick={() => setVincularModalOpen(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            >
+              <FiUserPlus size={20} />
+              Vincular Usuário
+            </button>
+          )}
+          <button
+            onClick={() => navigate("/usuarios/novo")}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white font-semibold rounded-xl shadow-lg shadow-xfire-orange/30 hover:shadow-xl hover:shadow-xfire-orange/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+          >
+            <FiPlus size={20} />
+            Novo Usuário
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -195,7 +217,8 @@ const UsuariosList = () => {
       <SelectEmpresa
         value={empresaId}
         onChange={(empresa) => {
-          setEmpresaSelecionada(empresa);
+          setEmpresaSelecionada(empresa?.value || empresa);
+          setEmpresaNome(empresa?.label || '');
           setRefreshKey((k) => k + 1);
         }}
       />
@@ -232,6 +255,18 @@ const UsuariosList = () => {
           </p>
         </div>
       </div>
+
+      {/* Vincular Usuario Modal */}
+      <VincularUsuarioModal
+        open={vincularModalOpen}
+        empresaId={empresaId}
+        empresaNome={empresaNome}
+        onClose={() => setVincularModalOpen(false)}
+        onSuccess={() => {
+          toast.success("Usuário vinculado à empresa com sucesso!");
+          setRefreshKey(k => k + 1);
+        }}
+      />
     </div>
   );
 };

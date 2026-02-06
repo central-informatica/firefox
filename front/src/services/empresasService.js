@@ -194,3 +194,34 @@ export async function toggleEmpresaAtivo(id) {
 
   return res.json();
 }
+
+/**
+ * Listar usuários vinculados a uma empresa
+ */
+export async function listarUsuariosEmpresa(empresaId) {
+  const res = await apiFetchWithToken(`/usuarios/empresas/${empresaId}/usuarios`);
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  const result = await res.json();
+  return result.data || [];
+}
+
+/**
+ * Vincular um usuário existente a uma empresa
+ */
+export async function vincularUsuarioEmpresa(empresaId, userId) {
+  const res = await apiFetchWithToken(`/empresas/id/${empresaId}/usuarios`, {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId }),
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error);
+  }
+
+  return res.json();
+}

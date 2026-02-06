@@ -468,3 +468,51 @@ async def toggle_empresa_status(
             status_code=e.status_code or 500,
             detail=e.message,
         )
+
+
+class VincularUsuarioRequest(BaseModel):
+    """Request to link an existing user to a company."""
+    user_id: str
+
+
+@router.post("/id/{empresa_id}/usuarios")
+async def vincular_usuario_empresa(
+    request: Request,
+    empresa_id: str,
+    data: VincularUsuarioRequest,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    Vincular um usuário existente a uma empresa.
+
+    Este endpoint permite adicionar um usuário que já existe na organização
+    a uma empresa específica, sem precisar enviar um novo convite.
+
+    Apenas administradores podem vincular usuários a empresas.
+    """
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem vincular usuários a empresas",
+        )
+
+    headers = get_forwarded_headers(request)
+
+    try:
+        result = await auth_client.proxy_request(
+            method="POST",
+            path=f"/api/v1/companies/{empresa_id}/users",
+            headers=headers,
+            json={"user_id": data.user_id},
+        )
+
+        return {
+            "message": "Usuário vinculado à empresa com sucesso",
+            "data": result,
+        }
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )

@@ -73,8 +73,18 @@ class AuthClient(BaseServiceClient):
         )
 
         if response.status_code >= 400:
+            # Try to extract message from JSON response
+            error_message = response.text
+            try:
+                error_data = response.json()
+                if isinstance(error_data, dict):
+                    # Extract just the message, removing the "detail" wrapper
+                    error_message = error_data.get("detail", error_data.get("message", error_message))
+            except Exception:
+                pass
+
             raise AuthServiceError(
-                message=response.text,
+                message=error_message,
                 status_code=response.status_code,
             )
 
