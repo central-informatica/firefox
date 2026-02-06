@@ -20,8 +20,8 @@ def _verificar_admin(current_user: dict):
 
 @router.get("/")
 def listar_planos_trabalho(
-    page: int = 1,
-    limit: int = 10,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     search: str | None = None,
     sort: str | None = None,
     empresa_id: str | None = Query(default=None),
