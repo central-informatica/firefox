@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "backend-certificado"
 version = "0.1.0"
-description = ""
+description = "XSecurity Orquestrador Backend"
 authors = ["Guibson Moura <mouraguibson12@gmail.com>"]
 readme = "README.md"
 package-mode = false
