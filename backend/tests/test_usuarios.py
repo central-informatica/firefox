@@ -142,10 +142,13 @@ def test_list_users_non_admin_forbidden(non_admin_client):
 
 def test_list_users_admin_success(admin_client, mock_auth_service):
     """Test that admin can list users."""
-    mock_auth_service.return_value = [
-        {"id": "1", "email": "user1@test.com"},
-        {"id": "2", "email": "user2@test.com"},
-    ]
+    mock_auth_service.return_value = {
+        "users": [
+            {"id": "1", "email": "user1@test.com", "first_name": "User", "last_name": "One"},
+            {"id": "2", "email": "user2@test.com", "first_name": "User", "last_name": "Two"},
+        ],
+        "total": 2
+    }
 
     response = admin_client.get("/usuarios/")
 
