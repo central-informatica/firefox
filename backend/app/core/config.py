@@ -17,7 +17,7 @@ _custom_origin = os.getenv("FRONTEND_ORIGIN")
 if _custom_origin and _custom_origin not in FRONTEND_ORIGINS:
     FRONTEND_ORIGINS.append(_custom_origin)
 
-MASTER_KEY = gerar_chave(password=os.getenv("MASTER_KEY"))
+MASTER_KEY = gerar_chave(password=os.getenv("MASTER_KEY") or "senha-mestra")
 
 STORAGE_DIR = os.getenv("CERT_STORAGE_DIR", "storage/certificados")
 Path(STORAGE_DIR).mkdir(parents=True, exist_ok=True)
