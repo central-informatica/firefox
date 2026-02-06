@@ -153,7 +153,10 @@ def test_list_users_admin_success(admin_client, mock_auth_service):
     response = admin_client.get("/usuarios/")
 
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
+    data = response.json()
+    assert isinstance(data, dict)
+    assert "users" in data
+    assert len(data["users"]) == 2
 
 
 def test_list_users_unauthenticated(client):
