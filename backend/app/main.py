@@ -38,6 +38,7 @@ from backend.app.api.routes.usuarios import router as usuarios_router
 from backend.app.api.routes.convites import router as convites_router
 from backend.app.api.routes.companies import router as companies_router
 from backend.app.api.routes.certificados import router as certificados_router
+from backend.app.api.routes.dashboard import router as dashboard_router
 
 # Routers - Business logic (local)
 from backend.app.api.routes.grupos import router as grupos_router
@@ -278,6 +279,7 @@ app.include_router(usuarios_router)
 app.include_router(convites_router)
 app.include_router(companies_router)
 app.include_router(certificados_router)
+app.include_router(dashboard_router)
 
 # Business logic (local)
 app.include_router(grupos_router)

@@ -29,6 +29,12 @@ class CRUDGruposUsuarios:
             GruposUsuarios.empresa_id == empresa_id
         ).all()
 
+    def listar_por_usuario(self, db: Session, usuario_id: str):
+        """List all grupos for a specific user."""
+        return db.query(GruposUsuarios).filter(
+            GruposUsuarios.usuario_id == usuario_id
+        ).all()
+
     def get(self, db: Session, grupo_usuario_id: str):
         registro = db.query(GruposUsuarios).filter(
             GruposUsuarios.grupo_usuario_id == grupo_usuario_id

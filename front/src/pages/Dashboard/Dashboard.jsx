@@ -1,21 +1,43 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiUsers, FiShield, FiActivity, FiTrendingUp,
   FiClock, FiCheckCircle, FiAlertCircle
 } from "react-icons/fi";
+import { getDashboardStats } from "../../services/dashboardService";
 
 const Dashboard = () => {
+  const [loading, setLoading] = useState(true);
+  const [statsData, setStatsData] = useState({
+    total_usuarios: 0,
+    certificados_ativos: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await getDashboardStats();
+        setStatsData(data);
+      } catch (error) {
+        console.error("Erro ao carregar estatísticas do dashboard:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   const stats = [
     {
       label: "Total de Usuarios",
-      value: "124",
+      value: loading ? "..." : String(statsData.total_usuarios),
       change: "+12%",
       positive: true,
       icon: <FiUsers className="text-status-monitorado" size={24} />
     },
     {
       label: "Certificados Ativos",
-      value: "48",
+      value: loading ? "..." : String(statsData.certificados_ativos),
       change: "+8%",
       positive: true,
       icon: <FiShield className="text-status-permitido" size={24} />

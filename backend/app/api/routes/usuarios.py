@@ -13,6 +13,10 @@ from pydantic import BaseModel
 from backend.app.api.deps import check_auth_with_ip
 from backend.app.core.exceptions import AuthServiceError
 from backend.app.services.auth_client import auth_client
+from backend.app.db.session import get_db
+from backend.app.crud.grupos_usuarios import crud_grupos_usuarios
+from backend.app.db.models import Grupos
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
@@ -454,6 +458,90 @@ async def toggle_user_active(
         result = await auth_client.proxy_request(
             method="PATCH",
             path=f"/api/v1/users/{user_id}/toggle-active",
+            headers=headers,
+        )
+        return result
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )
+
+
+@router.get("/{user_id}/grupos")
+async def get_user_grupos(
+    user_id: str,
+    db: Session = Depends(get_db),
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    List all grupos for a specific user with group details.
+
+    Returns list of grupos with group information (name, description, etc).
+    Admin only.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem visualizar grupos de usuários",
+        )
+
+    try:
+        # Get user-grupo associations
+        grupos_usuarios = crud_grupos_usuarios.listar_por_usuario(db, user_id)
+
+        # Build response with group details
+        result = []
+        for gu in grupos_usuarios:
+            grupo = db.query(Grupos).filter(Grupos.grupo_id == gu.grupo_id).first()
+            if grupo:
+                result.append({
+                    "grupo_usuario_id": str(gu.grupo_usuario_id),
+                    "grupo_id": str(gu.grupo_id),
+                    "nome": grupo.nome,
+                    "empresa_id": str(gu.empresa_id) if gu.empresa_id else None,
+                })
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching user grupos: {str(e)}",
+        )
+
+
+@router.get("/{user_id}/companies")
+async def get_user_companies(
+    request: Request,
+    user_id: str,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    List all companies a user has access to.
+
+    Admin only - Forwards request to Auth service /api/v1/users/{user_id}/companies.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem visualizar empresas de usuários",
+        )
+
+    headers = get_forwarded_headers(request)
+
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
+    try:
+        result = await auth_client.proxy_request(
+            method="GET",
+            path=f"/api/v1/users/{user_id}/companies",
             headers=headers,
         )
         return result

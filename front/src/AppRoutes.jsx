@@ -4,6 +4,7 @@ import EmpresasList from "./pages/Empresas/EmpresasList";
 import EmpresaForm from "./pages/Empresas/EmpresasForm";
 import UsuariosList from "./pages/Usuarios/UsuariosList";
 import UsuariosForm from "./pages/Usuarios/UsuariosForm";
+import UsuariosRelacionamentos from "./pages/Usuarios/UsuariosRelacionamentos";
 import CertificadosList from "./pages/Certificados/CertificadosList"
 import CertificadosForm from "./pages/Certificados/CertificadosForm"
 import CertificadosGruposList from "./pages/Certificados/CertificadosGruposList"
@@ -34,6 +35,7 @@ export default function AppRoutes() {
       <Route path="/usuarios" element={<UsuariosList />} />
       <Route path="/usuarios/novo" element={<UsuariosForm />} />
       <Route path="/usuarios/editar/:id" element={<UsuariosForm />} />
+      <Route path="/usuarios/relacionamentos" element={<UsuariosRelacionamentos />} />
 
 
       <Route path="/certificados" element={<CertificadosList />} />

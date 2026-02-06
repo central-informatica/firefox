@@ -49,7 +49,15 @@ export default function Sidebar() {
         { id: "planos-novo", label: "Novo plano", path: "/planos/novo" }
       ]
     },
-    { id: "usuarios", label: "Usuarios", icon: <FiUsers />, path: "/usuarios" },
+    {
+      id: "usuarios",
+      label: "Usuarios",
+      icon: <FiUsers />,
+      children: [
+        { id: "usuarios-lista", label: "Listar usuarios", path: "/usuarios" },
+        { id: "usuarios-relacionamentos", label: "Relacionamentos", path: "/usuarios/relacionamentos" }
+      ]
+    },
     {
       id: "grupos",
       label: "Grupos",
