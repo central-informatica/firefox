@@ -52,7 +52,8 @@ def listar_grupos_empresa(
     current_user=Depends(check_auth_with_ip),
 ):
     """List grupos by empresa (optionally filtered by plano)."""
-    # Usuários comuns podem listar grupos
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar grupos")
     usuario_id = current_user.get("id") or current_user.get("usuario_id")
     return listar_grupos_por_empresa(
         db=db,
@@ -69,7 +70,8 @@ def obter(
     current_user=Depends(check_auth_with_ip),
 ):
     """Get a specific grupo by ID."""
-    # Usuários comuns podem visualizar grupo
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem visualizar grupos")
     grupo = get_grupo(db, grupo_id)
     if not grupo:
         raise HTTPException(status_code=404, detail="Grupo nao encontrado")
@@ -135,7 +137,8 @@ def listar_certificados_grupo(
     current_user=Depends(check_auth_with_ip),
 ):
     """List certificados associated with a grupo."""
-    # Usuários comuns podem listar certificados do grupo
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar certificados do grupo")
     return listar_certificados_do_grupo(db=db, grupo_id=grupo_id)
 
 
