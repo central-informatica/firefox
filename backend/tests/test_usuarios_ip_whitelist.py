@@ -44,8 +44,8 @@ def test_listar_por_empresa_admin_success(client, db_session):
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.1")
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.2")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.1")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.2")
 
     app.dependency_overrides[check_auth_with_ip] = _mock_admin_user(user_id, empresa_id)
 
@@ -113,7 +113,7 @@ def test_listar_por_usuario_success(client, db_session):
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.1")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.1")
 
     app.dependency_overrides[check_auth_with_ip] = _mock_admin_user(user_id, empresa_id)
 
@@ -338,7 +338,7 @@ def test_atualizar_to_duplicate_ip_returns_409(client, db_session):
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.1")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.1")
     entry2 = criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.2")
 
     app.dependency_overrides[check_auth_with_ip] = _mock_admin_user(user_id, empresa_id)
@@ -401,8 +401,8 @@ def test_deletar_todos_por_usuario_success(client, db_session):
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.1")
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.2")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.1")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.2")
 
     app.dependency_overrides[check_auth_with_ip] = _mock_admin_user(user_id, empresa_id)
 
