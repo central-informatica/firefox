@@ -116,7 +116,7 @@ def test_create_whitelist_non_admin_forbidden(non_admin_client, empresa_id, user
         json={
             "usuario_id": str(uuid.uuid4()),
             "empresa_id": empresa_id,
-            "ip_address": "192.168.1.100",
+            "ip_address": "203.0.113.100",
         }
     )
 
@@ -134,7 +134,7 @@ def test_update_whitelist_non_admin_forbidden(non_admin_client):
 
     response = non_admin_client.put(
         f"/usuarios-ip-whitelist/{fake_id}",
-        json={"ip_address": "192.168.1.200"}
+        json={"ip_address": "203.0.113.200"}
     )
 
     assert response.status_code == 403
