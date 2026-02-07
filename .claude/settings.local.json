@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Read(//c/Projetos/xsecurity-infra/xsecurity-auth/**)",
-      "Read(//c/Projetos/xsecurity-infra/xsecurity-auth/auth/auth/**)"
+      "Read(//c/Projetos/xsecurity-infra/xsecurity-auth/auth/auth/**)",
+      "Bash(poetry lock:*)"
     ],
     "additionalDirectories": [
       "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\presentation\\api\\v1\\endpoints",

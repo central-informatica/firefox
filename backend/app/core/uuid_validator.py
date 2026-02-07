@@ -34,8 +34,8 @@ def validate_uuid(uuid_string: str, field_name: str = "ID") -> str:
         return uuid_string
     except ValueError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} inválido: '{uuid_string}' não é um UUID válido",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{field_name} não encontrado",
         )
 
 
