@@ -3,9 +3,9 @@ from tests.factories.base import commit_and_refresh
 
 def criar_grupo(
     db,
-    nome="Grupo Padrão",
     empresa_id=None,
     plano_id=None,
+    nome="Grupo Padrão",
 ):
     # If plano_id not provided, create one
     if not plano_id:

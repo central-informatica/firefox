@@ -28,7 +28,6 @@ def listar_planos_trabalho(
     db: Session = Depends(get_db),
     current_user = Depends(check_auth_with_ip),
 ):
-    _verificar_admin(current_user)
     if empresa_id is None:
         empresa_id = current_user["organization_id"]
 
@@ -52,7 +51,6 @@ def getPlanoTrabalho(
     db: Session = Depends(get_db),
     current_user = Depends(check_auth_with_ip),
 ):
-    _verificar_admin(current_user)
     plano_id = validate_uuid(plano_id, "plano_id")
     usuario_id = current_user["id"]
     return crud_planos_trabalho.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
@@ -66,13 +64,8 @@ def criar_plano_trabalho(
 ):
     _verificar_admin(current_user)
 
-    # Usa empresa_id do payload (selecionada pelo usuário)
-    empresa_id = data.empresa_id
-    if not empresa_id:
-        raise HTTPException(
-            status_code=400,
-            detail="empresa_id é obrigatório"
-        )
+    # Usa empresa_id do payload, ou do usuário atual se não fornecido
+    empresa_id = data.empresa_id or current_user["organization_id"]
 
     return crud_planos_trabalho.criar(
         db=db,

@@ -1,3 +1,4 @@
+import uuid
 from backend.app.db.models import Certificados
 from tests.factories.base import commit_and_refresh
 
@@ -10,6 +11,9 @@ def criar_certificado(
     secret="secret",
     ativo=True,
 ):
+    if criado_por is None:
+        criado_por = str(uuid.uuid4())
+
     cert = Certificados(
         empresa_id=empresa_id,
         criado_por=criado_por,
