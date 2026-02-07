@@ -19,7 +19,8 @@ router = APIRouter(prefix="/feriados", tags=["Feriados"])
 
 @router.get("/", response_model=list[FeriadoOut])
 def listar_feriados(db: Session = Depends(get_db), current_user=Depends(check_auth_with_ip)):
-    # Usuários comuns podem listar feriados
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar feriados")
     return crud_feriados.listar(db)
 
 
@@ -71,7 +72,8 @@ def listar_feriados_por_empresa(
 
 @router.get("/{feriado_id}", response_model=FeriadoOut)
 def obter_feriado(feriado_id: str, db: Session = Depends(get_db), current_user=Depends(check_auth_with_ip)):
-    # Usuários comuns podem visualizar feriados
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem visualizar feriados")
     return crud_feriados.get(db, feriado_id)
 
 
