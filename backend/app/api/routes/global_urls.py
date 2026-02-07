@@ -22,7 +22,8 @@ def listar_global_urls(
     search: str = "",
     sort: str = "",
 ):
-    # Usuários comuns podem listar, apenas criar/editar/excluir requer admin
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar URLs globais")
     items, total = crud_global_urls.listar_paginado(
         db=db,
         empresa_id=empresa_id,
@@ -54,7 +55,8 @@ def get_global_url(
     db: Session = Depends(get_db),
     current_user=Depends(check_auth_with_ip),
 ):
-    # Usuários comuns podem visualizar
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem visualizar URLs globais")
     return crud_global_urls.get(db, global_urls_id)
 
 
