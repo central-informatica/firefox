@@ -769,7 +769,10 @@ async def list_certificates(
         sort: Sort field and direction
         grupo_id: Filter by grupo ID
     """
-    # Usuários comuns podem listar certificados
+    # Verificar se é admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar certificados")
+
     usuario_id = get_user_id_from_data(user_data)
 
     if empresa_id:
@@ -969,8 +972,11 @@ async def get_certificate(
     """
     Get specific certificate by ID.
 
-    Usuários comuns podem visualizar certificados que têm acesso.
+    Apenas administradores podem visualizar certificados.
     """
+    if not user_data.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem visualizar certificados")
+
     usuario_id = get_user_id_from_data(user_data)
 
     cert = verificar_acesso_certificado(db, usuario_id, certificado_id)
