@@ -49,7 +49,7 @@ def test_listar_planos_trabalho_success(client, db_session):
     # Create test plano
     plano = criar_plano(db_session, empresa_id, nome="Plano Teste")
 
-    app.dependency_overrides[check_auth_with_ip] = _mock_user(user_id, empresa_id)
+    app.dependency_overrides[check_auth_with_ip] = _mock_admin(user_id, empresa_id)
 
     response = client.get("/planos-trabalho/")
 
@@ -69,7 +69,7 @@ def test_listar_planos_trabalho_with_empresa_id(client, db_session):
 
     plano = criar_plano(db_session, empresa_id, nome="Plano Empresa Especifica")
 
-    app.dependency_overrides[check_auth_with_ip] = _mock_user(user_id, empresa_id)
+    app.dependency_overrides[check_auth_with_ip] = _mock_admin(user_id, empresa_id)
 
     response = client.get(f"/planos-trabalho/?empresa_id={empresa_id}")
 
@@ -96,7 +96,7 @@ def test_get_plano_trabalho_success(client, db_session):
 
     plano = criar_plano(db_session, empresa_id, nome="Plano Individual")
 
-    app.dependency_overrides[check_auth_with_ip] = _mock_user(user_id, empresa_id)
+    app.dependency_overrides[check_auth_with_ip] = _mock_admin(user_id, empresa_id)
 
     response = client.get(f"/planos-trabalho/{plano.plano_id}")
 
@@ -113,7 +113,7 @@ def test_get_plano_trabalho_not_found(client, db_session):
     empresa_id = str(uuid.uuid4())
     fake_id = str(uuid.uuid4())
 
-    app.dependency_overrides[check_auth_with_ip] = _mock_user(user_id, empresa_id)
+    app.dependency_overrides[check_auth_with_ip] = _mock_admin(user_id, empresa_id)
 
     response = client.get(f"/planos-trabalho/{fake_id}")
 

@@ -28,6 +28,7 @@ def listar_planos_trabalho(
     db: Session = Depends(get_db),
     current_user = Depends(check_auth_with_ip),
 ):
+    _verificar_admin(current_user)
     if empresa_id is None:
         empresa_id = current_user["organization_id"]
 
@@ -51,6 +52,7 @@ def getPlanoTrabalho(
     db: Session = Depends(get_db),
     current_user = Depends(check_auth_with_ip),
 ):
+    _verificar_admin(current_user)
     plano_id = validate_uuid(plano_id, "plano_id")
     usuario_id = current_user["id"]
     return crud_planos_trabalho.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
