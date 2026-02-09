@@ -264,11 +264,12 @@ export default function AssociarUsuarios() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Usuários (esquerda) */}
         <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 p-4">
-          <h3 className="font-semibold text-neutral-100">Usuários</h3>
           <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-neutral-100">Usuários</h3>
             <div className="flex items-center gap-2">
               <button onClick={selectAll} className="px-2 py-1 text-sm bg-dark-tertiary text-neutral-100 rounded">Todos</button>
               <button onClick={clearSelection} className="px-2 py-1 text-sm bg-dark-tertiary text-neutral-100 rounded">Limpar</button>
+              <span className="text-xs bg-dark-tertiary text-neutral-400 px-2 py-1 rounded">{users.length}</span>
             </div>
           </div>
 
@@ -277,22 +278,16 @@ export default function AssociarUsuarios() {
               <p className="text-sm text-neutral-500">Nenhum usuário encontrado</p>
             ) : (
               users.map((u) => (
-                <div key={u.usuario_id} className="flex items-center justify-between p-2 rounded hover:bg-dark-tertiary">
-                  <div className="flex items-center gap-3">
-                    <input type="checkbox" checked={selectedUsers.has(u.usuario_id)} onChange={() => toggleSelectUser(u.usuario_id)} disabled={isUserMemberOfSelectedGroup(u.usuario_id)} className="bg-dark-tertiary border-neutral-700" />
+                <div key={u.usuario_id} onClick={() => toggleSelectUser(u.usuario_id)} className={`p-3 rounded cursor-pointer border ${selectedUsers.has(u.usuario_id) ? 'border-xfire-orange bg-xfire-orange/10' : isUserMemberOfSelectedGroup(u.usuario_id) ? 'border-transparent opacity-50' : 'border-transparent hover:bg-dark-tertiary'}`}>
+                  <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-sm text-neutral-100">{u.nome}</p>
+                      <p className="font-medium text-neutral-100">{u.nome}</p>
                       <p className="text-xs text-neutral-500">{u.email}</p>
-
-                      {/* Mostrar badges dos grupos do usuário (dentro da empresa) */}
-                      <div className="mt-1 flex gap-2">
-                        {(userGroupsMap.get(u.usuario_id) || []).map((g) => (
-                          <span key={g.grupo_id} className="text-xs bg-dark-tertiary px-2 py-0.5 rounded-full text-neutral-400">{g.nome || g.grupo_id}</span>
-                        ))}
-                      </div>
                     </div>
+                    {selectedUsers.has(u.usuario_id) && (
+                      <FiCheck className="text-xfire-orange" />
+                    )}
                   </div>
-                  <div className="text-xs text-neutral-500">{u.cargo || ''}</div>
                 </div>
               ))
             )}
@@ -307,7 +302,7 @@ export default function AssociarUsuarios() {
           </div>
 
           <button onClick={handleAdicionarSelecionados} disabled={!selectedGrupo || selectedUsers.size === 0 || loading} className="px-4 py-2 bg-xfire-orange text-white rounded-lg">
-            <FiPlus size={16} /> Adicionar selecionados
+            <FiPlus size={16} /> Adicionar
           </button>
         </div>
 

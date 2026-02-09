@@ -363,8 +363,8 @@ export default function FeriadosList() {
           <div>
             <p className="text-sm font-medium text-orange-300 mb-1">Como funcionam os feriados</p>
             <p className="text-sm text-orange-400">
-              Nos dias marcados como feriado, os certificados que possuem regras de acesso com "bloquear em feriado" ativado
-              nao poderao ser utilizados.
+              Nos dias marcados como feriado, os certificados que possuem regras de acesso ativas com "bloquear em feriado",
+              não poderão ser utilizados.
             </p>
           </div>
         </div>

@@ -297,7 +297,16 @@ export default function RegrasAcessoIpsList() {
       let errorMessage = "Erro ao salvar regra";
       try {
         const parsed = JSON.parse(error.message);
-        errorMessage = parsed.detail || errorMessage;
+        if (Array.isArray(parsed.detail)) {
+          const ipError = parsed.detail.find(e => e.loc?.includes("ip_addresses"));
+          if (ipError) {
+            errorMessage = "Máscara de IP errada";
+          } else {
+            errorMessage = parsed.detail.map(e => e.msg).join("; ");
+          }
+        } else {
+          errorMessage = parsed.detail || errorMessage;
+        }
       } catch {
         errorMessage = error.message || errorMessage;
       }

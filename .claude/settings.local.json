@@ -3,7 +3,8 @@
     "allow": [
       "Read(//c/Projetos/xsecurity-infra/xsecurity-auth/**)",
       "Read(//c/Projetos/xsecurity-infra/xsecurity-auth/auth/auth/**)",
-      "Bash(poetry lock:*)"
+      "Bash(poetry lock:*)",
+      "Bash(poetry run python:*)"
     ],
     "additionalDirectories": [
       "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\presentation\\api\\v1\\endpoints",

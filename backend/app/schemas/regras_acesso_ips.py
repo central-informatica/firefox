@@ -47,19 +47,20 @@ def _validate_ip_or_cidr(ip: str) -> str:
     except ValueError:
         pass
 
+    # Try as CIDR network
     try:
-        # Try as CIDR network
         net = ipaddress.ip_network(ip, strict=False)
-        # Limit CIDR to /24 (256 addresses max)
-        if net.num_addresses > 256:
-            raise ValueError(
-                f"Bloco de IP muito grande ({net.num_addresses} enderecos). Maximo permitido: /24 (256 enderecos)"
-            )
-        return ip
     except ValueError:
         raise ValueError(
             f"'{ip}' nao e um endereco IP ou bloco CIDR valido"
         )
+
+    # Limit CIDR to /24 (256 addresses max)
+    if net.num_addresses > 256:
+        raise ValueError(
+            f"Bloco CIDR '{ip}' muito grande ({net.num_addresses} enderecos). Maximo permitido: /24 (256 enderecos)"
+        )
+    return ip
 
 
 def _expand_ip_network(network: str) -> List[str]:
