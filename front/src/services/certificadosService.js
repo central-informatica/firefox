@@ -86,6 +86,20 @@ export async function excluir_certificado(id) {
   return res.json();
 }
 
+export async function toggleCertificadoAtivo(id) {
+  const res = await apiFetchWithToken(`/certificados/${id}/toggle-ativo`, {
+    method: "PATCH",
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Erro ao alterar status", errorText);
+    throw new Error("Erro ao alterar status do certificado");
+  }
+
+  return res.json();
+}
+
 
 // Mock data para testes de associação
 const certificadosMock = [
@@ -128,12 +142,13 @@ export async function listarCertificadosPermitidos() {
 
 export async function listarCertificadosDaEmpresa(empresaId) {
   if (!empresaId) return [];
-  const res = await apiFetchWithToken(`/certificados/?empresa_id=${empresaId}`);
+  const res = await apiFetchWithToken(`/certificados/?empresa_id=${empresaId}&limit=1000`);
   if (!res.ok) {
     throw new Error(await res.text());
   }
   const json = await res.json();
-  return Array.isArray(json?.items) ? json.items : [];
+  // Backend returns { data: [...], total: ... } format
+  return Array.isArray(json?.data) ? json.data : [];
 }
 
 

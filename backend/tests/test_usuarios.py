@@ -142,15 +142,21 @@ def test_list_users_non_admin_forbidden(non_admin_client):
 
 def test_list_users_admin_success(admin_client, mock_auth_service):
     """Test that admin can list users."""
-    mock_auth_service.return_value = [
-        {"id": "1", "email": "user1@test.com"},
-        {"id": "2", "email": "user2@test.com"},
-    ]
+    mock_auth_service.return_value = {
+        "users": [
+            {"id": "1", "email": "user1@test.com", "first_name": "User", "last_name": "One"},
+            {"id": "2", "email": "user2@test.com", "first_name": "User", "last_name": "Two"},
+        ],
+        "total": 2
+    }
 
     response = admin_client.get("/usuarios/")
 
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
+    data = response.json()
+    assert isinstance(data, dict)
+    assert "users" in data
+    assert len(data["users"]) == 2
 
 
 def test_list_users_unauthenticated(client):
@@ -247,3 +253,65 @@ def test_delete_user_admin_success(admin_client, mock_auth_service):
     response = admin_client.delete(f"/usuarios/{fake_user_id}")
 
     assert response.status_code == 200
+
+
+# ============================================
+# GET /usuarios/{user_id}/grupos - Get User Grupos
+# ============================================
+
+def test_get_user_grupos_non_admin_forbidden(non_admin_client):
+    """Test that non-admin user gets 403 Forbidden when getting user grupos."""
+    fake_user_id = str(uuid.uuid4())
+
+    response = non_admin_client.get(f"/usuarios/{fake_user_id}/grupos")
+
+    assert response.status_code == 403
+    assert "administradores" in response.json()["detail"].lower()
+
+
+def test_get_user_grupos_admin_success(admin_client, db_session, user_id, empresa_id):
+    """Test that admin can get user grupos."""
+    from tests.factories.grupo_factory import criar_grupo
+    from tests.factories.grupo_usuario_factory import criar_grupo_usuario
+
+    # Create a group and link user to it
+    grupo = criar_grupo(db_session, nome="Test Group", empresa_id=empresa_id)
+    criar_grupo_usuario(db_session, usuario_id=user_id, grupo_id=grupo.grupo_id, empresa_id=empresa_id)
+    db_session.commit()
+
+    response = admin_client.get(f"/usuarios/{user_id}/grupos")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]["nome"] == "Test Group"
+    assert data[0]["grupo_id"] == str(grupo.grupo_id)
+
+
+# ============================================
+# GET /usuarios/{user_id}/companies - Get User Companies
+# ============================================
+
+def test_get_user_companies_non_admin_forbidden(non_admin_client):
+    """Test that non-admin user gets 403 Forbidden when getting user companies."""
+    fake_user_id = str(uuid.uuid4())
+
+    response = non_admin_client.get(f"/usuarios/{fake_user_id}/companies")
+
+    assert response.status_code == 403
+    assert "administradores" in response.json()["detail"].lower()
+
+
+def test_get_user_companies_admin_success(admin_client, mock_auth_service):
+    """Test that admin can get user companies."""
+    fake_user_id = str(uuid.uuid4())
+    mock_auth_service.return_value = [
+        {"id": "1", "name": "Company 1"},
+        {"id": "2", "name": "Company 2"},
+    ]
+
+    response = admin_client.get(f"/usuarios/{fake_user_id}/companies")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)

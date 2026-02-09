@@ -25,18 +25,6 @@ class Base(DeclarativeBase):
     pass
 
 
-class Ramos(Base):
-    """Ramos de atuacao das empresas (industry sectors)."""
-    __tablename__ = 'ramos'
-    __table_args__ = (
-        PrimaryKeyConstraint('ramos_id', name='ramos_pkey'),
-        {'comment': 'Ramos de atuacao das empresas.'}
-    )
-
-    ramos_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
-    ramo: Mapped[str] = mapped_column(String(80), nullable=False, comment='Nome do ramo de atuacao.')
-
-
 class Certificados(Base):
     """Certificados digitais criptografados das empresas."""
     __tablename__ = 'certificados'
@@ -59,6 +47,7 @@ class Certificados(Base):
     validade_inicio: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), comment='Data de inicio da validade')
     valido_ate: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), comment='Data do fim da validade')
     cofre_cert_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True, comment='ID do certificado no servico Cofre')
+    ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'), comment='Indica se o certificado esta ativo para uso')
     deleted_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True, comment='Data/hora da exclusao (soft delete)')
     deleted_by: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True, comment='ID do usuario que excluiu o certificado')
 
@@ -123,6 +112,8 @@ class Grupos(Base):
     grupos_certificados: Mapped[list['GruposCertificados']] = relationship('GruposCertificados', back_populates='grupo')
     grupos_usuarios: Mapped[list['GruposUsuarios']] = relationship('GruposUsuarios', back_populates='grupo')
     regras_acesso: Mapped[list['RegrasAcesso']] = relationship('RegrasAcesso', back_populates='grupo')
+    regras_acesso_urls: Mapped[list['RegrasAcessoUrls']] = relationship('RegrasAcessoUrls', back_populates='grupo')
+    regras_acesso_ips: Mapped[list['RegrasAcessoIps']] = relationship('RegrasAcessoIps', back_populates='grupo')
 
 
 class GruposCertificados(Base):
@@ -209,6 +200,7 @@ class GlobalUrls(Base):
     empresa_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment='ID da empresa (validado pelo Auth service)')
 
     grupos_certificados_urls: Mapped[list['GruposCertificadosUrls']] = relationship('GruposCertificadosUrls', back_populates='global_url')
+    regras_acesso_urls: Mapped[list['RegrasAcessoUrls']] = relationship('RegrasAcessoUrls', back_populates='global_url')
 
 
 class GruposCertificadosUrls(Base):
@@ -255,3 +247,59 @@ class UsuariosIpWhitelist(Base):
     criado_por: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment='ID do admin que criou a entrada')
     deleted_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True, comment='Data/hora da exclusao (soft delete)')
     deleted_by: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True, comment='ID do usuario que excluiu')
+
+
+class RegrasAcessoUrls(Base):
+    """Regras de dias e horarios permitidos para URLs especificas de um grupo."""
+    __tablename__ = 'regras_acesso_urls'
+    __table_args__ = (
+        ForeignKeyConstraint(['grupo_id'], ['grupos.grupo_id'], ondelete='CASCADE', name='regras_acesso_urls_grupo_fk'),
+        ForeignKeyConstraint(['global_urls_id'], ['global_urls.global_urls_id'], ondelete='CASCADE', name='regras_acesso_urls_url_fk'),
+        PrimaryKeyConstraint('regra_id', name='regras_acesso_urls_pkey'),
+        UniqueConstraint('grupo_id', 'global_urls_id', name='regras_acesso_urls_grupo_url_unq'),
+        Index('idx_regras_acesso_urls_grupo', 'grupo_id'),
+        Index('idx_regras_acesso_urls_url', 'global_urls_id'),
+        Index('idx_regras_acesso_urls_emp', 'empresa_id'),
+        {'comment': 'Regras de dias e horarios permitidos para URLs especificas de um grupo.'}
+    )
+
+    regra_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
+    empresa_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment='ID da empresa (validado pelo Auth service)')
+    grupo_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    global_urls_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    tipo_dia: Mapped[str] = mapped_column(String(20), nullable=False, comment='Tipo de regra: corridos, uteis ou especificos.')
+    horarios: Mapped[dict] = mapped_column(JSONB, nullable=False, comment='Lista de janelas de horario em JSON (inicio/fim no formato HH:MI).')
+    criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
+    dias_especificos: Mapped[Optional[list[int]]] = mapped_column(ARRAY(Integer()), comment='Lista de dias (ex: 1=segunda ... 7=domingo) quando tipo_dia = especificos.')
+    bloquear_em_feriado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'), comment='Bloqueia acesso em feriados da empresa.')
+    ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'), comment='Indica se a regra esta ativa.')
+
+    grupo: Mapped['Grupos'] = relationship('Grupos', back_populates='regras_acesso_urls')
+    global_url: Mapped['GlobalUrls'] = relationship('GlobalUrls', back_populates='regras_acesso_urls')
+
+
+class RegrasAcessoIps(Base):
+    """Regras de dias e horarios permitidos para enderecos IP especificos de um grupo."""
+    __tablename__ = 'regras_acesso_ips'
+    __table_args__ = (
+        ForeignKeyConstraint(['grupo_id'], ['grupos.grupo_id'], ondelete='CASCADE', name='regras_acesso_ips_grupo_fk'),
+        PrimaryKeyConstraint('regra_id', name='regras_acesso_ips_pkey'),
+        Index('idx_regras_acesso_ips_grupo', 'grupo_id'),
+        Index('idx_regras_acesso_ips_emp', 'empresa_id'),
+        {'comment': 'Regras de dias e horarios permitidos para enderecos IP especificos de um grupo.'}
+    )
+
+    regra_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
+    empresa_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, comment='ID da empresa (validado pelo Auth service)')
+    grupo_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    ip_addresses: Mapped[list] = mapped_column(JSONB, nullable=False, comment='Lista de enderecos IP (IPv4, IPv6 ou blocos CIDR)')
+    tipo_dia: Mapped[str] = mapped_column(String(20), nullable=False, comment='Tipo de regra: corridos, uteis ou especificos.')
+    horarios: Mapped[dict] = mapped_column(JSONB, nullable=False, comment='Lista de janelas de horario em JSON (inicio/fim no formato HH:MI).')
+    criado_em: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('now()'))
+    dias_especificos: Mapped[Optional[list[int]]] = mapped_column(ARRAY(Integer()), comment='Lista de dias (ex: 1=segunda ... 7=domingo) quando tipo_dia = especificos.')
+    bloquear_em_feriado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'), comment='Bloqueia acesso em feriados da empresa.')
+    ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'), comment='Indica se a regra esta ativa.')
+
+    grupo: Mapped['Grupos'] = relationship('Grupos', back_populates='regras_acesso_ips')
+
+

@@ -7,6 +7,7 @@ import { useAuth } from "../../auth/useAuth";
 import {
   listarCertificadosPaginado,
   excluir_certificado,
+  toggleCertificadoAtivo,
 } from "../../services/certificadosService";
 import { toast } from "react-toastify";
 import {
@@ -36,14 +37,30 @@ export default function CertificadosList() {
   const { user } = useAuth();
 
   const [empresaId, setEmpresaId] = useState(null);
+  const [empresaAtiva, setEmpresaAtiva] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
-  const [stats, setStats] = useState({ total: 0, ativos: 0, expirando: 0, expirados: 0, });
+  const [stats, setStats] = useState({ total: 0, ativos: 0, expirando: 0, expirados: 0, inativos: 0 });
   const [selectedGroup, setSelectedGroup] = useState(null);
 
   // Confirmation modal state
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmData, setConfirmData] = useState(null); // { id, nome }
   const [isDeleting, setIsDeleting] = useState(false);
+  const [togglingId, setTogglingId] = useState(null);
+
+  const handleToggleAtivo = async (certificadoId) => {
+    setTogglingId(certificadoId);
+    try {
+      const result = await toggleCertificadoAtivo(certificadoId);
+      toast.success(result.message);
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao alterar status do certificado");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const getCertificateStatus = (validoAte) => {
     const hoje = new Date();
@@ -61,7 +78,7 @@ export default function CertificadosList() {
 
   useEffect(() => {
   if (!empresaId) {
-    setStats({ total: 0, ativos: 0, expirando: 0, expirados: 0});
+    setStats({ total: 0, ativos: 0, expirando: 0, expirados: 0, inativos: 0});
     return;
   }
 
@@ -84,13 +101,20 @@ export default function CertificadosList() {
       let _ativos = 0;
       let _expirando = 0;
       let _expirados = 0;
+      let _inativos = 0;
 
       certificados.forEach((c) => {
-        const statusInfo = getCertificateStatus(c.valido_ate);
+        const certAtivo = c.ativo !== false;
+        const isInativo = !empresaAtiva || !certAtivo;
 
-        if (statusInfo.status === "ativo") _ativos++;
-        else if (statusInfo.status === "expirando") _expirando++;
-        else if (statusInfo.status === "expirado") _expirados++;
+        if (isInativo) {
+          _inativos++;
+        } else {
+          const statusInfo = getCertificateStatus(c.valido_ate);
+          if (statusInfo.status === "ativo") _ativos++;
+          else if (statusInfo.status === "expirando") _expirando++;
+          else if (statusInfo.status === "expirado") _expirados++;
+        }
       });
 
       setStats({
@@ -98,27 +122,33 @@ export default function CertificadosList() {
         ativos: _ativos,
         expirando: _expirando,
         expirados: _expirados,
+        inativos: _inativos,
       });
 
-      console.log("Contadores:", { _ativos, _expirando, _expirados });
+      console.log("Contadores:", { _ativos, _expirando, _expirados, _inativos });
 
     } catch (err) {
       console.error("Erro ao carregar estatísticas:", err);
-      setStats({ total: 0, ativos: 0, expirando: 0, expirados: 0 });
+      setStats({ total: 0, ativos: 0, expirando: 0, expirados: 0, inativos: 0 });
     }
   }
 
   carregarStats();
-}, [empresaId, reloadKey, selectedGroup]);
+}, [empresaId, reloadKey, selectedGroup, empresaAtiva]);
 
 
   const columns = [
     {
       header: "Certificado",
       accessorKey: "nome_arquivo",
+      size: 280,
       cell: ({ row }) => {
         const cert = row.original;
         const statusInfo = getCertificateStatus(cert.valido_ate);
+        const certAtivo = cert.ativo !== false;
+        const isEmpresaInativa = !empresaAtiva;
+        // Show "Inativo" badge if empresa or certificate is inactive
+        const showInativo = isEmpresaInativa || !certAtivo;
 
         return (
           <div className="flex items-center gap-3 py-2">
@@ -130,15 +160,22 @@ export default function CertificadosList() {
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-neutral-100 truncate">{cert.nome_arquivo || "Certificado.pfx"}</div>
               <div className="flex items-center gap-2 mt-1">
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
-                  ${statusInfo.status === 'ativo' ? 'badge-permitido' : ''}
-                  ${statusInfo.status === 'expirando' ? 'bg-orange-900/30 text-orange-400' : ''}
-                  ${statusInfo.status === 'expirado' ? 'badge-bloqueado' : ''}
-                `}>
-                  {statusInfo.status === 'ativo' && <FiCheckCircle size={10} />}
-                  {statusInfo.status !== 'ativo' && <FiAlertCircle size={10} />}
-                  {statusInfo.label}
-                </span>
+                {showInativo ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-700/50 text-neutral-400">
+                    <FiAlertCircle size={10} />
+                    {isEmpresaInativa ? 'Empresa inativa' : 'Inativo'}
+                  </span>
+                ) : (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+                    ${statusInfo.status === 'ativo' ? 'badge-permitido' : ''}
+                    ${statusInfo.status === 'expirando' ? 'bg-orange-900/30 text-orange-400' : ''}
+                    ${statusInfo.status === 'expirado' ? 'badge-bloqueado' : ''}
+                  `}>
+                    {statusInfo.status === 'ativo' && <FiCheckCircle size={10} />}
+                    {statusInfo.status !== 'ativo' && <FiAlertCircle size={10} />}
+                    {statusInfo.label}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -148,6 +185,7 @@ export default function CertificadosList() {
     {
       header: "Criado por",
       accessorKey: "criado_por_nome",
+      size: 140,
       cell: ({ row }) => (
         <div className="flex items-center gap-2 text-sm text-neutral-400">
           <FiUser className="text-neutral-500" size={14} />
@@ -158,6 +196,7 @@ export default function CertificadosList() {
     {
       accessorKey: "validade_inicio",
       header: "Início",
+      size: 110,
       cell: ({ row }) => (
         <div className="flex items-center gap-2 text-sm text-neutral-400">
           <FiCalendar className="text-neutral-500" size={14} />
@@ -168,6 +207,7 @@ export default function CertificadosList() {
     {
       accessorKey: "valido_ate",
       header: "Válido até",
+      size: 120,
       cell: ({ row }) => {
         const statusInfo = getCertificateStatus(row.original.valido_ate);
         return (
@@ -188,6 +228,7 @@ export default function CertificadosList() {
     {
       accessorKey: "criado_em",
       header: "Cadastrado em",
+      size: 120,
       cell: ({ row }) => (
         <div className="text-sm text-neutral-400">
           {new Date(row.original.criado_em).toLocaleDateString("pt-BR")}
@@ -195,21 +236,55 @@ export default function CertificadosList() {
       ),
     },
     {
+      accessorKey: "ativo",
+      header: "Status",
+      size: 110,
+      cell: ({ row }) => {
+        const cert = row.original;
+        const isToggling = togglingId === cert.certificado_id;
+        const certAtivo = cert.ativo !== false; // default true if undefined
+        // If empresa is inactive, certificate is also considered inactive
+        const isAtivo = empresaAtiva && certAtivo;
+        const isEmpresaInativa = !empresaAtiva;
+
+        return (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleToggleAtivo(cert.certificado_id)}
+              disabled={isToggling || isEmpresaInativa}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-xfire-orange focus:ring-offset-2 focus:ring-offset-dark-primary ${
+                isAtivo ? 'bg-green-600' : 'bg-neutral-600'
+              } ${isToggling ? 'opacity-50 cursor-wait' : ''} ${isEmpresaInativa ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              title={isEmpresaInativa ? 'Empresa inativa' : (isAtivo ? 'Clique para desativar' : 'Clique para ativar')}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                  isAtivo ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-medium ${isAtivo ? 'text-green-400' : 'text-neutral-500'}`}>
+              {isEmpresaInativa ? 'Empresa inativa' : (isAtivo ? 'Ativo' : 'Inativo')}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       header: "Ações",
+      size: 90,
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              setConfirmData({ id: row.original.certificado_id, nome: row.original.nome_arquivo });
-              setConfirmOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group"
-            title="Excluir certificado"
-          >
-            <FiTrash2 size={14} className="group-hover:scale-110 transition-transform" />
-            Excluir
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            setConfirmData({ id: row.original.certificado_id, nome: row.original.nome_arquivo });
+            setConfirmOpen(true);
+          }}
+          className="inline-flex items-center gap-1 px-2 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer group"
+          title="Excluir certificado"
+        >
+          <FiTrash2 size={14} className="group-hover:scale-110 transition-transform" />
+          Excluir
+        </button>
       ),
     },
   ];
@@ -289,6 +364,9 @@ export default function CertificadosList() {
                 setEmpresaId(id);
                 setSelectedGroup(null);
                 setReloadKey((k) => k + 1);
+              }}
+              onChangeWithData={(data) => {
+                setEmpresaAtiva(data ? data.ativo : true);
               }}
             />
           </div>

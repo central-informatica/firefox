@@ -11,7 +11,7 @@ import uuid
 from typing import Any
 
 from cryptography.hazmat.primitives.serialization import pkcs12
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -57,6 +57,7 @@ class CertificateResponse(BaseModel):
     validade_inicio: str | None = None
     valido_ate: str | None = None
     criado_em: str | None = None
+    ativo: bool = True
 
 
 class CertificateUploadResponse(BaseModel):
@@ -431,16 +432,20 @@ def verificar_url_permitida(
 
 @router.post("/", response_model=CertificateUploadResponse)
 async def upload_certificate(
+    request: Request,
     arquivo: UploadFile = File(...),
-    senha: str = Form(...),
-    empresa_id: str = Form(...),
+    senha: str = Form(""),
+    empresa_id: str = Form(None),
+    auto_create_empresa: str = Form(None),
+    manual_cnpj: str = Form(None),
     db: Session = Depends(get_db),
     user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> CertificateResponse:
     """
     Upload certificate to Cofre for encryption and storage.
 
-    Admin only - empresa_id must be provided explicitly.
+    Admin only - empresa_id must be provided explicitly, or auto_create_empresa=true
+    to create/find empresa automatically from certificate CNPJ.
     """
     # 1. Check if user is admin
     if not user_data.get("is_admin"):
@@ -450,14 +455,21 @@ async def upload_certificate(
         )
 
     usuario_id = get_user_id_from_data(user_data)
+    should_auto_create = auto_create_empresa == "true"
 
-    # 2. Validate empresa_id format (must be valid UUID)
-    try:
-        uuid.UUID(empresa_id)
-    except ValueError:
+    # 2. Validate empresa_id format (must be valid UUID) if provided
+    if empresa_id:
+        try:
+            uuid.UUID(empresa_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="empresa_id deve ser um UUID válido",
+            )
+    elif not should_auto_create:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="empresa_id deve ser um UUID válido",
+            detail="empresa_id é obrigatório quando auto_create_empresa não está ativo",
         )
 
     # 3. Read file content with size limit check
@@ -475,16 +487,213 @@ async def upload_certificate(
             detail=f"Arquivo muito grande. Tamanho maximo permitido: {MAX_CERT_SIZE_BYTES // (1024 * 1024)} MB",
         )
 
-    # 4. Validate PFX password
+    # 4. Validate PFX password and extract certificate info
     try:
-        pkcs12.load_key_and_certificates(file_content, senha.encode() if senha else None)
+        private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
+            file_content, senha.encode() if senha else None
+        )
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Senha do certificado inválida",
         )
 
-    # 5. Send to Cofre for encryption
+    # 5. Auto-create empresa if needed
+    if should_auto_create and not empresa_id:
+        import re
+        from cryptography.x509.oid import NameOID
+        from backend.app.services.auth_client import auth_client
+        from backend.app.core.exceptions import AuthServiceError
+
+        # Extract CNPJ from certificate subject
+        # ICP-Brasil certificates may have CNPJ in various fields:
+        # - serialNumber (most common for e-CNPJ)
+        # - CN (Common Name)
+        # - OU (Organizational Unit)
+        # - O (Organization Name)
+        cert_cnpj = None
+        cert_name = None
+        cn_value = None
+        debug_info = {}  # Store extracted values for error messages
+
+        def extract_cnpj_from_text(text):
+            """Extract CNPJ (14 digits) from text, handling various formats."""
+            if not text:
+                return None
+            # Remove ALL non-digit characters
+            digits_only = re.sub(r'\D', '', text)
+            # CNPJ has exactly 14 digits
+            if len(digits_only) >= 14:
+                # Find first sequence of 14 digits
+                cnpj_match = re.search(r'\d{14}', digits_only)
+                if cnpj_match:
+                    return cnpj_match.group(0)
+            return None
+
+        if certificate:
+            try:
+                subject = certificate.subject
+
+                # Try to get CN for certificate name
+                cn_attrs = subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+                if cn_attrs:
+                    cn_value = cn_attrs[0].value
+                    cert_name = cn_value
+                    debug_info['CN'] = cn_value
+
+                # 1. First try serialNumber (ICP-Brasil standard for e-CNPJ)
+                serial_attrs = subject.get_attributes_for_oid(NameOID.SERIAL_NUMBER)
+                if serial_attrs:
+                    serial_value = serial_attrs[0].value
+                    debug_info['serialNumber'] = serial_value
+                    cert_cnpj = extract_cnpj_from_text(serial_value)
+
+                # 2. Try CN (Common Name) if serialNumber didn't work
+                if not cert_cnpj and cn_value:
+                    cert_cnpj = extract_cnpj_from_text(cn_value)
+
+                # 3. Try OU (Organizational Unit)
+                if not cert_cnpj:
+                    ou_attrs = subject.get_attributes_for_oid(NameOID.ORGANIZATIONAL_UNIT_NAME)
+                    for ou_attr in ou_attrs:
+                        debug_info['OU'] = ou_attr.value
+                        cert_cnpj = extract_cnpj_from_text(ou_attr.value)
+                        if cert_cnpj:
+                            break
+
+                # 4. Try O (Organization Name)
+                if not cert_cnpj:
+                    org_attrs = subject.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)
+                    if org_attrs:
+                        debug_info['O'] = org_attrs[0].value
+                        cert_cnpj = extract_cnpj_from_text(org_attrs[0].value)
+
+                # 5. Try Subject Alternative Names extension
+                if not cert_cnpj:
+                    try:
+                        from cryptography.x509 import ExtensionOID, SubjectAlternativeName
+                        san_ext = certificate.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+                        san = san_ext.value
+                        for name in san:
+                            name_str = str(name.value) if hasattr(name, 'value') else str(name)
+                            debug_info['SAN'] = name_str
+                            cert_cnpj = extract_cnpj_from_text(name_str)
+                            if cert_cnpj:
+                                break
+                    except Exception:
+                        pass  # SAN extension not present or error reading it
+
+            except Exception:
+                pass
+
+        # Use manual_cnpj if provided (takes precedence over extracted)
+        if manual_cnpj:
+            manual_digits = re.sub(r'\D', '', manual_cnpj)  # Remove non-digits
+            if len(manual_digits) == 14:
+                cert_cnpj = manual_digits
+            elif len(manual_digits) > 0:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"CNPJ inválido. Deve conter exatamente 14 dígitos. Fornecido: {len(manual_digits)} dígitos.",
+                )
+
+        if not cert_cnpj or len(cert_cnpj) != 14:
+            detail_msg = "Não foi possível extrair o CNPJ do certificado."
+            # Add debug info about what fields were found
+            if debug_info:
+                fields_found = []
+                for field, value in debug_info.items():
+                    # Truncate long values
+                    display_val = value[:80] + "..." if len(str(value)) > 80 else value
+                    fields_found.append(f"{field}='{display_val}'")
+                if fields_found:
+                    detail_msg += f" Campos encontrados: {'; '.join(fields_found)}."
+            detail_msg += " Forneça o CNPJ manualmente (14 dígitos)."
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=detail_msg,
+            )
+
+        org_id = user_data.get("organization_id")
+        if not org_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Usuário não está associado a uma organização",
+            )
+
+        # Get authorization header from session cookie
+        auth_headers = {}
+        session_token = request.cookies.get("session_token")
+        if session_token:
+            auth_headers["Authorization"] = f"Bearer {session_token}"
+
+        # Search for existing empresa with this CNPJ via auth service
+        try:
+            # Paginate through companies to find one with matching CNPJ
+            # Auth service has max limit of 100 per request
+            existing_empresa = None
+            offset = 0
+            page_size = 100
+
+            while existing_empresa is None:
+                empresas_response = await auth_client.proxy_request(
+                    method="GET",
+                    path=f"/api/v1/organizations/{org_id}/companies",
+                    params={"limit": page_size, "offset": offset},
+                    headers=auth_headers,
+                )
+
+                empresas_list = empresas_response.get("companies", [])
+                if not empresas_list:
+                    break  # No more companies to check
+
+                for emp in empresas_list:
+                    emp_cnpj = re.sub(r'\D', '', emp.get("cnpj", "") or "")
+                    if emp_cnpj == cert_cnpj:
+                        existing_empresa = emp
+                        break
+
+                if len(empresas_list) < page_size:
+                    break  # Last page reached
+
+                offset += page_size
+
+            if existing_empresa:
+                empresa_id = str(existing_empresa.get("id"))
+            else:
+                # Create new empresa via auth service
+                company_data = {
+                    "name": cert_name or f"Empresa CNPJ {cert_cnpj}",
+                    "cnpj": cert_cnpj,
+                    "timezone": "America/Sao_Paulo",
+                }
+
+                new_empresa = await auth_client.proxy_request(
+                    method="POST",
+                    path=f"/api/v1/organizations/{org_id}/companies",
+                    json=company_data,
+                    headers=auth_headers,
+                )
+                empresa_id = str(new_empresa.get("id"))
+
+                if not empresa_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Falha ao criar empresa automaticamente",
+                    )
+
+        except AuthServiceError as e:
+            raise HTTPException(
+                status_code=e.status_code or 500,
+                detail=f"Erro ao buscar/criar empresa: {e.message}",
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Erro ao buscar/criar empresa: {str(e)}",
+            )
+
+    # 6. Send to Cofre for encryption
     try:
         cofre_result = await cofre_client.upload_certificate(
             arquivo=file_content,
@@ -501,7 +710,7 @@ async def upload_certificate(
             detail=e.message,
         )
 
-    # 6. Store local reference
+    # 7. Store local reference
     # Note: encrypted and secret fields are now handled by Cofre
     # We store cofre_cert_id to reference the certificate in Cofre
     cert = Certificados(
@@ -538,24 +747,31 @@ async def upload_certificate(
 async def list_certificates(
     empresa_id: str | None = None,
     include_deleted: bool = False,
+    page: int = 1,
+    limit: int = 10,
+    search: str = "",
+    sort: str = "",
+    grupo_id: str | None = None,
     db: Session = Depends(get_db),
     user_data: dict[str, Any] = Depends(check_auth_with_ip),
-) -> list[CertificateResponse]:
+) -> dict[str, Any]:
     """
-    List certificates.
+    List certificates with pagination.
 
-    Admin only - If empresa_id is provided, lists certificates for that empresa.
+    If empresa_id is provided, lists certificates for that empresa.
     Otherwise, lists all certificates the user has access to.
 
     Args:
         include_deleted: If True, includes soft-deleted certificates in the results.
+        page: Page number (1-indexed)
+        limit: Number of items per page
+        search: Search term for filtering
+        sort: Sort field and direction
+        grupo_id: Filter by grupo ID
     """
-    # Check if user is admin
+    # Verificar se é admin
     if not user_data.get("is_admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas administradores podem listar certificados",
-        )
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar certificados")
 
     usuario_id = get_user_id_from_data(user_data)
 
@@ -566,7 +782,28 @@ async def list_certificates(
         query = db.query(Certificados).filter(Certificados.empresa_id == empresa_id)
         if not include_deleted:
             query = query.filter(Certificados.deleted_at.is_(None))
-        certs = query.all()
+
+        # Filter by grupo if provided
+        if grupo_id:
+            query = query.join(
+                GruposCertificados,
+                GruposCertificados.certificado_id == Certificados.certificado_id,
+            ).filter(GruposCertificados.grupo_id == grupo_id)
+
+        # Apply search filter
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                Certificados.nome_arquivo.ilike(search_term) |
+                Certificados.proprietario.ilike(search_term)
+            )
+
+        # Get total count before pagination
+        total = query.count()
+
+        # Apply pagination
+        offset = (page - 1) * limit
+        certs = query.offset(offset).limit(limit).all()
     else:
         # Get certificates from all empresas user has access to
         # This includes certificates via grupo membership
@@ -586,22 +823,44 @@ async def list_certificates(
         )
         if not include_deleted:
             query = query.filter(Certificados.deleted_at.is_(None))
-        certs = query.distinct().all()
 
-    return [
-        CertificateResponse(
-            certificado_id=str(c.certificado_id),
-            cofre_cert_id=str(c.cofre_cert_id) if c.cofre_cert_id else None,
-            empresa_id=str(c.empresa_id),
-            nome_arquivo=c.nome_arquivo,
-            proprietario=c.proprietario,
-            emitido_por=c.emitido_por,
-            validade_inicio=str(c.validade_inicio) if c.validade_inicio else None,
-            valido_ate=str(c.valido_ate) if c.valido_ate else None,
-            criado_em=str(c.criado_em) if c.criado_em else None,
-        )
+        # Apply search filter
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                Certificados.nome_arquivo.ilike(search_term) |
+                Certificados.proprietario.ilike(search_term)
+            )
+
+        # Get total count before pagination
+        total = query.distinct().count()
+
+        # Apply pagination
+        offset = (page - 1) * limit
+        certs = query.distinct().offset(offset).limit(limit).all()
+
+    data = [
+        {
+            "certificado_id": str(c.certificado_id),
+            "cofre_cert_id": str(c.cofre_cert_id) if c.cofre_cert_id else None,
+            "empresa_id": str(c.empresa_id),
+            "nome_arquivo": c.nome_arquivo,
+            "proprietario": c.proprietario,
+            "emitido_por": c.emitido_por,
+            "validade_inicio": str(c.validade_inicio) if c.validade_inicio else None,
+            "valido_ate": str(c.valido_ate) if c.valido_ate else None,
+            "criado_em": str(c.criado_em) if c.criado_em else None,
+            "ativo": c.ativo,
+        }
         for c in certs
     ]
+
+    return {
+        "data": data,
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }
 
 
 @router.get("/der", response_model=CertificateDerResponse)
@@ -713,14 +972,10 @@ async def get_certificate(
     """
     Get specific certificate by ID.
 
-    Admin only.
+    Apenas administradores podem visualizar certificados.
     """
-    # Check if user is admin
     if not user_data.get("is_admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas administradores podem visualizar certificados",
-        )
+        raise HTTPException(status_code=403, detail="Apenas administradores podem visualizar certificados")
 
     usuario_id = get_user_id_from_data(user_data)
 
@@ -736,6 +991,7 @@ async def get_certificate(
         validade_inicio=str(cert.validade_inicio) if cert.validade_inicio else None,
         valido_ate=str(cert.valido_ate) if cert.valido_ate else None,
         criado_em=str(cert.criado_em) if cert.criado_em else None,
+        ativo=cert.ativo,
     )
 
 
@@ -856,3 +1112,54 @@ async def delete_certificate(
     db.commit()
 
     return {"message": "Certificado removido com sucesso"}
+
+
+@router.patch("/{certificado_id}/toggle-ativo")
+async def toggle_certificate_status(
+    certificado_id: str,
+    db: Session = Depends(get_db),
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> dict[str, Any]:
+    """
+    Toggle certificate active status.
+
+    Admin only - Toggles the 'ativo' field between True and False.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem alterar o status do certificado",
+        )
+
+    usuario_id = get_user_id_from_data(user_data)
+
+    # Get certificate (exclude deleted)
+    cert = (
+        db.query(Certificados)
+        .filter(
+            Certificados.certificado_id == certificado_id,
+            Certificados.deleted_at.is_(None),
+        )
+        .first()
+    )
+
+    if not cert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Certificado nao encontrado",
+        )
+
+    # Verify user is empresa owner/member
+    exigir_acesso_empresa(db, cert.empresa_id, usuario_id)
+
+    # Toggle the ativo status
+    cert.ativo = not cert.ativo
+    db.commit()
+    db.refresh(cert)
+
+    return {
+        "certificado_id": str(cert.certificado_id),
+        "ativo": cert.ativo,
+        "message": f"Certificado {'ativado' if cert.ativo else 'desativado'} com sucesso",
+    }

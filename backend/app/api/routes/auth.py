@@ -364,12 +364,14 @@ async def logout(
 @router.post("/verify-2fa")
 async def verify_2fa(
     request: Request,
+    response: Response,
     data: Verify2FARequest,
 ) -> dict[str, Any]:
     """
     Verify 2FA code after login.
 
     Forwards request to Auth service /api/v1/auth/verify-2fa.
+    On success, sets session cookies.
     """
     # Forward Authorization header if present
     headers = {}
@@ -381,7 +383,42 @@ async def verify_2fa(
             body=data.model_dump(),
             headers=headers if headers else None,
         )
-        return result
+
+        # Log the result for debugging
+        import logging
+        logging.info(f"2FA verify result: {result}")
+
+        # Extract tokens from Auth service response and set cookies
+        # Try both "tokens" object and direct properties
+        tokens = result.get("tokens", {})
+        access_token = tokens.get("access_token") or result.get("access_token")
+        csrf_token = tokens.get("csrf_token") or result.get("csrf_token")
+
+        if access_token:
+            # Set HttpOnly cookie for session token (not accessible to JS)
+            response.set_cookie(
+                key="session_token",
+                value=access_token,
+                httponly=True,
+                secure=not DEBUG,
+                samesite="lax",
+                max_age=3600,
+                path="/",
+            )
+
+            # Set readable cookie for CSRF token (accessible to JS)
+            if csrf_token:
+                response.set_cookie(
+                    key="csrf_token",
+                    value=csrf_token,
+                    httponly=False,
+                    secure=not DEBUG,
+                    samesite="lax",
+                    max_age=3600,
+                    path="/",
+                )
+
+        return {"message": "Verificacao 2FA concluida com sucesso"}
 
     except AuthenticationError as e:
         raise HTTPException(
@@ -572,6 +609,49 @@ async def verify_email(
     """
     try:
         result = await auth_client.verify_email(token=data.token)
+        return result
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 400,
+            detail=e.message,
+        )
+
+
+class AcceptInvitationRequest(BaseModel):
+    """Accept invitation request."""
+    token: str
+    password: str
+    first_name: str | None = None
+    last_name: str | None = None
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """Validate password meets security requirements."""
+        return validate_password_strength(v)
+
+
+@router.post("/invitations/accept")
+async def accept_invitation(
+    data: AcceptInvitationRequest,
+) -> dict[str, Any]:
+    """
+    Accept an employee invitation and create user account.
+
+    Proxies request to Auth service /api/v1/invitations/accept.
+    """
+    try:
+        result = await auth_client.proxy_request(
+            method="POST",
+            path="/api/v1/invitations/accept",
+            json={
+                "token": data.token,
+                "password": data.password,
+                "first_name": data.first_name,
+                "last_name": data.last_name,
+            },
+        )
         return result
 
     except AuthServiceError as e:

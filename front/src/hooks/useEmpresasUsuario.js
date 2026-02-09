@@ -9,14 +9,17 @@ export function useEmpresasUsuario() {
     async function carregar() {
       try {
         const res = await listarMinhasEmpresas();
+        console.log("[useEmpresasUsuario] resposta:", res);
         const empresas = res.data ?? [];
+        console.log("[useEmpresasUsuario] empresas:", empresas);
 
-        setOptions(
-          empresas.map((e) => ({
-            value: e.empresa_id,
-            label: e.fantasia || e.razao_social,
-          }))
-        );
+        const opts = empresas.map((e) => ({
+          value: e.empresa_id,
+          label: e.fantasia || e.razao_social || e.name,
+          ativo: e.ativo !== false, // default true
+        }));
+        console.log("[useEmpresasUsuario] options:", opts);
+        setOptions(opts);
 
       } catch (e) {
         console.error("[useEmpresasUsuario] erro:", e);

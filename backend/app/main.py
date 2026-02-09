@@ -16,7 +16,7 @@ XSecurity-Vault handles:
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -38,6 +38,7 @@ from backend.app.api.routes.usuarios import router as usuarios_router
 from backend.app.api.routes.convites import router as convites_router
 from backend.app.api.routes.companies import router as companies_router
 from backend.app.api.routes.certificados import router as certificados_router
+from backend.app.api.routes.dashboard import router as dashboard_router
 
 # Routers - Business logic (local)
 from backend.app.api.routes.grupos import router as grupos_router
@@ -47,9 +48,12 @@ from backend.app.api.routes.grupos_certificados import router as grupos_certific
 from backend.app.api.routes.grupos_certificados_urls import router as grupos_certificados_urls_router
 from backend.app.api.routes.grupos_usuarios import router as grupos_usuarios_router
 from backend.app.api.routes.regras_acesso import router as regras_acesso_router
+from backend.app.api.routes.regras_acesso_urls import router as regras_acesso_urls_router
+from backend.app.api.routes.regras_acesso_ips import router as regras_acesso_ips_router
 from backend.app.api.routes.usuarios_ip_whitelist import router as usuarios_ip_whitelist_router
 from backend.app.api.routes.global_urls import router as global_urls_router
-from backend.app.api.routes.ramos import router as ramos_router
+from backend.app.api.routes.company_categories import router as company_categories_router
+from backend.app.api.routes.empresas import router as empresas_router
 
 
 # Configure logging
@@ -146,9 +150,35 @@ app.add_middleware(
 )
 
 
+def get_cors_headers(request: Request) -> dict[str, str]:
+    """Get CORS headers for a request based on origin."""
+    origin = request.headers.get("origin", "")
+    if origin in origins:
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": ", ".join(ALLOWED_METHODS),
+            "Access-Control-Allow-Headers": ", ".join(ALLOWED_HEADERS),
+        }
+    return {}
+
+
 # -----------------------------------------------------------------------------
 # Exception Handlers
 # -----------------------------------------------------------------------------
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(
+    request: Request,
+    exc: HTTPException,
+) -> JSONResponse:
+    """Handle HTTP exceptions with CORS headers."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=get_cors_headers(request),
+    )
 
 
 @app.exception_handler(ServiceUnavailableError)
@@ -164,6 +194,7 @@ async def service_unavailable_handler(
             "detail": "Servico temporariamente indisponivel",
             "service": exc.service_name,
         },
+        headers=get_cors_headers(request),
     )
 
 
@@ -180,6 +211,7 @@ async def service_timeout_handler(
             "detail": "Servico demorou muito para responder",
             "service": exc.service_name,
         },
+        headers=get_cors_headers(request),
     )
 
 
@@ -197,6 +229,7 @@ async def circuit_breaker_handler(
             "service": exc.service_name,
             "retry_after": exc.detail.get("retry_after", 30),
         },
+        headers=get_cors_headers(request),
     )
 
 
@@ -213,6 +246,26 @@ async def service_error_handler(
             "detail": exc.message,
             "service": exc.service_name,
         },
+        headers=get_cors_headers(request),
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    """
+    Catch-all exception handler for unhandled errors.
+    Ensures proper JSON response with logging.
+    """
+    logger.exception(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Erro interno do servidor",
+        },
+        headers=get_cors_headers(request),
     )
 
 
@@ -226,6 +279,7 @@ app.include_router(usuarios_router)
 app.include_router(convites_router)
 app.include_router(companies_router)
 app.include_router(certificados_router)
+app.include_router(dashboard_router)
 
 # Business logic (local)
 app.include_router(grupos_router)
@@ -235,9 +289,12 @@ app.include_router(grupos_usuarios_router)
 app.include_router(planos_trabalho_router)
 app.include_router(feriados_router)
 app.include_router(regras_acesso_router)
+app.include_router(regras_acesso_urls_router)
+app.include_router(regras_acesso_ips_router)
 app.include_router(usuarios_ip_whitelist_router)
 app.include_router(global_urls_router)
-app.include_router(ramos_router)
+app.include_router(company_categories_router)
+app.include_router(empresas_router)
 
 
 # -----------------------------------------------------------------------------

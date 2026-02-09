@@ -49,7 +49,7 @@ def test_listar_planos_trabalho_success(client, db_session):
     # Create test plano
     plano = criar_plano(db_session, empresa_id, nome="Plano Teste")
 
-    app.dependency_overrides[check_auth_with_ip] = _mock_user(user_id, empresa_id)
+    app.dependency_overrides[check_auth_with_ip] = _mock_admin(user_id, empresa_id)
 
     response = client.get("/planos-trabalho/")
 
@@ -69,7 +69,7 @@ def test_listar_planos_trabalho_with_empresa_id(client, db_session):
 
     plano = criar_plano(db_session, empresa_id, nome="Plano Empresa Especifica")
 
-    app.dependency_overrides[check_auth_with_ip] = _mock_user(user_id, empresa_id)
+    app.dependency_overrides[check_auth_with_ip] = _mock_admin(user_id, empresa_id)
 
     response = client.get(f"/planos-trabalho/?empresa_id={empresa_id}")
 
@@ -96,7 +96,7 @@ def test_get_plano_trabalho_success(client, db_session):
 
     plano = criar_plano(db_session, empresa_id, nome="Plano Individual")
 
-    app.dependency_overrides[check_auth_with_ip] = _mock_user(user_id, empresa_id)
+    app.dependency_overrides[check_auth_with_ip] = _mock_admin(user_id, empresa_id)
 
     response = client.get(f"/planos-trabalho/{plano.plano_id}")
 
@@ -113,7 +113,7 @@ def test_get_plano_trabalho_not_found(client, db_session):
     empresa_id = str(uuid.uuid4())
     fake_id = str(uuid.uuid4())
 
-    app.dependency_overrides[check_auth_with_ip] = _mock_user(user_id, empresa_id)
+    app.dependency_overrides[check_auth_with_ip] = _mock_admin(user_id, empresa_id)
 
     response = client.get(f"/planos-trabalho/{fake_id}")
 
@@ -620,7 +620,7 @@ def test_deletar_plano_invalid_uuid_returns_404(client, db_session):
 # VALIDATION TESTS - Pagination Boundaries
 # ---------------------------------------------------------------------------
 def test_listar_planos_page_zero(client, db_session):
-    """Page 0 - documents actual behavior."""
+    """Page 0 - should return validation error."""
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
@@ -632,12 +632,12 @@ def test_listar_planos_page_zero(client, db_session):
 
     app.dependency_overrides.pop(check_auth_with_ip, None)
 
-    assert response.status_code == 200
-    # Documents behavior: might return empty or treat as page 1
+    assert response.status_code == 422
+    # Page must be >= 1
 
 
 def test_listar_planos_negative_page(client, db_session):
-    """Negative page number - documents actual behavior."""
+    """Negative page number - should return validation error."""
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
@@ -649,12 +649,12 @@ def test_listar_planos_negative_page(client, db_session):
 
     app.dependency_overrides.pop(check_auth_with_ip, None)
 
-    assert response.status_code == 200
-    # Documents behavior
+    assert response.status_code == 422
+    # Page must be >= 1
 
 
 def test_listar_planos_limit_zero(client, db_session):
-    """Limit 0 - should return empty items."""
+    """Limit 0 - should return validation error."""
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
@@ -666,12 +666,12 @@ def test_listar_planos_limit_zero(client, db_session):
 
     app.dependency_overrides.pop(check_auth_with_ip, None)
 
-    assert response.status_code == 200
-    assert len(response.json()["items"]) == 0
+    assert response.status_code == 422
+    # Limit must be >= 1
 
 
 def test_listar_planos_negative_limit(client, db_session):
-    """Negative limit - documents actual behavior."""
+    """Negative limit - should return validation error."""
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
@@ -683,12 +683,12 @@ def test_listar_planos_negative_limit(client, db_session):
 
     app.dependency_overrides.pop(check_auth_with_ip, None)
 
-    assert response.status_code == 200
-    # Documents behavior: might return empty or error
+    assert response.status_code == 422
+    # Limit must be >= 1
 
 
 def test_listar_planos_very_large_limit(client, db_session):
-    """Very large limit - documents actual behavior."""
+    """Very large limit - should return validation error."""
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
@@ -700,8 +700,8 @@ def test_listar_planos_very_large_limit(client, db_session):
 
     app.dependency_overrides.pop(check_auth_with_ip, None)
 
-    assert response.status_code == 200
-    # Should succeed or have max limit
+    assert response.status_code == 422
+    # Limit must be <= 100
 
 
 def test_listar_planos_with_multiple_pages(client, db_session):

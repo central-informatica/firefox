@@ -2,6 +2,10 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./login";
 import Cadastro from "./pages/Usuarios/Cadastro";
+import VerifyEmail from "./pages/VerifyEmail";
+import AceitarConvite from "./pages/AceitarConvite";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import { useAuth } from "./auth/useAuth";
 import AppRoutes from "./AppRoutes";
 import Layout from "./layouts/MainLayout";
@@ -43,6 +47,10 @@ export default function App() {
         {/* Rotas publicas */}
         <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
         <Route path="/cadastro" element={user ? <Navigate to="/dashboard" /> : <Cadastro />} />
+        <Route path="/verificar-email" element={<VerifyEmail />} />
+        <Route path="/aceitar-convite" element={<AceitarConvite />} />
+        <Route path="/esqueci-senha" element={user ? <Navigate to="/dashboard" /> : <ForgotPassword />} />
+        <Route path="/redefinir-senha" element={<ResetPassword />} />
 
         {/* Rotas privadas */}
         <Route

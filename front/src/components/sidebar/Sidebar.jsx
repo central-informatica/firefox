@@ -3,7 +3,7 @@ import { FiLogOut } from "react-icons/fi";
 import {
   FiGrid, FiUsers, FiSettings, FiLifeBuoy, FiCreditCard,
   FiFlag, FiChevronDown, FiChevronRight, FiMenu, FiX, FiChevronsLeft, FiChevronsRight,
-  FiShield
+  FiShield, FiCalendar
 } from "react-icons/fi";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
@@ -49,7 +49,15 @@ export default function Sidebar() {
         { id: "planos-novo", label: "Novo plano", path: "/planos/novo" }
       ]
     },
-    { id: "usuarios", label: "Usuarios", icon: <FiUsers />, path: "/usuarios" },
+    {
+      id: "usuarios",
+      label: "Usuarios",
+      icon: <FiUsers />,
+      children: [
+        { id: "usuarios-lista", label: "Listar usuarios", path: "/usuarios" },
+        { id: "usuarios-relacionamentos", label: "Relacionamentos", path: "/usuarios/relacionamentos" }
+      ]
+    },
     {
       id: "grupos",
       label: "Grupos",
@@ -73,10 +81,19 @@ export default function Sidebar() {
       label: "Seguranca",
       icon: <FiShield />,
       children: [
-        { id: "seg-whitelist", label: "Enderecos permitidos", path: "/seguranca/enderecos-permitidos" }
+        { id: "seg-whitelist", label: "Enderecos permitidos", path: "/seguranca/enderecos-permitidos" },
+        { id: "seg-regras-urls", label: "Regras de acesso URLs", path: "/seguranca/regras-acesso-urls" },
+        { id: "seg-regras-ips", label: "Regras de acesso IPs", path: "/seguranca/regras-acesso-ips" }
       ]
     },
-    { id: "config", label: "Configuracoes", icon: <FiSettings />, path: "/config" },
+    {
+      id: "config",
+      label: "Configuracoes",
+      icon: <FiSettings />,
+      children: [
+        { id: "config-feriados", label: "Feriados", path: "/configuracoes/feriados" }
+      ]
+    },
   ];
 
   const toggleMobileSidebar = () => setMobileOpen(!mobileOpen);

@@ -8,10 +8,16 @@ load_dotenv()
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 FRONTEND_ORIGINS = [
-    os.getenv("FRONTEND_ORIGIN", "http://127.0.0.1:5173"),
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
 ]
 
-MASTER_KEY = gerar_chave(password=os.getenv("MASTER_KEY"))
+# Add custom origin from env if specified and different from defaults
+_custom_origin = os.getenv("FRONTEND_ORIGIN")
+if _custom_origin and _custom_origin not in FRONTEND_ORIGINS:
+    FRONTEND_ORIGINS.append(_custom_origin)
+
+MASTER_KEY = gerar_chave(password=os.getenv("MASTER_KEY") or "senha-mestra")
 
 STORAGE_DIR = os.getenv("CERT_STORAGE_DIR", "storage/certificados")
 Path(STORAGE_DIR).mkdir(parents=True, exist_ok=True)

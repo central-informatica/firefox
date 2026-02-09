@@ -30,6 +30,21 @@ def listar_grupo(grupo_id: str, db: Session = Depends(get_db), current_user=Depe
     return crud_grupos_usuarios.listar_por_grupo(db, grupo_id)
 
 
+@router.get("/empresa/{empresa_id}", response_model=list[GrupoUsuarioOut])
+def listar_empresa(empresa_id: str, db: Session = Depends(get_db), current_user=Depends(check_auth_with_ip)):
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar grupos-usuarios")
+    return crud_grupos_usuarios.listar_por_empresa(db, empresa_id)
+
+
+@router.get("/usuario/{usuario_id}", response_model=list[GrupoUsuarioOut])
+def listar_usuario(usuario_id: str, db: Session = Depends(get_db), current_user=Depends(check_auth_with_ip)):
+    """List all grupos for a specific user."""
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar grupos-usuarios")
+    return crud_grupos_usuarios.listar_por_usuario(db, usuario_id)
+
+
 @router.get("/{grupo_usuario_id}", response_model=GrupoUsuarioOut)
 def obter(grupo_usuario_id: str, db: Session = Depends(get_db), current_user=Depends(check_auth_with_ip)):
     if not current_user.get("is_admin"):

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Projetos/xsecurity-infra/xsecurity-auth/**)",
+      "Read(//c/Projetos/xsecurity-infra/xsecurity-auth/auth/auth/**)",
+      "Bash(poetry lock:*)",
+      "Bash(poetry run python:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\presentation\\api\\v1\\endpoints",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\infrastructure\\mappers",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\application\\use_cases\\employee_invitation",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\application\\use_cases\\organization",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\application\\use_cases\\user",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\application\\use_cases\\company",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\infrastructure\\models",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\core\\interfaces\\repositories",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\infrastructure\\repositories",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\core\\enums",
+      "C:\\Projetos\\xsecurity-infra\\xsecurity-auth\\auth\\auth\\presentation\\api"
+    ]
+  }
+}

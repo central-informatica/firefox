@@ -200,11 +200,26 @@ const GruposList = () => {
       </div>
       {/* Table */}
       <div className="bg-dark-secondary rounded-card shadow-sm border border-neutral-900 overflow-hidden">
-        <DataTable
-          key={`${empresaSelecionada ?? "all"}-${planoIdSelecionado ?? "all"}`}
-          columns={columns}
-          fetchData={fetchGrupos} limit={10}
-        />
+        {empresaSelecionada ? (
+          <DataTable
+            key={`${empresaSelecionada}-${planoIdSelecionado ?? "all"}`}
+            columns={columns}
+            fetchData={fetchGrupos}
+            limit={10}
+          />
+        ) : (
+          <div className="p-12 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="p-4 bg-dark-tertiary rounded-full">
+                <FiBriefcase size={32} className="text-neutral-500" />
+              </div>
+              <div>
+                <p className="text-neutral-100 font-medium mb-1">Selecione uma empresa</p>
+                <p className="text-sm text-neutral-500">Escolha uma empresa acima para visualizar os grupos</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

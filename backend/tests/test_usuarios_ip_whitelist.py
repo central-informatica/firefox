@@ -44,8 +44,8 @@ def test_listar_por_empresa_admin_success(client, db_session):
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.1")
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.2")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.1")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.2")
 
     app.dependency_overrides[check_auth_with_ip] = _mock_admin_user(user_id, empresa_id)
 
@@ -102,7 +102,7 @@ def test_listar_por_empresa_excludes_deleted(client, db_session):
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
-    assert data[0]["ip_address"] == "10.0.0.1"
+    assert data[0]["ip_address"] == "203.0.113.1"
 
 
 # ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ def test_listar_por_usuario_success(client, db_session):
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.1")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.1")
 
     app.dependency_overrides[check_auth_with_ip] = _mock_admin_user(user_id, empresa_id)
 
@@ -144,7 +144,7 @@ def test_obter_entry_success(client, db_session):
 
     assert response.status_code == 200
     data = response.json()
-    assert data["ip_address"] == "10.0.0.1"
+    assert data["ip_address"] == "203.0.113.1"
 
 
 def test_obter_deleted_entry_returns_404(client, db_session):
@@ -194,7 +194,7 @@ def test_criar_admin_success(client, db_session):
     payload = {
         "usuario_id": user_id,
         "empresa_id": empresa_id,
-        "ip_address": "192.168.1.50",
+        "ip_address": "203.0.113.50",
         "descricao": "Office IP",
     }
 
@@ -204,7 +204,7 @@ def test_criar_admin_success(client, db_session):
 
     assert response.status_code == 201
     data = response.json()
-    assert data["ip_address"] == "192.168.1.50"
+    assert data["ip_address"] == "203.0.113.50"
     assert data["descricao"] == "Office IP"
 
 
@@ -218,7 +218,7 @@ def test_criar_non_admin_forbidden(client, db_session):
     payload = {
         "usuario_id": user_id,
         "empresa_id": empresa_id,
-        "ip_address": "192.168.1.50",
+        "ip_address": "203.0.113.50",
     }
 
     response = client.post("/usuarios-ip-whitelist/", json=payload)
@@ -240,7 +240,7 @@ def test_criar_duplicate_ip_returns_409(client, db_session):
     payload = {
         "usuario_id": user_id,
         "empresa_id": empresa_id,
-        "ip_address": "192.168.1.50",
+        "ip_address": "203.0.113.50",
     }
 
     response = client.post("/usuarios-ip-whitelist/", json=payload)
@@ -303,7 +303,7 @@ def test_atualizar_admin_success(client, db_session):
 
     app.dependency_overrides[check_auth_with_ip] = _mock_admin_user(user_id, empresa_id)
 
-    payload = {"ip_address": "10.0.0.99", "descricao": "Updated"}
+    payload = {"ip_address": "203.0.113.99", "descricao": "Updated"}
 
     response = client.put(f"/usuarios-ip-whitelist/{entry.whitelist_id}", json=payload)
 
@@ -311,7 +311,7 @@ def test_atualizar_admin_success(client, db_session):
 
     assert response.status_code == 200
     data = response.json()
-    assert data["ip_address"] == "10.0.0.99"
+    assert data["ip_address"] == "203.0.113.99"
     assert data["descricao"] == "Updated"
 
 
@@ -324,7 +324,7 @@ def test_atualizar_non_admin_forbidden(client, db_session):
 
     app.dependency_overrides[check_auth_with_ip] = _mock_non_admin_user(user_id, empresa_id)
 
-    payload = {"ip_address": "10.0.0.99"}
+    payload = {"ip_address": "203.0.113.99"}
 
     response = client.put(f"/usuarios-ip-whitelist/{entry.whitelist_id}", json=payload)
 
@@ -338,12 +338,12 @@ def test_atualizar_to_duplicate_ip_returns_409(client, db_session):
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.1")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.1")
     entry2 = criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.2")
 
     app.dependency_overrides[check_auth_with_ip] = _mock_admin_user(user_id, empresa_id)
 
-    payload = {"ip_address": "10.0.0.1"}
+    payload = {"ip_address": "203.0.113.1"}
 
     response = client.put(f"/usuarios-ip-whitelist/{entry2.whitelist_id}", json=payload)
 
@@ -401,8 +401,8 @@ def test_deletar_todos_por_usuario_success(client, db_session):
     user_id = str(uuid.uuid4())
     empresa_id = str(uuid.uuid4())
 
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.1")
-    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "10.0.0.2")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.1")
+    criar_usuarios_ip_whitelist(db_session, user_id, empresa_id, "203.0.113.2")
 
     app.dependency_overrides[check_auth_with_ip] = _mock_admin_user(user_id, empresa_id)
 

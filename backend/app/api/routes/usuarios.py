@@ -7,12 +7,16 @@ Admin-only access with IP whitelist validation.
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 
 from backend.app.api.deps import check_auth_with_ip
 from backend.app.core.exceptions import AuthServiceError
 from backend.app.services.auth_client import auth_client
+from backend.app.db.session import get_db
+from backend.app.crud.grupos_usuarios import crud_grupos_usuarios
+from backend.app.db.models import Grupos
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
@@ -33,12 +37,24 @@ def get_forwarded_headers(request: Request) -> dict[str, str]:
 # -----------------------------------------------------------------------------
 
 
+class UserCreate(BaseModel):
+    """User creation request (sends invitation)."""
+
+    nome: str
+    email: str
+    nivel: str = "COMUM"
+    empresa_id: str | None = None
+
+
 class UserUpdate(BaseModel):
     """User update request."""
 
+    nome: str | None = None
+    nivel: str | None = None
     first_name: str | None = None
     last_name: str | None = None
     is_active: bool | None = None
+    role: str | None = None
     requires_2fa: bool | None = None
 
 
@@ -70,6 +86,11 @@ async def list_users(
 
     headers = get_forwarded_headers(request)
 
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
     params = {
         "limit": limit,
         "offset": offset,
@@ -79,11 +100,93 @@ async def list_users(
         params["organization_id"] = organization_id
 
     try:
-        return await auth_client.proxy_request(
+        result = await auth_client.proxy_request(
             method="GET",
             path="/api/v1/users/",
             headers=headers,
             params=params,
+        )
+
+        # Transform response to frontend expected format
+        users = result.get("users", [])
+        transformed_users = [
+            {
+                "id": u.get("id"),
+                "nome": f"{u.get('first_name', '') or ''} {u.get('last_name', '') or ''}".strip(),
+                "email": u.get("email"),
+                "nivel": u.get("role", "USUARIO"),
+                "role": u.get("role", "USUARIO"),
+                "is_active": u.get("is_active", True),
+                "is_owner": u.get("is_owner", False),
+                "first_name": u.get("first_name"),
+                "last_name": u.get("last_name"),
+                "created_at": u.get("created_at"),
+                "updated_at": u.get("updated_at"),
+            }
+            for u in users
+        ]
+
+        return {
+            "users": transformed_users,
+            "total": result.get("total", len(transformed_users)),
+            "limit": result.get("limit", limit),
+            "offset": result.get("offset", offset),
+        }
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_user(
+    request: Request,
+    data: UserCreate,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    Create a new user by sending an invitation.
+
+    Admin only - Creates an invitation via Auth service /api/v1/invitations/.
+    The invited user will receive an email with instructions to complete registration.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem criar usuários",
+        )
+
+    headers = get_forwarded_headers(request)
+
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
+    # Split nome into first_name and last_name
+    name_parts = data.nome.strip().split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+    invitation_data = {
+        "email": data.email,
+        "first_name": first_name,
+        "last_name": last_name,
+    }
+
+    # Add company_id if provided
+    if data.empresa_id:
+        invitation_data["company_id"] = data.empresa_id
+
+    try:
+        return await auth_client.proxy_request(
+            method="POST",
+            path="/api/v1/invitations/",
+            headers=headers,
+            json=invitation_data,
         )
 
     except AuthServiceError as e:
@@ -113,12 +216,34 @@ async def get_user(
 
     headers = get_forwarded_headers(request)
 
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
     try:
-        return await auth_client.proxy_request(
+        result = await auth_client.proxy_request(
             method="GET",
             path=f"/api/v1/users/{user_id}",
             headers=headers,
         )
+
+        # Transform response to frontend expected format
+        first_name = result.get("first_name", "") or ""
+        last_name = result.get("last_name", "") or ""
+        nome = f"{first_name} {last_name}".strip()
+        role = result.get("role", "USUARIO")
+
+        return {
+            "id": result.get("id"),
+            "nome": nome,
+            "email": result.get("email"),
+            "nivel": role,
+            "role": role,
+            "is_active": result.get("is_active", True),
+            "first_name": first_name,
+            "last_name": last_name,
+        }
 
     except AuthServiceError as e:
         raise HTTPException(
@@ -147,7 +272,25 @@ async def update_user(
         )
 
     headers = get_forwarded_headers(request)
+
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
     update_data = data.model_dump(exclude_none=True)
+
+    # Convert nome to first_name/last_name
+    if "nome" in update_data:
+        nome = update_data.pop("nome")
+        name_parts = nome.strip().split(" ", 1)
+        update_data["first_name"] = name_parts[0] if name_parts else ""
+        update_data["last_name"] = name_parts[1] if len(name_parts) > 1 else ""
+
+    # Convert nivel to role
+    if "nivel" in update_data:
+        nivel = update_data.pop("nivel")
+        update_data["role"] = nivel
 
     try:
         return await auth_client.proxy_request(
@@ -184,12 +327,224 @@ async def delete_user(
 
     headers = get_forwarded_headers(request)
 
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
     try:
         return await auth_client.proxy_request(
             method="DELETE",
             path=f"/api/v1/users/{user_id}",
             headers=headers,
         )
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )
+
+
+@router.get("/empresas/{empresa_id}/usuarios")
+async def list_users_by_company(
+    request: Request,
+    empresa_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    search: str = "",
+    sort: str = "",
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    List users that belong to a specific company.
+
+    Admin only - Forwards request to Auth service /api/v1/companies/{company_id}/users.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem listar usuários por empresa",
+        )
+
+    headers = get_forwarded_headers(request)
+
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
+    try:
+        result = await auth_client.proxy_request(
+            method="GET",
+            path=f"/api/v1/companies/{empresa_id}/users",
+            headers=headers,
+        )
+
+        # Auth service returns a list of users directly
+        users = result if isinstance(result, list) else []
+
+        # Apply search filter if provided
+        if search:
+            search_lower = search.lower()
+            users = [
+                u for u in users
+                if search_lower in (u.get("email", "") or "").lower()
+                or search_lower in (u.get("first_name", "") or "").lower()
+                or search_lower in (u.get("last_name", "") or "").lower()
+            ]
+
+        total = len(users)
+
+        # Apply pagination
+        offset = (page - 1) * limit
+        paginated_users = users[offset:offset + limit]
+
+        # Transform to frontend expected format
+        data = [
+            {
+                "id": u.get("user_id"),
+                "usuario_id": u.get("user_id"),  # Also include usuario_id for compatibility
+                "nome": f"{u.get('first_name', '')} {u.get('last_name', '')}".strip(),
+                "email": u.get("email"),
+                "is_active": u.get("is_active", True),
+                "role": u.get("role", "USUARIO"),
+                "nivel": u.get("role", "USUARIO"),
+                "added_at": u.get("added_at"),
+            }
+            for u in paginated_users
+        ]
+
+        return {
+            "data": data,
+            "total": total,
+        }
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )
+
+
+@router.patch("/{user_id}/toggle-active")
+async def toggle_user_active(
+    request: Request,
+    user_id: str,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    Toggle user active status (organization-level).
+
+    Admin only - Forwards request to Auth service /api/v1/users/{user_id}/toggle-active.
+    This controls whether the user can login to the system.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem ativar/desativar usuários",
+        )
+
+    headers = get_forwarded_headers(request)
+
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
+    try:
+        result = await auth_client.proxy_request(
+            method="PATCH",
+            path=f"/api/v1/users/{user_id}/toggle-active",
+            headers=headers,
+        )
+        return result
+
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=e.message,
+        )
+
+
+@router.get("/{user_id}/grupos")
+async def get_user_grupos(
+    user_id: str,
+    db: Session = Depends(get_db),
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    List all grupos for a specific user with group details.
+
+    Returns list of grupos with group information (name, description, etc).
+    Admin only.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem visualizar grupos de usuários",
+        )
+
+    try:
+        # Get user-grupo associations
+        grupos_usuarios = crud_grupos_usuarios.listar_por_usuario(db, user_id)
+
+        # Build response with group details
+        result = []
+        for gu in grupos_usuarios:
+            grupo = db.query(Grupos).filter(Grupos.grupo_id == gu.grupo_id).first()
+            if grupo:
+                result.append({
+                    "grupo_usuario_id": str(gu.grupo_usuario_id),
+                    "grupo_id": str(gu.grupo_id),
+                    "nome": grupo.nome,
+                    "empresa_id": str(gu.empresa_id) if gu.empresa_id else None,
+                })
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching user grupos: {str(e)}",
+        )
+
+
+@router.get("/{user_id}/companies")
+async def get_user_companies(
+    request: Request,
+    user_id: str,
+    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+) -> Any:
+    """
+    List all companies a user has access to.
+
+    Admin only - Forwards request to Auth service /api/v1/users/{user_id}/companies.
+    """
+    # Check if user is admin
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem visualizar empresas de usuários",
+        )
+
+    headers = get_forwarded_headers(request)
+
+    # Add Authorization header from session_token cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        headers["Authorization"] = f"Bearer {session_token}"
+
+    try:
+        result = await auth_client.proxy_request(
+            method="GET",
+            path=f"/api/v1/users/{user_id}/companies",
+            headers=headers,
+        )
+        return result
 
     except AuthServiceError as e:
         raise HTTPException(

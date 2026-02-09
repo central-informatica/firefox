@@ -1,20 +1,35 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
-  FiPlus, FiEdit2, FiTrash2, FiUsers, FiUserCheck, FiShield, FiAlertCircle, FiMail
+  FiPlus, FiEdit2, FiTrash2, FiUsers, FiUserCheck, FiShield, FiAlertCircle, FiMail, FiUserPlus
 } from "react-icons/fi";
-import { deletarUsuario, listarUsuariosPaginado } from "../../services/usuariosService";
+import { deletarUsuario, listarUsuariosPaginado, toggleUsuarioAtivo } from "../../services/usuariosService";
+import { toast } from "react-toastify";
 
 import SelectEmpresa from "../../components/Select/SelectEmpresa";
 import DataTable from "../../components/Tables/DataTable";
+import VincularUsuarioModal from "../../components/VincularUsuarioModal";
+import ConfirmModal from "../../components/ConfirmModal";
 
 const UsuariosList = () => {
   const navigate = useNavigate();
   const [empresaId, setEmpresaSelecionada] = useState(null);
+  const [empresaNome, setEmpresaNome] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [totalUsuariosAtivos, setTotalUserAtivos] = useState(0);
   const [totalUsuarios, setTotalUsuarios] = useState(0);
   const [totalUsuariosAdmin, setTotalUsuariosAdmin] = useState(0);
+
+  // Vincular usuario modal state
+  const [vincularModalOpen, setVincularModalOpen] = useState(false);
+
+  // Toggle state management
+  const [statusOverride, setStatusOverride] = useState({});
+  const [togglingId, setTogglingId] = useState(null);
+
+  // Confirmation modal state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState(null); // { user_id, nome, currentStatus }
 
 
   const fetchUsuarios = async ({ page, limit, search, sort }) => {
@@ -23,6 +38,10 @@ const UsuariosList = () => {
     setTotalUsuarios(res.total);
     setTotalUserAtivos(res.total);
     setTotalUsuariosAdmin(res.total_adm);
+
+    // Clear status overrides on reload
+    setStatusOverride({});
+
     return res;
   };
 
@@ -46,10 +65,51 @@ const UsuariosList = () => {
     }
   };
 
+  const handleToggleClick = (usuario) => {
+    // Use override if exists, otherwise use is_active from the user
+    const currentStatus = statusOverride[usuario.id] !== undefined
+      ? statusOverride[usuario.id]
+      : (usuario.is_active !== false);
+
+    setConfirmData({
+      user_id: usuario.id,
+      nome: usuario.nome,
+      currentStatus,
+    });
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmToggle = async () => {
+    if (!confirmData) return;
+
+    setTogglingId(confirmData.user_id);
+    setConfirmOpen(false);
+
+    try {
+      const result = await toggleUsuarioAtivo(confirmData.user_id);
+      toast.success(result.message);
+
+      // Update local override
+      setStatusOverride(prev => ({
+        ...prev,
+        [confirmData.user_id]: result.is_active,
+      }));
+
+      setRefreshKey(k => k + 1);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao alterar status do usuário");
+    } finally {
+      setTogglingId(null);
+      setConfirmData(null);
+    }
+  };
+
   const columns = [
   {
       header: "Usuário",
       accessorKey: "nome",
+      size: 350,
       cell: ({ row }) => {
         const u = row.original;
         return (
@@ -67,6 +127,7 @@ const UsuariosList = () => {
     {
       header: "Email",
       accessorKey: "email",
+      size: 250,
       cell: ({ row }) => (
         <div className="flex items-center gap-2 text-sm text-neutral-400">
           <FiMail size={14} className="text-neutral-500" />
@@ -77,25 +138,52 @@ const UsuariosList = () => {
     {
       header: "Nível",
       accessorKey: "nivel",
+      size: 120,
       cell: ({ row }) => getNivelBadge(row.original.nivel),
     },
     {
       header: "Status",
-      cell: () => (
-        <span className="badge-permitido">
-          <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-          Ativo
-        </span>
-      ),
+      size: 140,
+      cell: ({ row }) => {
+        const u = row.original;
+        const isToggling = togglingId === u.id;
+        // Use override if exists, otherwise use is_active from user
+        const isAtivo = statusOverride[u.id] !== undefined
+          ? statusOverride[u.id]
+          : (u.is_active !== false);
+
+        return (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleToggleClick(u)}
+              disabled={isToggling}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-xfire-orange focus:ring-offset-2 focus:ring-offset-dark-primary ${
+                isAtivo ? 'bg-green-600' : 'bg-neutral-600'
+              } ${isToggling ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+              title={isAtivo ? 'Clique para desativar' : 'Clique para ativar'}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                  isAtivo ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-medium ${isAtivo ? 'text-green-400' : 'text-neutral-500'}`}>
+              {isAtivo ? 'Ativo' : 'Inativo'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       header: "Ações",
+      size: 200,
       cell: ({ row }) => {
         const u = row.original;
         return (
           <div className="flex items-center justify-end gap-2">
             <button
-              onClick={()=> handleOnClickEdit(u.usuario_id)}
+              onClick={()=> handleOnClickEdit(u.id)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-xfire-orange/20 hover:bg-xfire-orange/30 text-xfire-orange rounded-lg text-sm font-medium"
             >
               <FiEdit2 size={14} />
@@ -117,13 +205,14 @@ const UsuariosList = () => {
   const getNivelBadge = (nivel) => {
     const badges = {
       ADMINISTRADOR: { color: "bg-purple-900/30 text-purple-400", icon: <FiShield size={12} />, label: "Admin" },
-      COMUM: { color: "bg-blue-900/30 text-blue-400", icon: <FiUsers size={12} />, label: "Usuário" },
+      USUARIO: { color: "bg-blue-900/30 text-blue-400", icon: <FiUsers size={12} />, label: "Usuário" },
+      COMUM: { color: "bg-blue-900/30 text-blue-400", icon: <FiUsers size={12} />, label: "Usuário" }, // backward compat
       MODERADOR: { color: "bg-orange-900/30 text-orange-400", icon: <FiUserCheck size={12} />, label: "Moderador" },
     };
 
     // Convert nivel to string and uppercase safely
-    const nivelKey = String(nivel || 'COMUM').toUpperCase();
-    const badge = badges[nivelKey] || badges.COMUM;
+    const nivelKey = String(nivel || 'USUARIO').toUpperCase();
+    const badge = badges[nivelKey] || badges.USUARIO;
 
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 ${badge.color} rounded-full text-xs font-medium`}>
@@ -142,13 +231,24 @@ const UsuariosList = () => {
           <p className="text-neutral-400">Gerencie os usuários cadastrados no sistema</p>
         </div>
 
-        <button
-          onClick={() => navigate("/usuarios/novo")}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white font-semibold rounded-xl shadow-lg shadow-xfire-orange/30 hover:shadow-xl hover:shadow-xfire-orange/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-        >
-          <FiPlus size={20} />
-          Novo Usuário
-        </button>
+        <div className="flex items-center gap-3">
+          {empresaId && (
+            <button
+              onClick={() => setVincularModalOpen(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            >
+              <FiUserPlus size={20} />
+              Vincular Usuário
+            </button>
+          )}
+          <button
+            onClick={() => navigate("/usuarios/novo")}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-xfire-orange to-xfire-red hover:from-xfire-orange/90 hover:to-xfire-red/90 text-white font-semibold rounded-xl shadow-lg shadow-xfire-orange/30 hover:shadow-xl hover:shadow-xfire-orange/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+          >
+            <FiPlus size={20} />
+            Novo Usuário
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -194,7 +294,8 @@ const UsuariosList = () => {
       <SelectEmpresa
         value={empresaId}
         onChange={(empresa) => {
-          setEmpresaSelecionada(empresa);
+          setEmpresaSelecionada(empresa?.value || empresa);
+          setEmpresaNome(empresa?.label || '');
           setRefreshKey((k) => k + 1);
         }}
       />
@@ -227,10 +328,41 @@ const UsuariosList = () => {
             <span className="text-blue-400">Gerenciamento de Usuários</span>
           </h3>
           <p className="text-sm text-neutral-400">
-            Os usuários podem ter diferentes níveis de acesso: Administrador (controle total), Moderador (gerenciamento limitado) ou Usuário (acesso básico). Administradores podem gerenciar empresas, certificados e permissões.
+            Os usuários podem ter diferentes níveis de acesso: Administrador (controle total) ou Usuário (acesso básico). Administradores podem gerenciar empresas, certificados e permissões.
           </p>
         </div>
       </div>
+
+      {/* Vincular Usuario Modal */}
+      <VincularUsuarioModal
+        open={vincularModalOpen}
+        empresaId={empresaId}
+        empresaNome={empresaNome}
+        onClose={() => setVincularModalOpen(false)}
+        onSuccess={() => {
+          toast.success("Usuário vinculado à empresa com sucesso!");
+          setRefreshKey(k => k + 1);
+        }}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        open={confirmOpen}
+        title={confirmData?.currentStatus ? "Desativar usuário?" : "Ativar usuário?"}
+        description={
+          confirmData?.currentStatus
+            ? `Ao desativar o usuário "${confirmData?.nome}", ele não poderá mais fazer login no sistema. Deseja continuar?`
+            : `Ao ativar o usuário "${confirmData?.nome}", ele poderá fazer login no sistema novamente. Deseja continuar?`
+        }
+        confirmText={confirmData?.currentStatus ? "Desativar" : "Ativar"}
+        cancelText="Cancelar"
+        onConfirm={handleConfirmToggle}
+        onCancel={() => {
+          setConfirmOpen(false);
+          setConfirmData(null);
+        }}
+        variant={confirmData?.currentStatus ? "danger" : "primary"}
+      />
     </div>
   );
 };

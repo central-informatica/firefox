@@ -7,6 +7,7 @@ from backend.app.schemas.planos_trabalho import (
     PlanoTrabalhoCreate, PlanoTrabalhoUpdate, PlanoTrabalhoOut, PlanoTrabalhoPage
 )
 from backend.app.crud.planos_trabalho import crud_planos_trabalho
+from backend.app.core.uuid_validator import validate_uuid
 
 router = APIRouter(prefix="/planos-trabalho", tags=["Planos de Trabalho"])
 
@@ -19,8 +20,8 @@ def _verificar_admin(current_user: dict):
 
 @router.get("/")
 def listar_planos_trabalho(
-    page: int = 1,
-    limit: int = 10,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     search: str | None = None,
     sort: str | None = None,
     empresa_id: str | None = Query(default=None),
@@ -52,6 +53,7 @@ def getPlanoTrabalho(
     current_user = Depends(check_auth_with_ip),
 ):
     _verificar_admin(current_user)
+    plano_id = validate_uuid(plano_id, "plano_id")
     usuario_id = current_user["id"]
     return crud_planos_trabalho.getPlanoTrabalho(db, usuario_id=usuario_id, plano_id=plano_id)
 
@@ -63,17 +65,14 @@ def criar_plano_trabalho(
     current_user = Depends(check_auth_with_ip),
 ):
     _verificar_admin(current_user)
-    empresa_id = current_user.get("organization_id")
-    if not empresa_id:
-        raise HTTPException(
-            status_code=403,
-            detail="Usuário não possui empresa vinculada"
-        )
+
+    # Usa empresa_id do payload, ou do usuário atual se não fornecido
+    empresa_id = data.empresa_id or current_user["organization_id"]
 
     return crud_planos_trabalho.criar(
         db=db,
         data=data,
-        empresa_id=empresa_id,
+        empresa_id=str(empresa_id),
         usuario_id=current_user["id"],
     )
 
@@ -86,6 +85,7 @@ def atualizar_plano_trabalho(
     current_user = Depends(check_auth_with_ip),
 ):
     _verificar_admin(current_user)
+    plano_id = validate_uuid(plano_id, "plano_id")
     usuario_id = current_user["id"]
     return crud_planos_trabalho.atualizar(db, usuario_id=usuario_id, plano_id=plano_id, data=data)
 
@@ -97,6 +97,7 @@ def deletar_plano_trabalho(
     current_user = Depends(check_auth_with_ip),
 ):
     _verificar_admin(current_user)
+    plano_id = validate_uuid(plano_id, "plano_id")
     usuario_id = current_user["id"]
     crud_planos_trabalho.deletar(db, usuario_id=usuario_id, plano_id=plano_id)
     return {"ok": True}
