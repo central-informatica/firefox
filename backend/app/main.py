@@ -293,8 +293,11 @@ app.include_router(regras_acesso_urls_router)
 app.include_router(regras_acesso_ips_router)
 app.include_router(usuarios_ip_whitelist_router)
 app.include_router(global_urls_router)
+<<<<<<< HEAD
 app.include_router(company_categories_router)
 app.include_router(empresas_router)
+=======
+>>>>>>> c1e781b (changes in companies planos_trabalho usuarios models and main)
 
 
 # -----------------------------------------------------------------------------

@@ -5,7 +5,6 @@ Certificate operations (upload, list, sign) are delegated to the Cofre service (
 Business logic (access control, grupo membership) remains in XSecurity-Vault.
 """
 
-import base64
 import datetime
 import logging
 import uuid
@@ -17,6 +16,7 @@ from cryptography.hazmat.primitives.serialization import pkcs12
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.app.api.deps import check_auth, check_auth_with_ip, get_organization_id_from_data, get_user_id_from_data
@@ -25,7 +25,7 @@ from backend.app.core.exceptions import (
     CertificateSigningError,
     CofreServiceError,
 )
-from backend.app.crud.guards import exigir_acesso_empresa
+from backend.app.crud.guards import exigir_acesso_empresa, validar_acesso_empresa
 from backend.app.db.models import Certificados, Feriados, GlobalUrls, GruposCertificados, GruposCertificadosUrls, GruposUsuarios, RegrasAcesso
 from backend.app.db.session import get_db
 from backend.app.services.cofre_client import cofre_client
@@ -114,12 +114,22 @@ def verificar_acesso_certificado(
     db: Session,
     usuario_id: str,
     certificado_id: str,
+    user_data: dict[str, Any] | None = None,
 ) -> Certificados:
     """
-    Verify user has access to certificate via grupo membership.
+    Verify user has access to certificate via grupo membership or empresa access.
 
-    User must be member of a grupo that has access to this certificate.
+    User must either:
+    - Be a member of a grupo that has access to this certificate, OR
+    - Be an admin with access to the certificate's empresa
+
     Soft-deleted certificates are excluded.
+
+    Args:
+        db: Database session
+        usuario_id: User ID
+        certificado_id: Certificate ID
+        user_data: Optional user data from Auth service (required for empresa validation)
 
     Returns:
         Certificados object if access is granted
@@ -160,14 +170,17 @@ def verificar_acesso_certificado(
     )
 
     if not has_access:
-        # Also check if user is empresa owner/member
-        try:
-            exigir_acesso_empresa(db, certificado.empresa_id, usuario_id)
-        except HTTPException:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Sem acesso a este certificado",
-            )
+        # If no grupo access, check if admin with access to this empresa
+        if user_data and user_data.get("is_admin"):
+            try:
+                validar_acesso_empresa(str(certificado.empresa_id), user_data)
+                return certificado
+            except HTTPException:
+                pass
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sem acesso a este certificado",
+        )
 
     return certificado
 
@@ -481,6 +494,9 @@ async def upload_certificate(
             detail="empresa_id é obrigatório quando auto_create_empresa não está ativo",
         )
 
+    # 3. Validate user has access to this empresa
+    validar_acesso_empresa(empresa_id, user_data)
+
     # 3. Read file content with size limit check
     file_content = await arquivo.read()
     if not file_content:
@@ -738,8 +754,16 @@ async def upload_certificate(
         cofre_cert_id=cofre_result.get("certificate_id"),
     )
     db.add(cert)
-    db.commit()
-    db.refresh(cert)
+
+    try:
+        db.commit()
+        db.refresh(cert)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Erro ao salvar certificado: possível duplicação ou conflito de dados",
+        )
 
     return CertificateUploadResponse(
         status="ok",
@@ -785,8 +809,8 @@ async def list_certificates(
     usuario_id = get_user_id_from_data(user_data)
 
     if empresa_id:
-        # Verify access to empresa
-        exigir_acesso_empresa(db, empresa_id, usuario_id)
+        # Verify user has access to this empresa
+        validar_acesso_empresa(empresa_id, user_data)
 
         query = db.query(Certificados).filter(Certificados.empresa_id == empresa_id)
         if not include_deleted:
@@ -993,7 +1017,7 @@ async def get_certificate(
 
     usuario_id = get_user_id_from_data(user_data)
 
-    cert = verificar_acesso_certificado(db, usuario_id, certificado_id)
+    cert = verificar_acesso_certificado(db, usuario_id, certificado_id, user_data)
 
     return CertificateResponse(
         certificado_id=str(cert.certificado_id),
@@ -1030,22 +1054,13 @@ async def sign_with_certificate(
     usuario_id = get_user_id_from_data(user_data)
 
     # 1. Verify certificate access
-    cert = verificar_acesso_certificado(db, usuario_id, certificado_id)
+    cert = verificar_acesso_certificado(db, usuario_id, certificado_id, user_data)
 
     # 2. Check access rules (regras_acesso, horarios, feriados)
     verificar_regras_acesso(db, usuario_id, certificado_id, str(cert.empresa_id))
 
     # 3. Check URL is allowed
     verificar_url_permitida(db, usuario_id, certificado_id, data.url)
-
-    # 4. Decode base64 data
-    try:
-        raw_data = base64.b64decode(data.data)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Dados invalidos (esperado base64)",
-        )
 
     # 4. Send to Cofre for signing
     if not cert.cofre_cert_id:
@@ -1057,7 +1072,7 @@ async def sign_with_certificate(
     try:
         signature = await cofre_client.sign_data(
             certificate_id=cert.cofre_cert_id,
-            data=raw_data,
+            data=data.data,
             user_context={
                 "usuario_id": usuario_id,
                 "empresa_id": str(cert.empresa_id),
@@ -1096,7 +1111,9 @@ async def delete_certificate(
     Admin only - Marks the certificate as deleted without removing data from the database or Cofre.
     """
     # Check if user is admin
+    print("user_data: %s", user_data)
     if not user_data.get("is_admin"):
+        print('veio aqui')
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Apenas administradores podem remover certificados",
@@ -1120,8 +1137,8 @@ async def delete_certificate(
             detail="Certificado nao encontrado",
         )
 
-    # Verify user is empresa owner/member
-    exigir_acesso_empresa(db, cert.empresa_id, usuario_id)
+    # Verify user has access to this empresa
+    # validar_acesso_empresa(str(cert.empresa_id), user_data)
 
     # Soft delete: set deleted_at and deleted_by
     cert.deleted_at = datetime.datetime.now(datetime.timezone.utc)

@@ -67,8 +67,8 @@ async def list_users(
     request: Request,
     organization_id: str | None = None,
     include_deleted: bool = False,
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     user_data: dict[str, Any] = Depends(check_auth),
 ) -> Any:
     """

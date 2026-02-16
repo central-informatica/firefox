@@ -48,6 +48,7 @@ def validate_password_strength(password: str) -> str:
         raise ValueError("Senha deve conter pelo menos um caractere especial (@$!%*?&-_#^+=)")
 
     return password
+from backend.app.api.deps import check_auth
 from backend.app.core.exceptions import AuthenticationError, AuthServiceError
 from backend.app.utils.validators import (
     validate_cnpj,
@@ -372,6 +373,7 @@ async def verify_2fa(
 
     Forwards request to Auth service /api/v1/auth/verify-2fa.
     On success, sets session cookies.
+
     """
     # Forward Authorization header if present
     headers = {}
@@ -384,6 +386,7 @@ async def verify_2fa(
             headers=headers if headers else None,
         )
 
+<<<<<<< HEAD
         # Log the result for debugging
         import logging
         logging.info(f"2FA verify result: {result}")
@@ -394,15 +397,29 @@ async def verify_2fa(
         access_token = tokens.get("access_token") or result.get("access_token")
         csrf_token = tokens.get("csrf_token") or result.get("csrf_token")
 
+=======
+        # Extract tokens from Auth service response
+        tokens = result.get("tokens", {})
+        access_token = tokens.get("access_token")
+        csrf_token = tokens.get("csrf_token")
+
+        # Set cookies if we have tokens (successful 2FA verification)
+>>>>>>> c1e781b (changes in companies planos_trabalho usuarios models and main)
         if access_token:
             # Set HttpOnly cookie for session token (not accessible to JS)
             response.set_cookie(
                 key="session_token",
                 value=access_token,
                 httponly=True,
+<<<<<<< HEAD
                 secure=not DEBUG,
                 samesite="lax",
                 max_age=3600,
+=======
+                secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
+                samesite="lax",
+                max_age=3600,  # 1 hour
+>>>>>>> c1e781b (changes in companies planos_trabalho usuarios models and main)
                 path="/",
             )
 
@@ -411,14 +428,26 @@ async def verify_2fa(
                 response.set_cookie(
                     key="csrf_token",
                     value=csrf_token,
+<<<<<<< HEAD
                     httponly=False,
                     secure=not DEBUG,
+=======
+                    httponly=False,  # JS needs to read this
+                    secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
+>>>>>>> c1e781b (changes in companies planos_trabalho usuarios models and main)
                     samesite="lax",
                     max_age=3600,
                     path="/",
                 )
 
+<<<<<<< HEAD
         return {"message": "Verificacao 2FA concluida com sucesso"}
+=======
+        return {
+            "message": "2FA verificado com sucesso",
+            "success": True,
+        }
+>>>>>>> c1e781b (changes in companies planos_trabalho usuarios models and main)
 
     except AuthenticationError as e:
         raise HTTPException(
@@ -434,44 +463,22 @@ async def verify_2fa(
 
 @router.get("/me")
 async def get_me(
-    request: Request,
+    user_data: dict[str, Any] = Depends(check_auth),
 ) -> dict[str, Any]:
     """
     Get current authenticated user.
 
-    Reads session token from HttpOnly cookie and CSRF token from header.
-    Forwards request to Auth service /api/v1/auth/me with Authorization header.
+    Validates session via Auth service and returns user data including:
+    - id: User ID
+    - email: User email
+    - first_name, last_name: User name
+    - organization_id: Current organization
+    - is_admin: Admin status
+
+    Raises:
+        HTTPException 401: If session invalid or expired
     """
-    # Get session token from cookie
-    session_token = request.cookies.get("session_token")
-    csrf_token = request.headers.get("X-CSRF-Token")
-
-    if not session_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Nao autenticado",
-        )
-
-    # Build headers for auth service, including Authorization
-    excluded_headers = {'content-length', 'host', 'transfer-encoding', 'content-type', 'cookie'}
-    headers = {
-        k: v for k, v in request.headers.items()
-        if k.lower() not in excluded_headers
-    }
-    # Add Authorization header with session token
-    headers["Authorization"] = f"Bearer {session_token}"
-
-    try:
-        return await auth_client.proxy_request(
-            method="GET",
-            path="/api/v1/auth/me",
-            headers=headers,
-        )
-    except AuthServiceError as e:
-        raise HTTPException(
-            status_code=e.status_code or 401,
-            detail=e.message,
-        )
+    return user_data
 
 
 @router.post("/forgot-password")

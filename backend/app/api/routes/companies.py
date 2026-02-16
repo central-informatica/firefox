@@ -7,7 +7,7 @@ Admin-only access with IP whitelist validation (except user's own companies endp
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 
 from backend.app.api.deps import check_auth_with_ip, get_user_id_from_data
@@ -65,8 +65,8 @@ class CompanyUserAssignment(BaseModel):
 async def list_companies(
     request: Request,
     org_id: str,
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     include_deleted: bool = False,
     user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
@@ -259,8 +259,8 @@ async def delete_company(
 async def list_company_users(
     request: Request,
     company_id: str,
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
     """
@@ -383,8 +383,8 @@ async def remove_user_from_company(
 async def list_user_companies(
     request: Request,
     user_id: str,
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     user_data: dict[str, Any] = Depends(check_auth_with_ip),
 ) -> Any:
     """
