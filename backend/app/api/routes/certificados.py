@@ -7,11 +7,15 @@ Business logic (access control, grupo membership) remains in XSecurity-Vault.
 
 import base64
 import datetime
+import logging
 import uuid
-from typing import Any
+from typing import Any, Literal, Optional
+
+logger = logging.getLogger(__name__)
 
 from cryptography.hazmat.primitives.serialization import pkcs12
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -43,6 +47,7 @@ class SignRequest(BaseModel):
 
     data: str  # Base64-encoded data to sign
     url: str   # URL where the certificate will be used (must be in allowed list)
+    algorithm: str
 
 
 class CertificateResponse(BaseModel):
@@ -416,7 +421,11 @@ def verificar_url_permitida(
             if allowed_parsed.scheme == "https":
                 # Normalize allowed domain for consistent comparison
                 allowed_domain = _normalize_domain(allowed_parsed.netloc)
+                # Exact domain match
                 if request_domain == allowed_domain:
+                    return True
+                # Domain suffix match (e.g., gov.br matches *.gov.br)
+                if request_domain.endswith("." + allowed_domain):
                     return True
 
     raise HTTPException(
@@ -867,7 +876,7 @@ async def list_certificates(
 async def get_certificates_der(
     db: Session = Depends(get_db),
     user_data: dict[str, Any] = Depends(check_auth_with_ip),
-) -> CertificateDerResponse:
+):
     """
     Get DER-encoded certificate data for all accessible certificates.
 
@@ -903,64 +912,69 @@ async def get_certificates_der(
         .distinct()
         .all()
     )
-
+    logger.info('accessible_certs: %s', accessible_certs)
     if not accessible_certs:
-        return CertificateDerResponse(certificates=[], errors=[])
-
+        return {"certificates": [], "errors": []}
+    logger.info('accessible_certs after check: %s', accessible_certs)
     # 2. Filter by access rules (day/time/holiday)
     id_mapping: dict[str, str] = {}
     errors: list[CertificateDerError] = []
-
+    logger.info('Starting access rules check')
     for cert in accessible_certs:
         cert_id = str(cert.certificado_id)
         try:
             # Check access rules (day/time/holiday)
+            logger.info('Checking access for cert_id: %s', cert_id)
             verificar_regras_acesso(db, usuario_id, cert_id, str(cert.empresa_id))
+            logger.info('Access granted for cert_id: %s', cert_id)
             # Map local_id -> cofre_id
             id_mapping[cert_id] = str(cert.cofre_cert_id)
         except HTTPException as e:
+            logger.warning('Access denied for cert_id: %s, Reason: %s', cert_id, e.detail)
             errors.append(CertificateDerError(
                 id=cert_id,
                 reason=e.detail
             ))
+    logger.info('ID mapping after access rules check: %s', id_mapping)
 
     if not id_mapping:
-        return CertificateDerResponse(certificates=[], errors=errors)
-
+        return {"certificates": [], "errors": [{"id": e.id, "reason": e.reason} for e in errors]}
+    logger.info('Proceeding to Cofre proxy with IDs: %s', list(id_mapping.values()))
     # 3. Proxy to Cofre with cofre_cert_ids
     try:
         cofre_response = await cofre_client.get_certificates_der(
             list(id_mapping.values())
         )
+        logger.info('Cofre response: %s', cofre_response)
     except CertificateNotFoundError:
         # All requested certs not found in Cofre
+        logger.warning('Certificates not found in Cofre for IDs: %s', list(id_mapping.values()))
         for local_id in id_mapping.keys():
             errors.append(CertificateDerError(
                 id=local_id,
                 reason="Certificado nao encontrado no Cofre"
             ))
-        return CertificateDerResponse(certificates=[], errors=errors)
+        return {"certificates": [], "errors": [{"id": e.id, "reason": e.reason} for e in errors]}
     except CofreServiceError as e:
         raise HTTPException(
             status_code=e.status_code or 500,
             detail=e.message,
         )
 
-    # 4. Map cofre_id back to local_id in response
-    reverse_mapping = {v: k for k, v in id_mapping.items()}
+    # 4. Map cofre IDs back to local certificado_ids
+    cofre_to_local = {v: k for k, v in id_mapping.items()}
+    mapped_certificates = []
+    for cert in cofre_response:
+        cofre_id = cert.get("id")
+        mapped_certificates.append({
+            **cert,
+            "id": cofre_to_local.get(cofre_id, cofre_id)
+        })
 
-    certificates = []
-    for item in cofre_response:
-        cofre_id = item["id"]
-        local_id = reverse_mapping.get(cofre_id)
-        if local_id:
-            certificates.append(CertificateDerItem(
-                id=local_id,
-                label=item["label"],
-                cert_der_b64=item["cert_der_b64"]
-            ))
-
-    return CertificateDerResponse(certificates=certificates, errors=errors)
+    return JSONResponse(content={
+        "certificates": mapped_certificates,
+        "errors": [{"id": e.id, "reason": e.reason} for e in errors]
+    })
 
 
 @router.get("/{certificado_id}")
@@ -1011,6 +1025,8 @@ async def sign_with_certificate(
     3. Check URL is allowed for this grupo-certificado
     4. Send to Cofre for signing
     """
+    print('algorithm: %s', data.algorithm)
+    logger.info("algorithm: %s", data.algorithm)
     usuario_id = get_user_id_from_data(user_data)
 
     # 1. Verify certificate access
@@ -1046,6 +1062,7 @@ async def sign_with_certificate(
                 "usuario_id": usuario_id,
                 "empresa_id": str(cert.empresa_id),
             },
+            algorithm=data.algorithm,
         )
 
         return SignResponse(signature=signature)

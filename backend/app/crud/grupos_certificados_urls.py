@@ -63,5 +63,37 @@ class CRUDGruposCertificadosUrls:
         db.commit()
         return {"status": "deleted"}
 
+    def listar_urls_acessiveis_por_usuario(self, db: Session, usuario_id: str, empresa_id: str):
+        """List all URLs accessible by a user based on their group memberships."""
+        from sqlalchemy import select
+        from backend.app.db.models import GruposUsuarios, GlobalUrls
+
+        # Subquery: grupos the user belongs to
+        user_grupos = select(GruposUsuarios.grupo_id).where(
+            GruposUsuarios.usuario_id == usuario_id,
+            GruposUsuarios.empresa_id == empresa_id
+        ).scalar_subquery()
+
+        # Subquery: grupo_cert_ids for those grupos
+        grupo_certs = select(GruposCertificados.grupo_cert_id).where(
+            GruposCertificados.grupo_id.in_(user_grupos),
+            GruposCertificados.empresa_id == empresa_id
+        ).scalar_subquery()
+
+        # Query URLs with GlobalUrls join
+        results = db.query(
+            GruposCertificadosUrls.grupo_cert_url_id,
+            GruposCertificadosUrls.grupo_cert_id,
+            GruposCertificadosUrls.global_urls_id,
+            GlobalUrls.url
+        ).join(
+            GlobalUrls, GruposCertificadosUrls.global_urls_id == GlobalUrls.global_urls_id
+        ).filter(
+            GruposCertificadosUrls.grupo_cert_id.in_(grupo_certs),
+            GlobalUrls.inativo == False
+        ).all()
+
+        return results
+
 
 crud_grupos_certificados_urls = CRUDGruposCertificadosUrls()

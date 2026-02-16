@@ -24,3 +24,18 @@ class GrupoCertUrlOut(BaseModel):
     @field_serializer("grupo_cert_url_id", "grupo_cert_id", "global_urls_id", "empresa_id")
     def serialize_uuid(self, value: UUID) -> str:
         return str(value)
+
+
+class UrlAcessivelOut(BaseModel):
+    """Schema for user's accessible URL response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    grupo_cert_url_id: UUID
+    grupo_cert_id: UUID
+    global_urls_id: UUID
+    url: str
+
+    @field_serializer("grupo_cert_url_id", "grupo_cert_id", "global_urls_id")
+    def serialize_uuid(self, value: UUID) -> str:
+        return str(value)

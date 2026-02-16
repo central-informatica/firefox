@@ -8,16 +8,34 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import check_auth_with_ip, get_organization_id_from_data
+from backend.app.api.deps import check_auth_with_ip, get_organization_id_from_data, get_user_id_from_data
 from backend.app.db.session import get_db
 from backend.app.schemas.grupos_certificados_urls import (
     GrupoCertUrlCreate,
     GrupoCertUrlOut,
+    UrlAcessivelOut,
 )
 from backend.app.crud.grupos_certificados_urls import crud_grupos_certificados_urls
 
 
 router = APIRouter(prefix="/grupos-certificados", tags=["Grupos Certificados URLs"])
+
+
+@router.get("/minhas-urls", response_model=list[UrlAcessivelOut])
+async def listar_minhas_urls(
+    db: Session = Depends(get_db),
+    current_user=Depends(check_auth_with_ip)
+):
+    """List all URLs accessible by the authenticated user based on their group memberships."""
+    usuario_id = get_user_id_from_data(current_user)
+    empresa_id = get_organization_id_from_data(current_user)
+
+    if not empresa_id:
+        raise HTTPException(400, "Usuario nao esta associado a uma empresa")
+
+    return crud_grupos_certificados_urls.listar_urls_acessiveis_por_usuario(
+        db, usuario_id, empresa_id
+    )
 
 
 @router.get("/{grupo_cert_id}/urls", response_model=list[GrupoCertUrlOut])

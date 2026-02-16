@@ -30,12 +30,6 @@ TestingSessionLocal = sessionmaker(
 def create_test_db():
     Base.metadata.create_all(bind=engine)
     yield
-    # Drop schema with CASCADE to handle all foreign key dependencies
-    with engine.begin() as conn:
-        conn.execute(text("DROP SCHEMA public CASCADE"))
-        conn.execute(text("CREATE SCHEMA public"))
-        conn.execute(text("GRANT ALL ON SCHEMA public TO postgres"))
-        conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
 
 # -------------------------------------------------
 # Sessão com rollback por teste

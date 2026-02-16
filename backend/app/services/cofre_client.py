@@ -235,6 +235,7 @@ class CofreClient(BaseServiceClient):
         certificate_id: uuid.UUID,
         data: bytes,
         user_context: Optional[dict[str, Any]] = None,
+        algorithm: Optional[str] = None,
     ) -> str:
         """
         Sign data using a certificate stored in Cofre.
@@ -250,6 +251,7 @@ class CofreClient(BaseServiceClient):
             certificate_id: Certificate ID in Cofre
             data: Data to sign (raw bytes, will be SHA-256 hashed)
             user_context: Optional context for audit (usuario_id, empresa_id)
+            algorithm: Optional signing algorithm (e.g., SHA256withRSA, SHA256withECDSA)
 
         Returns:
             Base64-encoded signature
@@ -266,7 +268,7 @@ class CofreClient(BaseServiceClient):
         digest = hashlib.sha256(data).digest()
         data_b64 = base64.b64encode(digest).decode("utf-8")
 
-        request_body = {
+        request_body: dict[str, Any] = {
             "cert_id": str(certificate_id),
             "data": data_b64,
         }
@@ -274,6 +276,10 @@ class CofreClient(BaseServiceClient):
         # Add user context for audit if provided
         if user_context:
             request_body["context"] = user_context
+
+        # Add algorithm if provided
+        if algorithm:
+            request_body["algorithm"] = algorithm
 
         response = await self._post(
             "/api/v1/certificates/sign",

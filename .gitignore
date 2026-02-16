@@ -1,7 +1,7 @@
 # ============================================================
 #   PYTHON / FASTAPI / POETRY
 # ============================================================
-
+nul
 __pycache__/
 *.py[cod]
 *.pyc
@@ -86,7 +86,6 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
-!.env.test.example
 
 
 # ============================================================
@@ -124,4 +123,4 @@ PSReadLine/
 
 signed/
 signatures/
-.env.test
+>>>>>>> c7772ea (mudar essa mensagem de commit)

@@ -9,8 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
-
-from backend.app.api.deps import check_auth_with_ip
+from backend.app.api.deps import check_auth, check_auth_with_ip
 from backend.app.core.exceptions import AuthServiceError
 from backend.app.services.auth_client import auth_client
 from backend.app.db.session import get_db
@@ -70,7 +69,7 @@ async def list_users(
     include_deleted: bool = False,
     limit: int = 100,
     offset: int = 0,
-    user_data: dict[str, Any] = Depends(check_auth_with_ip),
+    user_data: dict[str, Any] = Depends(check_auth),
 ) -> Any:
     """
     List users in organization.

@@ -14,7 +14,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
-from backend.app.api.deps import check_auth_with_ip
+from backend.app.api.deps import check_auth, check_auth_with_ip
 from backend.app.db.session import get_db
 
 from tests.factories.usuarios_ip_whitelist_factory import criar_usuarios_ip_whitelist
@@ -72,6 +72,7 @@ def admin_client(db_session, user_id, empresa_id):
         finally:
             pass
 
+    app.dependency_overrides[check_auth] = mock_auth
     app.dependency_overrides[check_auth_with_ip] = mock_auth
     app.dependency_overrides[get_db] = override_get_db
 
@@ -101,6 +102,7 @@ def non_admin_client(db_session, user_id, empresa_id):
         finally:
             pass
 
+    app.dependency_overrides[check_auth] = mock_auth
     app.dependency_overrides[check_auth_with_ip] = mock_auth
     app.dependency_overrides[get_db] = override_get_db
 
@@ -164,11 +166,11 @@ def test_list_users_unauthenticated(client):
     async def mock_auth():
         raise HTTPException(status_code=401, detail="Não autenticado")
 
-    app.dependency_overrides[check_auth_with_ip] = mock_auth
+    app.dependency_overrides[check_auth] = mock_auth
 
     response = client.get("/usuarios/")
 
-    app.dependency_overrides.pop(check_auth_with_ip, None)
+    app.dependency_overrides.pop(check_auth, None)
 
     assert response.status_code == 401
 
