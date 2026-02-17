@@ -386,7 +386,7 @@ async def verify_2fa(
             headers=headers if headers else None,
         )
 
-<<<<<<< HEAD
+
         # Log the result for debugging
         import logging
         logging.info(f"2FA verify result: {result}")
@@ -397,29 +397,16 @@ async def verify_2fa(
         access_token = tokens.get("access_token") or result.get("access_token")
         csrf_token = tokens.get("csrf_token") or result.get("csrf_token")
 
-=======
-        # Extract tokens from Auth service response
-        tokens = result.get("tokens", {})
-        access_token = tokens.get("access_token")
-        csrf_token = tokens.get("csrf_token")
 
-        # Set cookies if we have tokens (successful 2FA verification)
->>>>>>> c1e781b (changes in companies planos_trabalho usuarios models and main)
         if access_token:
             # Set HttpOnly cookie for session token (not accessible to JS)
             response.set_cookie(
                 key="session_token",
                 value=access_token,
                 httponly=True,
-<<<<<<< HEAD
-                secure=not DEBUG,
-                samesite="lax",
-                max_age=3600,
-=======
                 secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
                 samesite="lax",
                 max_age=3600,  # 1 hour
->>>>>>> c1e781b (changes in companies planos_trabalho usuarios models and main)
                 path="/",
             )
 
@@ -428,26 +415,17 @@ async def verify_2fa(
                 response.set_cookie(
                     key="csrf_token",
                     value=csrf_token,
-<<<<<<< HEAD
-                    httponly=False,
-                    secure=not DEBUG,
-=======
                     httponly=False,  # JS needs to read this
                     secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
->>>>>>> c1e781b (changes in companies planos_trabalho usuarios models and main)
                     samesite="lax",
                     max_age=3600,
                     path="/",
                 )
 
-<<<<<<< HEAD
-        return {"message": "Verificacao 2FA concluida com sucesso"}
-=======
         return {
             "message": "2FA verificado com sucesso",
             "success": True,
         }
->>>>>>> c1e781b (changes in companies planos_trabalho usuarios models and main)
 
     except AuthenticationError as e:
         raise HTTPException(

@@ -6,6 +6,7 @@ __pycache__/
 *.py[cod]
 *.pyc
 *.pyob
+report.md
 *.pyd
 *.pdb
 *$py.class
