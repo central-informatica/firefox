@@ -70,6 +70,13 @@ const TwoFactorAuth = ({ userId, email, onSuccess, onBack }) => {
         throw new Error(data.detail || "Codigo invalido");
       }
 
+      const data = await response.json();
+
+      // Store csrf_token from response body after successful 2FA
+      if (data.csrf_token) {
+        document.cookie = `csrf_token=${data.csrf_token}; path=/; SameSite=Strict`;
+      }
+
       toast.success("Verificacao concluida!");
       onSuccess();
     } catch (err) {

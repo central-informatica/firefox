@@ -42,14 +42,23 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function login(email, senha) {
+    
     const response = await loginWeb(email, senha);
-
+    
+    
+    console.log("Login response:", response);
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.detail || "Login invalido");
     }
 
     const data = await response.json();
+
+    // Store csrf_token from response body in a readable cookie
+    // Auth service sends this in body, not as a Set-Cookie header
+    if (data.csrf_token) {
+      document.cookie = `csrf_token=${data.csrf_token}; path=/; SameSite=Strict`;
+    }
 
     // Check if 2FA is required
     if (data.requires_2fa) {

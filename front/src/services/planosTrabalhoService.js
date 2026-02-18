@@ -61,7 +61,7 @@ export async function atualizarPlanoTrabalho(planoId, payload) {
 
 
 export async function deletarPlanoTrabalho(planoId) {
-  return apiFetch(`/planos-trabalho/${planoId}`, {
+  return apiFetchWithToken(`/planos-trabalho/${planoId}`, {
     method: "DELETE",
   });
 }

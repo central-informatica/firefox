@@ -7,6 +7,8 @@ const API_URL = import.meta.env.VITE_URL_BACKEND || "http://127.0.0.1:8000";
  * Use this for public endpoints (login, register, etc.)
  */
 export async function apiFetch(path, options = {}) {
+  console.log("apiFetch called with path:", path, "and options:", options);
+  console.log("API_URL:", API_URL);
   const response = await fetch(API_URL + path, {
     credentials: "include", // Send cookies
     ...options,
@@ -14,7 +16,8 @@ export async function apiFetch(path, options = {}) {
       ...(options.headers || {}),
     },
   });
-
+  console.log(response);
+  console.log("apiFetch response:", response);
   return response;
 }
 
@@ -23,10 +26,11 @@ export async function apiFetch(path, options = {}) {
  * Use this for protected endpoints that require authentication
  */
 export async function apiFetchWithToken(path, options = {}) {
-  const csrf = getCookie("csrf_token") || "";
+  const csrf = getCookie("csrf_token");
 
   if (!csrf) {
-    console.warn("CSRF token not found. User may not be authenticated.");
+    console.error("CSRF token not found in cookies. User may not be authenticated.");
+    throw new Error("Authentication token missing. Please log in again.");
   }
 
   // If the body is FormData (multipart), DO NOT set Content-Type so browser sets the boundary automatically
@@ -42,7 +46,7 @@ export async function apiFetchWithToken(path, options = {}) {
   }
 
   const response = await fetch(API_URL + path, {
-    credentials: "include", // Send session_token cookie
+    credentials: "include", // Send auth_token cookie
     ...options,
     headers,
   });
