@@ -38,14 +38,14 @@ async def get_dashboard_stats(
             )
 
         # Get total users from Auth service
-        session_token = request.cookies.get("session_token")
-        if not session_token:
+        auth_token = request.cookies.get("auth_token")
+        if not auth_token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Session token not found",
+                detail="Auth token not found",
             )
 
-        headers = {"Authorization": f"Bearer {session_token}"}
+        headers = {"Authorization": f"Bearer {auth_token}"}
 
         try:
             users_response = await auth_client.proxy_request(

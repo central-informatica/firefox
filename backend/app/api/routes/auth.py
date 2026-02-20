@@ -62,7 +62,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # Security scheme for OpenAPI documentation
 bearer_scheme = HTTPBearer(
     scheme_name="BearerAuth",
-    description="Session token for authentication. Use the session_token from login response.",
+    description="Session token for authentication. Use the auth_token from login response.",
     auto_error=False,
 )
 
@@ -222,10 +222,8 @@ async def login_web(
     """
     Authenticate user via Auth service for web clients.
 
-    Web clients receive 1-hour session tokens with CSRF protection.
-    Tokens are set as cookies:
-    - session_token: HttpOnly cookie (not accessible to JS, prevents XSS)
-    - csrf_token: Readable cookie (accessible to JS for header)
+    Proxies the login request to Auth service and forwards Set-Cookie headers.
+    The Auth service controls cookie attributes (samesite, secure, domain, etc).
     """
     try:
         result = await auth_client.login(
@@ -234,37 +232,15 @@ async def login_web(
             client_type="web",
         )
 
-        # Extract tokens from Auth service response
-        tokens = result.get("tokens", {})
+        # Extract data and cookies from Auth service response
         data = result.get("data", {})
+        cookies = result.get("cookies", [])
         requires_2fa = data.get("requires_2fa", False)
 
-        access_token = tokens.get("access_token")
-        csrf_token = tokens.get("csrf_token")
-
-        # Set cookies only if we have tokens (not during 2FA flow)
-        if access_token and not requires_2fa:
-            # Set HttpOnly cookie for session token (not accessible to JS)
-            response.set_cookie(
-                key="session_token",
-                value=access_token,
-                httponly=True,
-                secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
-                samesite="lax",
-                max_age=3600,  # 1 hour
-                path="/",
-            )
-
-            # Set readable cookie for CSRF token (accessible to JS)
-            response.set_cookie(
-                key="csrf_token",
-                value=csrf_token,
-                httponly=False,  # JS needs to read this
-                secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
-                samesite="lax",
-                max_age=3600,
-                path="/",
-            )
+        # Forward all Set-Cookie headers from Auth service to browser
+        # Must use append() to add multiple headers with the same name
+        for cookie_header in cookies:
+            response.headers.append("set-cookie", cookie_header)
 
         return LoginResponse(
             message="Login realizado com sucesso"
@@ -272,7 +248,7 @@ async def login_web(
             else "Codigo 2FA enviado para seu email",
             requires_2fa=requires_2fa,
             access_token=None,  # Don't expose in body, use cookies
-            csrf_token=None,  # Don't expose in body, use cookies
+            csrf_token=data.get("csrf_token"),  # Pass through from Auth service
             user_id=str(data.get("user_id")) if data.get("user_id") else None,
         )
 
@@ -307,8 +283,7 @@ async def login_desktop(
             client_type="desktop",
         )
 
-        # Extract tokens and data from Auth service response
-        tokens = result.get("tokens", {})
+        # Extract data from Auth service response
         data = result.get("data", {})
         requires_2fa = data.get("requires_2fa", False)
         user_id = data.get("user_id")
@@ -318,7 +293,7 @@ async def login_desktop(
             if not requires_2fa
             else "Codigo 2FA enviado para seu email",
             requires_2fa=requires_2fa,
-            access_token=tokens.get("access_token"),
+            access_token=data.get("access_token"),
             csrf_token=None,  # Desktop doesn't use CSRF protection
             user_id=str(user_id) if user_id else None,
         )
@@ -344,19 +319,19 @@ async def logout(
     Logout user and invalidate session.
 
     Reads session token from HttpOnly cookie and invalidates it.
-    Clears both session_token and csrf_token cookies.
+    Clears both auth_token and csrf_token cookies.
     """
     # Get session token from cookie
-    session_token = request.cookies.get("session_token")
+    auth_token = request.cookies.get("auth_token")
 
-    if session_token:
+    if auth_token:
         try:
-            await auth_client.logout(session_token)
+            await auth_client.logout(auth_token)
         except Exception:
             pass
 
     # Clear cookies
-    response.delete_cookie(key="session_token", path="/")
+    response.delete_cookie(key="auth_token", path="/")
     response.delete_cookie(key="csrf_token", path="/")
 
     return {"message": "Logout realizado com sucesso"}
@@ -371,9 +346,8 @@ async def verify_2fa(
     """
     Verify 2FA code after login.
 
-    Forwards request to Auth service /api/v1/auth/verify-2fa.
-    On success, sets session cookies.
-
+    Proxies request to Auth service and forwards Set-Cookie headers.
+    The Auth service controls cookie attributes.
     """
     # Forward Authorization header if present
     headers = {}
@@ -386,45 +360,19 @@ async def verify_2fa(
             headers=headers if headers else None,
         )
 
+        # Extract data and cookies from Auth service response
+        data_response = result.get("data", {})
+        cookies = result.get("cookies", [])
 
-        # Log the result for debugging
-        import logging
-        logging.info(f"2FA verify result: {result}")
-
-        # Extract tokens from Auth service response and set cookies
-        # Try both "tokens" object and direct properties
-        tokens = result.get("tokens", {})
-        access_token = tokens.get("access_token") or result.get("access_token")
-        csrf_token = tokens.get("csrf_token") or result.get("csrf_token")
-
-
-        if access_token:
-            # Set HttpOnly cookie for session token (not accessible to JS)
-            response.set_cookie(
-                key="session_token",
-                value=access_token,
-                httponly=True,
-                secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
-                samesite="lax",
-                max_age=3600,  # 1 hour
-                path="/",
-            )
-
-            # Set readable cookie for CSRF token (accessible to JS)
-            if csrf_token:
-                response.set_cookie(
-                    key="csrf_token",
-                    value=csrf_token,
-                    httponly=False,  # JS needs to read this
-                    secure=not DEBUG,  # HTTPS only in production (DEBUG=false)
-                    samesite="lax",
-                    max_age=3600,
-                    path="/",
-                )
+        # Forward all Set-Cookie headers from Auth service to browser
+        # Must use append() to add multiple headers with the same name
+        for cookie_header in cookies:
+            response.headers.append("set-cookie", cookie_header)
 
         return {
             "message": "2FA verificado com sucesso",
             "success": True,
+            "csrf_token": data_response.get("csrf_token"),  # Include csrf_token from Auth service
         }
 
     except AuthenticationError as e:

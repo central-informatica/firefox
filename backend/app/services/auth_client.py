@@ -45,6 +45,7 @@ class AuthClient(BaseServiceClient):
         method: str,
         path: str,
         headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
         json: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
     ) -> dict[str, Any] | list[Any]:
@@ -55,6 +56,7 @@ class AuthClient(BaseServiceClient):
             method: HTTP method (GET, POST, PUT, DELETE)
             path: API path (e.g., /api/v1/users/)
             headers: Headers to forward
+            cookies: Cookies to forward (auth_token, csrf_token)
             json: JSON body
             params: Query parameters
 
@@ -68,6 +70,7 @@ class AuthClient(BaseServiceClient):
             method,
             path,
             headers=headers,
+            cookies=cookies,
             json=json,
             params=params,
         )
@@ -109,7 +112,7 @@ class AuthClient(BaseServiceClient):
             client_type: "web" (1h token) or "desktop" (7d token)
 
         Returns:
-            dict with session info and cookies to set
+            dict with response data and headers (including Set-Cookie)
 
         Raises:
             AuthenticationError: If credentials are invalid
@@ -133,15 +136,13 @@ class AuthClient(BaseServiceClient):
                 status_code=response.status_code,
             )
 
-        # Extract tokens from response body
+        # Return response data and headers (including Set-Cookie from Auth service)
         data = response.json()
 
         return {
             "data": data,
-            "tokens": {
-                "access_token": data.get("access_token"),
-                "csrf_token": data.get("csrf_token"),
-            },
+            "headers": dict(response.headers),
+            "cookies": response.headers.get_list("set-cookie"),  # Preserve all Set-Cookie headers
         }
 
     async def logout(self, session_token: str) -> bool:
@@ -156,7 +157,7 @@ class AuthClient(BaseServiceClient):
         """
         response = await self._post(
             "/api/v1/auth/logout",
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
         )
         return response.status_code == 200
 
@@ -175,7 +176,7 @@ class AuthClient(BaseServiceClient):
             headers: Request headers to forward
 
         Returns:
-            dict with Auth service response
+            dict with response data and headers (including Set-Cookie)
         """
         response = await self._post(
             "/api/v1/auth/verify-2fa",
@@ -195,7 +196,12 @@ class AuthClient(BaseServiceClient):
                 status_code=response.status_code,
             )
 
-        return response.json()
+        # Return response data and headers (including Set-Cookie from Auth service)
+        return {
+            "data": response.json(),
+            "headers": dict(response.headers),
+            "cookies": response.headers.get_list("set-cookie"),  # Preserve all Set-Cookie headers
+        }
 
     async def get_current_user(
         self,
@@ -227,7 +233,7 @@ class AuthClient(BaseServiceClient):
         try:
             response = await self._get(
                 "/api/v1/auth/me",
-                cookies={"session_token": session_token},
+                cookies={"auth_token": session_token},
                 headers=headers if headers else None,
             )
 
@@ -385,7 +391,7 @@ class AuthClient(BaseServiceClient):
 
         response = await self._get(
             "/api/v1/users/",
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
             params=params,
         )
 
@@ -414,7 +420,7 @@ class AuthClient(BaseServiceClient):
         """
         response = await self._get(
             f"/api/v1/users/{user_id}",
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
         )
 
         if response.status_code == 404:
@@ -448,7 +454,7 @@ class AuthClient(BaseServiceClient):
         response = await self._put(
             f"/api/v1/users/{user_id}",
             json=data,
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
         )
 
         if response.status_code not in (200, 204):
@@ -476,7 +482,7 @@ class AuthClient(BaseServiceClient):
         """
         response = await self._delete(
             f"/api/v1/users/{user_id}",
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
         )
         return response.status_code in (200, 204)
 
@@ -499,7 +505,7 @@ class AuthClient(BaseServiceClient):
         """
         response = await self._get(
             "/api/v1/organizations/",
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
         )
 
         if response.status_code != 200:
@@ -527,7 +533,7 @@ class AuthClient(BaseServiceClient):
         """
         response = await self._get(
             f"/api/v1/organizations/{org_id}",
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
         )
 
         if response.status_code == 404:
@@ -600,7 +606,7 @@ class AuthClient(BaseServiceClient):
         """
         response = await self._get(
             f"/api/v1/organizations/{org_id}/members",
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
         )
 
         if response.status_code != 200:
@@ -639,7 +645,7 @@ class AuthClient(BaseServiceClient):
         response = await self._post(
             "/api/v1/invitations/",
             json=data,
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
         )
 
         if response.status_code not in (200, 201):
@@ -671,7 +677,7 @@ class AuthClient(BaseServiceClient):
         """
         response = await self._get(
             "/api/v1/invitations/",
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
             params={
                 "include_accepted": str(include_accepted).lower(),
                 "limit": limit,
@@ -704,7 +710,7 @@ class AuthClient(BaseServiceClient):
         """
         response = await self._delete(
             f"/api/v1/invitations/{invitation_id}",
-            cookies={"session_token": session_token},
+            cookies={"auth_token": session_token},
         )
         return response.status_code in (200, 204)
 

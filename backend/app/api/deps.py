@@ -31,7 +31,12 @@ async def check_auth(request: Request) -> dict[str, Any]:
     """
     Check if user is authenticated by forwarding to Auth service /api/v1/auth/me.
 
-    Reads session_token from HttpOnly cookie and converts to Authorization header.
+    Supports both authentication methods:
+    1. Session-based (web): Forwards auth_token and csrf_token cookies + X-CSRF-Token header
+    2. Bearer token (desktop/API): Forwards Authorization header
+
+    The orchestrator does not validate tokens locally - all validation
+    is delegated to the Auth service.
 
     Returns:
         dict with user information from Auth service
@@ -39,14 +44,6 @@ async def check_auth(request: Request) -> dict[str, Any]:
     Raises:
         HTTPException 401: If not authenticated
     """
-    # Get session token from cookie
-    session_token = request.cookies.get("session_token")
-
-    if not session_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization header",
-        )
 
     # Build headers, excluding certain ones
     headers = {
@@ -54,14 +51,16 @@ async def check_auth(request: Request) -> dict[str, Any]:
         if k.lower() not in EXCLUDED_HEADERS
     }
 
-    # Add Authorization header with session token from cookie
-    headers["Authorization"] = f"Bearer {session_token}"
+    # Extract cookies from request
+    # FastAPI's request.cookies is a dict-like object that can be converted to dict
+    cookies = dict(request.cookies) if request.cookies else {}
 
     try:
         return await auth_client.proxy_request(
             method="GET",
             path="/api/v1/auth/me",
             headers=headers,
+            cookies=cookies,
         )
     except AuthServiceError as e:
         raise HTTPException(
@@ -107,10 +106,11 @@ async def check_auth_with_ip(request: Request) -> dict[str, Any]:
         HTTPException 403: If IP not whitelisted
     """
     import logging
-
+    print("check_auth_with_ip called")
     logger = logging.getLogger(__name__)
+    # lohger.info("check_auth_with_ip called")
     user_data = await check_auth(request)
-
+    print(f'autorizado user data: {user_data}')
     # IP Whitelist validation
     # Auth service returns ip_address in response
     client_ip = user_data.get("ip_address")
@@ -122,6 +122,7 @@ async def check_auth_with_ip(request: Request) -> dict[str, Any]:
         from backend.app.crud.usuarios_ip_whitelist import crud_usuarios_ip_whitelist
 
         db = SessionLocal()
+        
         try:
             ip_allowed = crud_usuarios_ip_whitelist.verificar_ip_permitido(
                 db, usuario_id, empresa_id, client_ip

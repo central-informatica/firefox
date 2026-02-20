@@ -16,6 +16,7 @@ load_dotenv(dotenv_path)
 
 from backend.app.db.database import Base
 from backend.app.core.config import DATABASE_URL
+from backend.app.db.models import *  
 
 # Alembic Config
 config = context.config

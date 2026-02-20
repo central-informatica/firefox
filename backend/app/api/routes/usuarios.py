@@ -85,10 +85,10 @@ async def list_users(
 
     headers = get_forwarded_headers(request)
 
-    # Add Authorization header from session_token cookie
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        headers["Authorization"] = f"Bearer {session_token}"
+    # Add Authorization header from auth_token cookie
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
 
     params = {
         "limit": limit,
@@ -160,10 +160,10 @@ async def create_user(
 
     headers = get_forwarded_headers(request)
 
-    # Add Authorization header from session_token cookie
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        headers["Authorization"] = f"Bearer {session_token}"
+    # Add Authorization header from auth_token cookie
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
 
     # Split nome into first_name and last_name
     name_parts = data.nome.strip().split(" ", 1)
@@ -215,10 +215,10 @@ async def get_user(
 
     headers = get_forwarded_headers(request)
 
-    # Add Authorization header from session_token cookie
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        headers["Authorization"] = f"Bearer {session_token}"
+    # Add Authorization header from auth_token cookie
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
 
     try:
         result = await auth_client.proxy_request(
@@ -272,10 +272,10 @@ async def update_user(
 
     headers = get_forwarded_headers(request)
 
-    # Add Authorization header from session_token cookie
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        headers["Authorization"] = f"Bearer {session_token}"
+    # Add Authorization header from auth_token cookie
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
 
     update_data = data.model_dump(exclude_none=True)
 
@@ -326,10 +326,10 @@ async def delete_user(
 
     headers = get_forwarded_headers(request)
 
-    # Add Authorization header from session_token cookie
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        headers["Authorization"] = f"Bearer {session_token}"
+    # Add Authorization header from auth_token cookie
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
 
     try:
         return await auth_client.proxy_request(
@@ -369,10 +369,10 @@ async def list_users_by_company(
 
     headers = get_forwarded_headers(request)
 
-    # Add Authorization header from session_token cookie
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        headers["Authorization"] = f"Bearer {session_token}"
+    # Add Authorization header from auth_token cookie
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
 
     try:
         result = await auth_client.proxy_request(
@@ -448,10 +448,10 @@ async def toggle_user_active(
 
     headers = get_forwarded_headers(request)
 
-    # Add Authorization header from session_token cookie
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        headers["Authorization"] = f"Bearer {session_token}"
+    # Add Authorization header from auth_token cookie
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
 
     try:
         result = await auth_client.proxy_request(
@@ -532,10 +532,10 @@ async def get_user_companies(
 
     headers = get_forwarded_headers(request)
 
-    # Add Authorization header from session_token cookie
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        headers["Authorization"] = f"Bearer {session_token}"
+    # Add Authorization header from auth_token cookie
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
 
     try:
         result = await auth_client.proxy_request(

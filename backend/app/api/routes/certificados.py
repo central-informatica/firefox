@@ -25,7 +25,7 @@ from backend.app.core.exceptions import (
     CertificateSigningError,
     CofreServiceError,
 )
-from backend.app.crud.guards import exigir_acesso_empresa, validar_acesso_empresa
+from backend.app.crud.guards import exigir_acesso_empresa
 from backend.app.db.models import Certificados, Feriados, GlobalUrls, GruposCertificados, GruposCertificadosUrls, GruposUsuarios, RegrasAcesso
 from backend.app.db.session import get_db
 from backend.app.services.cofre_client import cofre_client
@@ -494,9 +494,6 @@ async def upload_certificate(
             detail="empresa_id é obrigatório quando auto_create_empresa não está ativo",
         )
 
-    # 3. Validate user has access to this empresa
-    validar_acesso_empresa(empresa_id, user_data)
-
     # 3. Read file content with size limit check
     file_content = await arquivo.read()
     if not file_content:
@@ -646,11 +643,11 @@ async def upload_certificate(
                 detail="Usuário não está associado a uma organização",
             )
 
-        # Get authorization header from session cookie
+        # Get authorization header from auth token cookie
         auth_headers = {}
-        session_token = request.cookies.get("session_token")
-        if session_token:
-            auth_headers["Authorization"] = f"Bearer {session_token}"
+        auth_token = request.cookies.get("auth_token")
+        if auth_token:
+            auth_headers["Authorization"] = f"Bearer {auth_token}"
 
         # Search for existing empresa with this CNPJ via auth service
         try:
@@ -810,7 +807,8 @@ async def list_certificates(
 
     if empresa_id:
         # Verify user has access to this empresa
-        validar_acesso_empresa(empresa_id, user_data)
+        
+        exigir_acesso_empresa(db, empresa_id, user_data)
 
         query = db.query(Certificados).filter(Certificados.empresa_id == empresa_id)
         if not include_deleted:

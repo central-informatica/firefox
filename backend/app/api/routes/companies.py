@@ -355,10 +355,10 @@ async def remove_user_from_company(
 
     headers = get_forwarded_headers(request)
 
-    # Add Authorization header from session_token cookie
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        headers["Authorization"] = f"Bearer {session_token}"
+    # Add Authorization header from auth_token cookie
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
 
     try:
         return await auth_client.proxy_request(
