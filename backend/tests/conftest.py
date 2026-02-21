@@ -1,5 +1,6 @@
 import os
 import pytest
+from unittest.mock import AsyncMock, patch
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
@@ -7,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.app.main import app
 from backend.app.db.session import get_db
-from backend.app.db.models import Base 
+from backend.app.db.models import Base
 
 # -------------------------------------------------
 # Carregar env de teste
@@ -22,6 +23,23 @@ TestingSessionLocal = sessionmaker(
     autoflush=False,
     bind=engine,
 )
+
+# -------------------------------------------------
+# Mock service clients health checks for all tests
+# -------------------------------------------------
+@pytest.fixture(scope="session", autouse=True)
+def mock_service_health_checks():
+    """Mock health checks for Auth and Cofre services during tests."""
+    with patch(
+        "backend.app.services.auth_client.auth_client.health_check",
+        new_callable=AsyncMock,
+        return_value=True,
+    ), patch(
+        "backend.app.services.cofre_client.cofre_client.health_check",
+        new_callable=AsyncMock,
+        return_value=True,
+    ):
+        yield
 
 # -------------------------------------------------
 # Criar schema uma vez

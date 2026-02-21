@@ -57,6 +57,12 @@ jobs:
           echo "DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/xsecurity_test" > .env.test
           echo "MASTER_KEY=test_master_key_for_ci" >> .env.test
           echo "CERT_STORAGE_DIR=storage/certificados" >> .env.test
+          echo "AUTH_SERVICE_URL=http://127.0.0.1:8001" >> .env.test
+          echo "COFRE_SERVICE_URL=http://127.0.0.1:8002" >> .env.test
+          echo "COFRE_SERVICE_API_KEY=test_api_key_for_ci" >> .env.test
+          echo "FRONTEND_ORIGINS=http://localhost:5173" >> .env.test
+          echo "AUTH_SERVICE_TIMEOUT=10.0" >> .env.test
+          echo "COFRE_SERVICE_TIMEOUT=30.0" >> .env.test
 
       - name: Create storage directory
         run: mkdir -p storage/certificados
